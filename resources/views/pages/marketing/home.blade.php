@@ -7,8 +7,8 @@
 @endphp
 
 <x-layouts::marketing
-    :title="__('AI-powered vehicle rental')"
-    :description="__('Rent a vehicle from verified local owners. CarHub matches you to the right car with smart recommendations, live GPS tracking, and secure, validated payments.')"
+    :title="__('Rent a vehicle from trusted local owners')"
+    :description="__('Rent a vehicle from verified local owners. Every CarHub trip is ID-verified, GPS-tracked from pickup to return, and paid for through validated, secure payments.')"
 >
     {{-- Hero --}}
     <section class="relative isolate overflow-hidden bg-white">
@@ -16,18 +16,13 @@
 
         <div class="relative mx-auto max-w-7xl px-4 pb-16 pt-16 sm:px-6 lg:px-8 lg:pb-24 lg:pt-24">
             <div class="mx-auto max-w-3xl text-center">
-                <span class="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white/70 px-3.5 py-1.5 text-sm font-medium text-brand-700 shadow-sm backdrop-blur">
-                    <span class="flex size-1.5 rounded-full bg-brand-500"></span>
-                    {{ __('AI-powered vehicle rental') }}
-                </span>
-
-                <h1 class="mt-6 text-4xl font-bold tracking-tight text-balance text-zinc-900 sm:text-6xl">
+                <h1 class="text-4xl font-bold tracking-tight text-balance text-zinc-900 sm:text-6xl">
                     {{ __('Rent the right car,') }}
                     <span class="text-gradient">{{ __('matched to you') }}</span>
                 </h1>
 
                 <p class="mx-auto mt-6 max-w-2xl text-lg/8 text-pretty text-zinc-600">
-                    {{ __('CarHub connects renters with verified local vehicle owners. Our recommendation engine learns what you actually need, forecasts demand so prices stay fair, and every trip is GPS-tracked from pickup to return.') }}
+                    {{ __('CarHub connects renters with verified local vehicle owners. Filter down to exactly the vehicle you need, book it in minutes, and drive away covered — every trip is GPS-tracked from pickup to return.') }}
                 </p>
             </div>
 
@@ -120,55 +115,6 @@
         </div>
     </section>
 
-    {{-- AI capabilities --}}
-    <section class="relative isolate overflow-hidden bg-zinc-950 py-20 lg:py-28">
-        <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-            <div class="absolute -left-24 top-0 size-[30rem] rounded-full bg-brand-600/20 blur-3xl"></div>
-            <div class="absolute -right-24 bottom-0 size-[30rem] rounded-full bg-spark-500/15 blur-3xl"></div>
-        </div>
-
-        <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mx-auto max-w-2xl text-center">
-                <p class="text-sm font-semibold uppercase tracking-wider text-spark-400">{{ __('The intelligence layer') }}</p>
-                <h2 class="mt-3 text-3xl font-bold tracking-tight text-balance text-white sm:text-4xl">
-                    {{ __('More than a listings page') }}
-                </h2>
-                <p class="mt-4 text-lg/8 text-pretty text-zinc-400">
-                    {{ __('Three models run underneath CarHub — one to understand what you want, one to keep prices honest, and one to keep every trip accounted for.') }}
-                </p>
-            </div>
-
-            <div class="mt-14 grid gap-6 lg:grid-cols-3">
-                <x-marketing.feature-card tone="dark" :title="__('Personalised recommendations')" :badge="__('Content-based')">
-                    <x-slot:icon>
-                        <svg class="size-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.36.39-1.59 1.59M21 12h-2.25m-.39 6.36-1.59-1.59M12 18.75V21m-4.77-2.23-1.59 1.59M5.25 12H3m2.64-6.36L7.23 7.23" />
-                            <circle cx="12" cy="12" r="3.25" />
-                        </svg>
-                    </x-slot:icon>
-                    {{ __('CarHub profiles every vehicle by body type, seats, transmission, features, and price band, then matches those attributes against what you have searched for and booked before. The more you use it, the closer the shortlist gets.') }}
-                </x-marketing.feature-card>
-
-                <x-marketing.feature-card tone="dark" :title="__('Demand forecasting')" :badge="__('LSTM')">
-                    <x-slot:icon>
-                        <svg class="size-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 20.25h18M6.75 16.5V9.75M11.25 16.5V6.75M15.75 16.5v-4.5M20.25 16.5V4.5" />
-                        </svg>
-                    </x-slot:icon>
-                    {{ __('A sequence model reads historical bookings, seasonality, and local events to project demand week by week. Owners get a suggested daily rate that reflects what the market will actually bear — no guesswork, no gouging.') }}
-                </x-marketing.feature-card>
-
-                <x-marketing.feature-card tone="dark" :title="__('GPS search & live tracking')" :badge="__('Real-time')">
-                    <x-slot:icon>
-                        <svg class="size-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 20.25 3 22.5v-15L9 5.25m0 15 6-2.25m-6 2.25V5.25m6 12.75 6 2.25V6l-6-2.25m0 14.25V3.75m0 0L9 5.25" />
-                        </svg>
-                    </x-slot:icon>
-                    {{ __('Search by map to find vehicles genuinely close to you, not just in the same city. Once a trip starts, owners see the vehicle live for the rental window only — tracking switches off the moment it ends.') }}
-                </x-marketing.feature-card>
-            </div>
-        </div>
-    </section>
 
     {{-- How it works --}}
     <section class="bg-white py-20 lg:py-28">
@@ -308,7 +254,7 @@
 
                     <ul class="mt-8 space-y-4">
                         @foreach ([
-                            __('AI-suggested daily rates based on live local demand — override them any time.'),
+                            __('Suggested daily rates based on live local demand — override them any time.'),
                             __('Review every renter\'s verification status, rating, and trip history before you accept.'),
                             __('See your vehicle on a map for the duration of an active rental.'),
                             __('Payouts to GCash, Maya, or your bank within 24 hours of trip completion.'),

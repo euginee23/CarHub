@@ -36,7 +36,7 @@
                 </a>
 
                 <p class="mt-4 max-w-sm text-sm/6 text-zinc-600">
-                    {{ __('An AI-powered vehicle rental marketplace connecting verified owners and renters — smarter matches, fairer prices, safer trips.') }}
+                    {{ __('A vehicle rental marketplace connecting verified owners and renters — smarter matches, fairer prices, safer trips.') }}
                 </p>
 
                 <div class="mt-6 flex items-center gap-2">

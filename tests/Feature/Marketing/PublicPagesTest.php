@@ -15,11 +15,21 @@ test('every marketing page is reachable as a guest', function (string $routeName
 ]);
 
 test('marketing pages render in light mode', function () {
-    // The app and auth layouts hardcode class="dark"; the marketing shell must not.
+    // The authenticated app layout hardcodes class="dark"; the marketing shell must not.
     $this->get(route('home'))
         ->assertOk()
         ->assertDontSee('<html lang="en" class="dark"', escape: false);
 });
+
+test('no public page advertises AI capabilities', function (string $routeName) {
+    // The recommendation engine, demand forecasting and chatbot are not implemented;
+    // the marketing site must not claim them.
+    $response = $this->get(route($routeName))->assertOk();
+
+    foreach (['AI-powered', 'AI-suggested', 'Where the AI helps', 'The intelligence layer', 'LSTM'] as $claim) {
+        $response->assertDontSee($claim);
+    }
+})->with(['home', 'vehicles.index', 'how-it-works', 'about', 'contact', 'faq', 'terms']);
 
 test('the home page shows featured vehicles linking to their detail page', function () {
     $featured = collect(config('demo.vehicles'))->firstWhere('featured', true);

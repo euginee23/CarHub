@@ -40,23 +40,11 @@
                         :description="__('Five steps. Verification happens once — every booking after that is immediate.')"
                     />
 
-                    <div class="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-5">
-                        <p class="flex items-center gap-2 text-sm font-semibold text-brand-800">
-                            <svg class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.36.39-1.59 1.59M21 12h-2.25m-.39 6.36-1.59-1.59M12 18.75V21m-4.77-2.23-1.59 1.59M5.25 12H3m2.64-6.36L7.23 7.23" />
-                                <circle cx="12" cy="12" r="3.25" />
-                            </svg>
-                            {{ __('Where the AI helps') }}
-                        </p>
-                        <p class="mt-2 text-sm/6 text-brand-900/80">
-                            {{ __('Content-based filtering profiles every listing by body type, seats, transmission, features, and price band, then ranks them against your search history and past trips — so the first three results are usually the right ones.') }}
-                        </p>
-                    </div>
                 </div>
 
                 <div>
                     <x-marketing.step number="1" :title="__('Search or get matched')">
-                        {{ __('Filter by city, dates, body type, transmission, seats, and daily rate. If you would rather not filter at all, the recommendation engine surfaces the closest matches to what you have booked before.') }}
+                        {{ __('Filter by city, dates, body type, transmission, seats, and daily rate until the shortlist is exactly what you need — or sort by rating and let the best-reviewed vehicles near you rise to the top.') }}
                     </x-marketing.step>
 
                     <x-marketing.step number="2" :title="__('Choose your dates')">
@@ -91,17 +79,6 @@
                         :description="__('You keep control over who drives your vehicle, when, and for how much.')"
                     />
 
-                    <div class="mt-8 rounded-2xl border border-brand-200 bg-brand-50 p-5">
-                        <p class="flex items-center gap-2 text-sm font-semibold text-brand-800">
-                            <svg class="size-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 20.25h18M6.75 16.5V9.75M11.25 16.5V6.75M15.75 16.5v-4.5M20.25 16.5V4.5" />
-                            </svg>
-                            {{ __('Where the AI helps') }}
-                        </p>
-                        <p class="mt-2 text-sm/6 text-brand-900/80">
-                            {{ __('An LSTM demand model reads historical bookings, seasonality, and local events to project the coming weeks, then suggests a daily rate that reflects real demand. You can accept it, adjust it, or ignore it entirely.') }}
-                        </p>
-                    </div>
                 </div>
 
                 <div>

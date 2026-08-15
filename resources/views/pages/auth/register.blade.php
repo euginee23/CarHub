@@ -1,9 +1,13 @@
-<x-layouts::auth :title="__('Register')">
-    <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Create an account')" :description="__('Enter your details below to create your account')" />
+<x-layouts::auth
+    :title="__('Register')"
+    :panel-heading="__('Start renting, or start earning.')"
+    :panel-description="__('One account covers both sides of CarHub — book a vehicle for your next trip, or list the one already sitting in your garage.')"
+>
+    <div class="flex flex-col gap-8">
+        <x-auth-header :title="__('Create your account')" :description="__('It takes a minute. You can verify your ID later, when you make your first booking.')" />
 
         <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
+        <x-auth-session-status :status="session('status')" />
 
         <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-6">
             @csrf
@@ -54,16 +58,14 @@
                 viewable
             />
 
-            <div class="flex items-center justify-end">
-                <flux:button type="submit" variant="primary" class="w-full" data-test="register-user-button">
-                    {{ __('Create account') }}
-                </flux:button>
-            </div>
+            <flux:button type="submit" variant="primary" class="w-full" data-test="register-user-button">
+                {{ __('Create account') }}
+            </flux:button>
         </form>
 
-        <div class="space-x-1 rtl:space-x-reverse text-center text-sm text-zinc-600 dark:text-zinc-400">
-            <span>{{ __('Already have an account?') }}</span>
+        <p class="text-sm text-zinc-600">
+            {{ __('Already have an account?') }}
             <flux:link :href="route('login')" wire:navigate>{{ __('Log in') }}</flux:link>
-        </div>
+        </p>
     </div>
 </x-layouts::auth>

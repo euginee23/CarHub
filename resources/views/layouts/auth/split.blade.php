@@ -1,42 +1,54 @@
+{{-- Guest auth shell: form column on the left, brand panel on the right.
+
+     Light-only, matching the marketing site. That means no `dark` class on <html>
+     and — critically — `partials.marketing-head` rather than `partials.head`,
+     because the latter emits @fluxAppearance, which restores a persisted dark
+     preference at runtime and would undo the light shell. --}}
+@props([
+    'title' => null,
+    'description' => null,
+    'panelHeading' => null,
+    'panelDescription' => null,
+])
+
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
-        @include('partials.head')
+        @include('partials.marketing-head', ['title' => $title, 'description' => $description])
+
+        <meta name="robots" content="noindex" />
     </head>
-    <body class="min-h-screen bg-white antialiased dark:bg-linear-to-b dark:from-neutral-950 dark:to-neutral-900">
-        <div class="relative grid h-dvh flex-col items-center justify-center px-8 sm:px-0 lg:max-w-none lg:grid-cols-2 lg:px-0">
-            <div class="bg-muted relative hidden h-full flex-col p-10 text-white lg:flex dark:border-e dark:border-neutral-800">
-                <div class="absolute inset-0 bg-neutral-900"></div>
-                <a href="{{ route('home') }}" class="relative z-20 flex items-center text-lg font-medium" wire:navigate>
-                    <span class="flex h-10 w-10 items-center justify-center rounded-md">
-                        <x-app-logo-icon class="me-2 h-7 fill-current text-white" />
-                    </span>
-                    {{ config('app.name', 'Laravel') }}
-                </a>
+    <body class="min-h-screen bg-white text-zinc-900 antialiased">
+        <div class="grid min-h-svh lg:grid-cols-2">
+            {{-- Form column --}}
+            <div class="relative isolate flex flex-col overflow-hidden">
+                <x-marketing.glow class="lg:hidden" />
 
-                @php
-                    [$message, $author] = str(Illuminate\Foundation\Inspiring::quotes()->random())->explode('-');
-                @endphp
-
-                <div class="relative z-20 mt-auto">
-                    <blockquote class="space-y-2">
-                        <flux:heading size="lg">&ldquo;{{ trim($message) }}&rdquo;</flux:heading>
-                        <footer><flux:heading>{{ trim($author) }}</flux:heading></footer>
-                    </blockquote>
-                </div>
-            </div>
-            <div class="w-full lg:p-8">
-                <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-                    <a href="{{ route('home') }}" class="z-20 flex flex-col items-center gap-2 font-medium lg:hidden" wire:navigate>
-                        <span class="flex h-9 w-9 items-center justify-center rounded-md">
-                            <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
+                <header class="relative p-6 lg:p-10">
+                    <a href="{{ route('home') }}" class="inline-flex items-center gap-2.5">
+                        <span class="flex size-9 items-center justify-center rounded-xl bg-linear-to-br from-brand-600 to-brand-500 shadow-sm shadow-brand-600/30">
+                            <x-app-logo-icon class="size-5 text-white" />
                         </span>
-
-                        <span class="sr-only">{{ config('app.name', 'Laravel') }}</span>
+                        <span class="text-lg font-bold tracking-tight text-zinc-900 lg:sr-only">{{ config('app.name') }}</span>
                     </a>
-                    {{ $slot }}
-                </div>
+                </header>
+
+                <main class="relative flex flex-1 items-center justify-center px-6 pb-12 lg:px-10">
+                    <div class="w-full max-w-sm">
+                        {{ $slot }}
+                    </div>
+                </main>
+
+                <footer class="relative px-6 pb-8 lg:px-10">
+                    <p class="text-center text-xs text-zinc-500 lg:text-start">
+                        &copy; {{ now()->year }} {{ config('app.name') }} &middot;
+                        <a href="{{ route('terms') }}" class="underline underline-offset-2 transition-colors hover:text-zinc-700">{{ __('Terms') }}</a>
+                    </p>
+                </footer>
             </div>
+
+            {{-- Brand column --}}
+            <x-auth.brand-panel :heading="$panelHeading" :description="$panelDescription" />
         </div>
 
         @persist('toast')

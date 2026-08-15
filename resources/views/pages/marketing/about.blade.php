@@ -44,7 +44,7 @@
                     <h2 class="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{{ __('Our approach') }}</h2>
                     <div class="mt-5 space-y-4 text-base/7 text-zinc-600">
                         <p>{{ __('CarHub formalises the transaction without making it slow. Identity is verified once with two government-issued IDs. Payments are authorised and validated before a reservation is held. Every trip is governed by a digital contract that records the vehicle\'s condition at both ends, and GPS-tracked for its duration.') }}</p>
-                        <p>{{ __('On top of that base, three models do the work that a listings page cannot: matching renters to the vehicles they actually want, forecasting demand so owners price sensibly, and locating vehicles by real distance rather than by city label.') }}</p>
+                        <p>{{ __('On top of that base sits the matching work a plain listings page cannot do: narrowing thousands of combinations down to the vehicles that actually suit a trip, helping owners price against real local demand, and locating vehicles by distance rather than by city label.') }}</p>
                     </div>
                 </div>
             </div>
@@ -60,30 +60,31 @@
 
         <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <p class="text-sm font-semibold uppercase tracking-wider text-spark-400">{{ __('The technology') }}</p>
+                <p class="text-sm font-semibold uppercase tracking-wider text-spark-400">{{ __('How it holds together') }}</p>
                 <h2 class="mt-3 text-3xl font-bold tracking-tight text-balance text-white sm:text-4xl">
                     {{ __('What is actually running underneath') }}
                 </h2>
             </div>
 
             <div class="mt-14 grid gap-6 lg:grid-cols-3">
-                <x-marketing.feature-card tone="dark" :title="__('Recommendation engine')" :badge="__('Content-based filtering')">
+                <x-marketing.feature-card tone="dark" :title="__('Identity verification')" :badge="__('Two IDs')">
                     <x-slot:icon>
                         <svg class="size-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.36.39-1.59 1.59M21 12h-2.25m-.39 6.36-1.59-1.59M12 18.75V21m-4.77-2.23-1.59 1.59M5.25 12H3m2.64-6.36L7.23 7.23" />
-                            <circle cx="12" cy="12" r="3.25" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5a.75.75 0 0 1 .75.75v9a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75v-9a.75.75 0 0 1 .75-.75Zm10.5 3.75h4.5m-4.5 3h3" />
+                            <circle cx="8.25" cy="11.25" r="1.75" />
                         </svg>
                     </x-slot:icon>
-                    {{ __('Each vehicle is represented as a feature vector across body type, seat count, transmission, fuel, amenities, location, and price band. Renter preferences are built from search and booking history, and listings are ranked by similarity to that profile.') }}
+                    {{ __('Renters submit two independently issued government IDs before their first booking, matched against the name on the account. Owners prove registration and ownership before a listing goes live. Documents are stored encrypted and never shared between users.') }}
                 </x-marketing.feature-card>
 
-                <x-marketing.feature-card tone="dark" :title="__('Demand forecasting')" :badge="__('LSTM')">
+                <x-marketing.feature-card tone="dark" :title="__('Validated payments')" :badge="__('Authorise & capture')">
                     <x-slot:icon>
                         <svg class="size-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 20.25h18M6.75 16.5V9.75M11.25 16.5V6.75M15.75 16.5v-4.5M20.25 16.5V4.5" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5a.75.75 0 0 1 .75.75v9a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75v-9a.75.75 0 0 1 .75-.75Z" />
+                            <path stroke-linecap="round" d="M3 10.5h18M6.75 14.25h3" />
                         </svg>
                     </x-slot:icon>
-                    {{ __('A long short-term memory network is trained on booking sequences per vehicle class and location, capturing weekly cycles, holiday peaks, and seasonal drift. Its output drives the daily-rate suggestions shown to owners.') }}
+                    {{ __('The rental total is authorised when a booking is requested, checked against the booking record, and captured only once the owner accepts. A reservation is never held against an unverified payment, and a declined request releases the authorisation in full.') }}
                 </x-marketing.feature-card>
 
                 <x-marketing.feature-card tone="dark" :title="__('Location & tracking')" :badge="__('GPS')">

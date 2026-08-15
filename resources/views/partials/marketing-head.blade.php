@@ -1,6 +1,6 @@
 @php
     $pageTitle = filled($title ?? null) ? $title.' - '.config('app.name') : config('app.name').' - Rent a vehicle from trusted local owners';
-    $pageDescription = $description ?? 'CarHub is an AI-powered vehicle rental marketplace connecting verified owners and renters. Smart recommendations, live GPS tracking, and secure payments.';
+    $pageDescription = $description ?? 'CarHub is a vehicle rental marketplace connecting verified owners and renters. ID-verified bookings, live GPS tracking, and secure, validated payments.';
 @endphp
 
 <meta charset="utf-8" />

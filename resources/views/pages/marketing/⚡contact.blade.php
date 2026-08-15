@@ -122,9 +122,7 @@ class extends Component {
                         />
 
                         <div class="flex items-center gap-4">
-                            {{-- Flux's primary variant paints from --color-accent (near-black);
-                                 the marketing site's CTAs are brand blue. --}}
-                            <flux:button variant="primary" type="submit" class="bg-brand-600! hover:bg-brand-700!">
+                            <flux:button variant="primary" type="submit">
                                 {{ __('Send message') }}
                             </flux:button>
 

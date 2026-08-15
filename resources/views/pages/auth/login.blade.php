@@ -1,10 +1,13 @@
-<x-layouts::auth :title="__('Log in')">
-    <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+<x-layouts::auth
+    :title="__('Log in')"
+    :panel-heading="__('Welcome back to CarHub.')"
+    :panel-description="__('Pick up where you left off — your saved searches, trips, and vehicles are waiting.')"
+>
+    <div class="flex flex-col gap-8">
+        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to continue.')" />
 
         <!-- Session Status -->
-        <x-auth-session-status class="text-center" :status="session('status')" />
-
+        <x-auth-session-status :status="session('status')" />
 
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
             @csrf
@@ -43,16 +46,14 @@
             <!-- Remember Me -->
             <flux:checkbox name="remember" :label="__('Remember me')" :checked="old('remember')" />
 
-            <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
-                    {{ __('Log in') }}
-                </flux:button>
-            </div>
+            <flux:button variant="primary" type="submit" class="w-full" data-test="login-button">
+                {{ __('Log in') }}
+            </flux:button>
         </form>
 
-        <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
-            <span>{{ __('Don\'t have an account?') }}</span>
+        <p class="text-sm text-zinc-600">
+            {{ __('Don\'t have an account?') }}
             <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
-        </div>
+        </p>
     </div>
 </x-layouts::auth>

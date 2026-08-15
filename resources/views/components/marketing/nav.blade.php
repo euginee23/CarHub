@@ -1,4 +1,4 @@
-{{-- Plain links only, no wire:navigate: the authenticated and auth layouts hardcode
+{{-- Plain links only, no wire:navigate: the authenticated layout hardcodes
      `class="dark"` on <html>, which an SPA body-swap would not undo. --}}
 @php
     $links = [

@@ -22,7 +22,10 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
+    /* Drives Flux's `variant="primary"` buttons and every Flux focus ring. Pointing it
+       at the brand keeps light-mode surfaces (marketing + auth) on-palette; the .dark
+       block below flips it back to white for the authenticated application. */
+    --color-accent: var(--color-brand-600);
     --color-accent-content: var(--color-neutral-800);
     --color-accent-foreground: var(--color-white);
 
@@ -80,7 +83,7 @@
         @apply bg-linear-to-r from-brand-600 via-brand-500 to-spark-400 bg-clip-text text-transparent;
     }
 
-    /* Frosted panel used for the AI capability cards and other floating surfaces. */
+    /* Frosted panel used for floating surfaces over a coloured or blurred backdrop. */
     .glass-card {
         @apply rounded-2xl bg-white/70 shadow-sm ring-1 ring-black/5 backdrop-blur-xl;
     }

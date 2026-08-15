@@ -15,7 +15,7 @@ This repository currently contains the **public-facing site** and the **authenti
 **Implemented**
 
 - Complete guest-facing marketing site — landing page, vehicle browse with working filters, vehicle detail with a live booking calculator, plus How it works, About, Contact, FAQ, and Terms pages.
-- Authentication via Laravel Fortify — registration, login, password reset, and email verification.
+- Authentication via Laravel Fortify — registration, login, password reset, and email verification, on a branded split-screen shell that matches the marketing design.
 - User settings — profile, password/security, and appearance.
 - Design system — brand tokens, a reusable marketing component library, and a light-only public shell.
 - Branded error pages for 401, 402, 403, 404, 419, 429, 500, and 503.
@@ -23,7 +23,7 @@ This repository currently contains the **public-facing site** and the **authenti
 **Not yet implemented**
 
 - Domain models. `app/Models/` contains only `User` — there is no `Vehicle`, `Booking`, `Owner`, or `Payment` model, and no corresponding migrations.
-- The AI features are **presented, not built**. The recommendation engine, LSTM demand forecasting, GPS search, and the chatbot are described and designed for on the marketing pages, but no model or service backs them yet.
+- The ML features from the panel review — content-based recommendations, LSTM demand forecasting, GPS map search, and the chatbot. **The marketing site deliberately does not advertise these**, since nothing backs them yet; a test in `tests/Feature/Marketing/PublicPagesTest.php` asserts no public page claims them. The chat bubble is presentational and its input is disabled.
 - Payment processing, ID verification uploads, and contract generation.
 - The authenticated dashboard is still the starter-kit placeholder.
 
@@ -191,8 +191,9 @@ resources/
     layouts/
       marketing.blade.php   Public shell — light-only, no dark class
       error.blade.php       Error shell — standalone, no Livewire/Flux
-      app/                  Authenticated shell (sidebar)
-      auth/                 Guest auth shell
+      app/                  Authenticated shell (sidebar) — the only dark shell
+      auth.blade.php        Thin wrapper forwarding to the split shell
+      auth/split.blade.php  Guest auth shell — form column + brand panel
     components/marketing/   Marketing component library (12 components)
     errors/                 Branded 401/402/403/404/419/429/500/503 pages
     pages/marketing/        The eight public pages
@@ -272,11 +273,17 @@ The existing `--color-accent` tokens are left untouched — they drive Flux's fo
 
 ### Light vs dark
 
-The **public site is light-only**. `layouts/marketing.blade.php` deliberately omits both the `dark` class and the `@fluxAppearance` script, so a dark preference persisted inside the application never leaks onto the marketing pages.
+Everything a guest sees — the marketing pages, the auth screens, and the error pages — is **light-only**. `layouts/marketing.blade.php`, `layouts/auth/split.blade.php`, and `layouts/error.blade.php` each omit both the `dark` class and the `@fluxAppearance` script. That second omission matters: `@fluxAppearance` restores a dark preference persisted inside the application, and would otherwise re-darken a guest page at runtime. Auth and marketing pages therefore use `partials/marketing-head.blade.php`, not `partials/head.blade.php`.
 
-The **authenticated and auth layouts hardcode `class="dark"`** on `<html>` and honour the appearance toggle at `/settings/appearance`.
+Only the **authenticated application** (`layouts/app/*`) hardcodes `class="dark"` and honours the appearance toggle at `/settings/appearance`.
 
-Because of this split, marketing navigation uses plain links rather than `wire:navigate` — an SPA body swap would not update the `<html>` class between the two shells.
+Because of that split, marketing navigation uses plain links rather than `wire:navigate` — an SPA body swap would not update the `<html>` class when crossing into the app shell.
+
+### Auth screens
+
+The six Fortify screens share one shell, `layouts/auth/split.blade.php`: the form column on the left, `<x-auth.brand-panel>` on the right (hidden below `lg`). Each page passes its own `:panel-heading` and `:panel-description` so the pitch matches the task — "Welcome back" on login, "Start renting, or start earning" on register.
+
+`layouts/auth.blade.php` is a thin wrapper that forwards to the split shell, so swapping the whole auth look is a one-file change.
 
 ### Marketing components
 
@@ -364,17 +371,19 @@ Additional guidance for AI coding agents is in `CLAUDE.md`.
 
 ## Roadmap
 
-Derived from the thesis panel's review comments. Everything below is currently **presented on the marketing site but not functional**.
+Derived from the thesis panel's review comments.
 
-| # | Feature | Where it's surfaced today |
-|---|---|---|
-| 1 | Chatbot | Floating assistant on every public page (UI only, input disabled) |
-| 2 | Personalised recommendations & price optimisation | Landing AI section; owner earnings panel |
-| 3 | Content-based filtering | Landing AI section; browse filters (currently attribute matching only) |
-| 4 | LSTM demand forecasting | Landing AI section; How it works → For owners |
-| 5 | Renter security | Landing trust & safety section |
-| 6 | GPS-based vehicle search with map | Landing AI section; disabled "Map view" toggle on browse |
-| 7 | Vehicle tracking | Landing AI section; vehicle features |
+The ML-backed items (2, 3, 4) are **not advertised anywhere on the site** — the marketing pages were deliberately stripped of AI claims so nothing is promised that isn't built. Where a capability has a plain, honest description (demand-based pricing, GPS tracking) it is worded without naming a model.
+
+| # | Feature | Where it's surfaced today | Built? |
+|---|---|---|---|
+| 1 | Chatbot | Floating assistant on every public page | UI only, input disabled |
+| 2 | Personalised recommendations & price optimisation | Owner earnings panel (suggested rate + forecast chart) | No |
+| 3 | Content-based filtering | Browse filters — attribute matching only, no learning | Filters work |
+| 4 | LSTM demand forecasting | Owner earnings panel chart is illustrative | No |
+| 5 | Renter security | Landing trust & safety section | Described |
+| 6 | GPS-based vehicle search with map | Disabled "Map view" toggle on browse | No |
+| 7 | Vehicle tracking | Vehicle features; Terms §8 | Described |
 | 8 | Two valid ID validation | Vehicle detail "What you will need"; trust section; Terms §2 |
 | 9 | Payment methods | How it works → Payments & security |
 | 10, 12 | Scheduling & booking validation | Booking panel date rules; How it works → Scheduling |
