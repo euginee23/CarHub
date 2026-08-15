@@ -8,7 +8,7 @@
     ];
 @endphp
 
-<div x-data="{ open: false }" class="fixed bottom-5 end-5 z-50 flex flex-col items-end gap-3">
+<div x-data="{ open: false }" class="fixed bottom-(--fab-offset) end-5 z-50 flex flex-col items-end gap-3 transition-[bottom]">
     <div
         x-show="open"
         x-cloak
@@ -66,7 +66,7 @@
                     placeholder="{{ __('Ask about a vehicle…') }}"
                     class="min-w-0 flex-1 cursor-not-allowed bg-transparent text-sm text-zinc-500 outline-hidden placeholder:text-zinc-400"
                 />
-                <span class="rounded-full bg-zinc-200 px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-zinc-600">
+                <span class="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-600">
                     {{ __('Soon') }}
                 </span>
             </div>

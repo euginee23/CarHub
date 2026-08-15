@@ -24,15 +24,17 @@
         'location' => $vehicle['location'],
         'price' => number_format($vehicle['price_per_day']),
     ])"
+    :mobile-action-bar="true"
 >
-    <div class="bg-zinc-50 pb-20">
+    {{-- pb-28 below lg clears the fixed booking bar at the foot of the viewport. --}}
+    <div class="bg-zinc-50 pb-28 lg:pb-20">
         <div class="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-            <nav aria-label="{{ __('Breadcrumb') }}" class="flex items-center gap-2 text-sm text-zinc-500">
-                <a href="{{ route('vehicles.index') }}" class="transition-colors hover:text-brand-700">{{ __('Browse') }}</a>
+            <nav aria-label="{{ __('Breadcrumb') }}" class="-mx-1.5 flex items-center gap-1 text-sm text-zinc-500">
+                <a href="{{ route('vehicles.index') }}" class="rounded px-1.5 py-2 transition-colors hover:text-brand-700">{{ __('Browse') }}</a>
                 <span aria-hidden="true">/</span>
-                <a href="{{ route('vehicles.index', ['type' => $vehicle['type']]) }}" class="transition-colors hover:text-brand-700">{{ $vehicle['type'] }}</a>
+                <a href="{{ route('vehicles.index', ['type' => $vehicle['type']]) }}" class="rounded px-1.5 py-2 transition-colors hover:text-brand-700">{{ $vehicle['type'] }}</a>
                 <span aria-hidden="true">/</span>
-                <span class="truncate text-zinc-800">{{ $vehicle['name'] }}</span>
+                <span class="truncate px-1.5 text-zinc-800">{{ $vehicle['name'] }}</span>
             </nav>
 
             <div class="mt-6 lg:grid lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-10">
@@ -79,10 +81,14 @@
                         <p class="mt-5 text-base/7 text-zinc-600">{{ $vehicle['description'] }}</p>
                     </div>
 
-                    {{-- Specs --}}
+                    {{-- Specs. Five items over two mobile columns leaves an odd cell, so the
+                         last one spans the full width below sm. --}}
                     <dl class="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-200 sm:grid-cols-5">
                         @foreach ($specs as $spec)
-                            <div class="bg-white p-4 text-center">
+                            <div @class([
+                                'bg-white p-4 text-center',
+                                'max-sm:col-span-2' => $loop->last && $loop->count % 2 !== 0,
+                            ])>
                                 <dt class="text-xs font-medium uppercase tracking-wide text-zinc-500">{{ $spec['label'] }}</dt>
                                 <dd class="mt-1.5 font-semibold text-zinc-900">{{ $spec['value'] }}</dd>
                             </div>
@@ -185,7 +191,8 @@
 
                 {{-- Booking panel --}}
                 <div
-                    class="mt-8 lg:sticky lg:top-24 lg:mt-0"
+                    id="book"
+                    class="mt-8 scroll-mt-24 lg:sticky lg:top-24 lg:mt-0"
                     x-data="{
                         rate: {{ $vehicle['price_per_day'] }},
                         serviceFeeRate: 0.15,
@@ -305,6 +312,32 @@
                     @endforeach
                 </div>
             </section>
+        </div>
+
+        {{-- Mobile action bar. On phones the booking panel sits far below the fold, so the
+             rate and the primary action are pinned to the viewport instead. --}}
+        <div class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur-lg lg:hidden">
+            <div class="flex items-center gap-3 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <p class="min-w-0 flex-1">
+                    <span class="block text-lg font-bold leading-tight text-zinc-900">
+                        &#8369;{{ number_format($vehicle['price_per_day']) }}
+                        <span class="text-sm font-normal text-zinc-500">/{{ __('day') }}</span>
+                    </span>
+                    <span class="mt-0.5 flex items-center gap-1 text-xs text-zinc-500">
+                        <svg class="size-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2.5 15 9l7 .8-5.2 4.7 1.5 6.9L12 17.9 5.7 21.4l1.5-6.9L2 9.8 9 9l3-6.5Z" />
+                        </svg>
+                        {{ number_format($vehicle['rating'], 1) }} &middot; {{ $vehicle['location'] }}
+                    </span>
+                </p>
+
+                <a
+                    href="#book"
+                    class="shrink-0 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
+                >
+                    {{ $vehicle['instant_book'] ? __('Book now') : __('Request') }}
+                </a>
+            </div>
         </div>
     </div>
 </x-layouts::marketing>

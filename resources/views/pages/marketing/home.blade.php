@@ -96,7 +96,7 @@
                 @foreach ($types as $type)
                     <a
                         href="{{ route('vehicles.index', ['type' => $type]) }}"
-                        class="rounded-full border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+                        class="rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm text-zinc-600 transition-colors hover:border-brand-300 hover:text-brand-700"
                     >
                         {{ $type }}
                     </a>

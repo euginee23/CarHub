@@ -47,7 +47,7 @@
                     ] as $social)
                         <a
                             href="#"
-                            class="flex size-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-900"
+                            class="flex size-10 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-500 transition-colors hover:border-zinc-300 hover:text-zinc-900"
                         >
                             <span class="sr-only">{{ $social['label'] }}</span>
                             <svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -61,10 +61,15 @@
             @foreach ($columns as $heading => $items)
                 <div>
                     <h3 class="text-sm font-semibold text-zinc-900">{{ $heading }}</h3>
-                    <ul class="mt-4 space-y-3">
+                    {{-- Links are padded to a ~40px tap target rather than the 18px a bare
+                         text-sm anchor gives; the negative margin keeps them optically aligned. --}}
+                    <ul class="mt-3 space-y-0.5">
                         @foreach ($items as $item)
                             <li>
-                                <a href="{{ $item['href'] }}" class="text-sm text-zinc-600 transition-colors hover:text-brand-700">
+                                <a
+                                    href="{{ $item['href'] }}"
+                                    class="-mx-2 inline-block rounded-lg px-2 py-2.5 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-brand-700"
+                                >
                                     {{ $item['label'] }}
                                 </a>
                             </li>

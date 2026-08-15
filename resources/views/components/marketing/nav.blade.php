@@ -42,20 +42,20 @@
             @auth
                 <a
                     href="{{ route('dashboard') }}"
-                    class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
+                    class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
                 >
                     {{ __('Dashboard') }}
                 </a>
             @else
                 <a
                     href="{{ route('login') }}"
-                    class="hidden rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 sm:block"
+                    class="hidden rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 sm:block"
                 >
                     {{ __('Log in') }}
                 </a>
                 <a
                     href="{{ route('register') }}"
-                    class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
+                    class="rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
                 >
                     {{ __('Get started') }}
                 </a>

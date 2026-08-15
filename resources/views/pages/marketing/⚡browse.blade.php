@@ -215,25 +215,24 @@ class extends Component {
                         :label="__('Search')"
                         :placeholder="__('Model, type, or city')"
                         icon="magnifying-glass"
-                        size="sm"
                         clearable
                     />
 
-                    <flux:select wire:model.live="type" :label="__('Body type')" size="sm">
+                    <flux:select wire:model.live="type" :label="__('Body type')">
                         <flux:select.option value="">{{ __('Any type') }}</flux:select.option>
                         @foreach ($this->facets['types'] as $option)
                             <flux:select.option :value="$option">{{ $option }}</flux:select.option>
                         @endforeach
                     </flux:select>
 
-                    <flux:select wire:model.live="transmission" :label="__('Transmission')" size="sm">
+                    <flux:select wire:model.live="transmission" :label="__('Transmission')">
                         <flux:select.option value="">{{ __('Any transmission') }}</flux:select.option>
                         @foreach ($this->facets['transmissions'] as $option)
                             <flux:select.option :value="$option">{{ $option }}</flux:select.option>
                         @endforeach
                     </flux:select>
 
-                    <flux:select wire:model.live="seats" :label="__('Minimum seats')" size="sm">
+                    <flux:select wire:model.live="seats" :label="__('Minimum seats')">
                         <flux:select.option value="">{{ __('Any size') }}</flux:select.option>
                         <flux:select.option value="5">{{ __('5+ seats') }}</flux:select.option>
                         <flux:select.option value="7">{{ __('7+ seats') }}</flux:select.option>
@@ -241,7 +240,7 @@ class extends Component {
                         <flux:select.option value="15">{{ __('15+ seats') }}</flux:select.option>
                     </flux:select>
 
-                    <flux:select wire:model.live="maxPrice" :label="__('Daily rate')" size="sm">
+                    <flux:select wire:model.live="maxPrice" :label="__('Daily rate')">
                         <flux:select.option value="">{{ __('Any price') }}</flux:select.option>
                         @foreach ($this->priceBands as $band)
                             <flux:select.option :value="$band">{{ __('Under :price', ['price' => '₱'.number_format($band)]) }}</flux:select.option>
@@ -257,7 +256,7 @@ class extends Component {
                                 </svg>
                                 {{ __('Map view') }}
                             </span>
-                            <span class="rounded-full bg-zinc-200 px-2 py-0.5 text-[0.6875rem] font-semibold uppercase tracking-wide text-zinc-600">
+                            <span class="rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-600">
                                 {{ __('Soon') }}
                             </span>
                         </div>
@@ -285,7 +284,7 @@ class extends Component {
 
                     <div class="flex items-center gap-2 sm:w-64">
                         <label for="sort" class="shrink-0 text-sm text-zinc-500">{{ __('Sort') }}</label>
-                        <flux:select id="sort" wire:model.live="sort" size="sm">
+                        <flux:select id="sort" wire:model.live="sort">
                             <flux:select.option value="recommended">{{ __('Recommended') }}</flux:select.option>
                             <flux:select.option value="price-asc">{{ __('Price: low to high') }}</flux:select.option>
                             <flux:select.option value="price-desc">{{ __('Price: high to low') }}</flux:select.option>

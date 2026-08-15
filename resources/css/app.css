@@ -74,6 +74,18 @@
     [x-cloak] {
         display: none !important;
     }
+
+    /* How far the floating assistant sits above the bottom of the viewport. Pages that
+       render a fixed mobile action bar raise it so the two do not overlap. */
+    :root {
+        --fab-offset: 1.25rem;
+    }
+
+    @media (width < 64rem) {
+        .has-mobile-actionbar {
+            --fab-offset: 5.75rem;
+        }
+    }
 }
 
 @layer components {
