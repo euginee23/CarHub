@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -45,6 +46,18 @@ class UserFactory extends Factory
 
     /**
      * Indicate that the model has two-factor authentication configured.
+     *
+     * Two-factor authentication is not enabled in config/fortify.php and the users
+     * table has no two_factor_* columns yet, so this state is only usable once the
+     * Fortify migration is published:
+     * `php artisan vendor:publish --tag=fortify-migrations`
      */
-    public function withTwoFactor(): static {}
+    public function withTwoFactor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'two_factor_secret' => encrypt('test-secret'),
+            'two_factor_recovery_codes' => encrypt(json_encode(Collection::times(8, fn () => Str::random(10).'-'.Str::random(10))->all())),
+            'two_factor_confirmed_at' => now(),
+        ]);
+    }
 }

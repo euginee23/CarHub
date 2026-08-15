@@ -13,16 +13,44 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    # `composer setup` runs `php artisan migrate`, so a real MySQL is needed even
+    # though the test suite itself uses the in-memory SQLite database configured
+    # in phpunit.xml. This also smoke-tests the migrations against MySQL 8.
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: carhub
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: carhub
+      DB_USERNAME: root
+      DB_PASSWORD: password
+
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
+      # Symfony 8 components in composer.lock require PHP >= 8.4.1, which is why
+      # composer.json declares ^8.4.1. Keep these two in step.
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, xml, curl, fileinfo
           tools: composer:v2
           coverage: none
 

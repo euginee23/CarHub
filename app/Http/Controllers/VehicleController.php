@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\View\View;
 
 class VehicleController extends Controller
@@ -14,7 +15,7 @@ class VehicleController extends Controller
      */
     public function show(string $slug): View
     {
-        $vehicle = collect(config('demo.vehicles'))->firstWhere('slug', $slug);
+        $vehicle = collect(Config::array('demo.vehicles'))->firstWhere('slug', $slug);
 
         abort_if($vehicle === null, 404);
 
