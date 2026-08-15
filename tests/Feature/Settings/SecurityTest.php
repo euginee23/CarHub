@@ -38,11 +38,6 @@ test('security settings page renders without two factor when feature is disabled
         ->assertDontSee('Two-factor authentication');
 });
 
-// Cannot be written until two-factor authentication is enabled in config/fortify.php
-// and the two_factor_* columns are added to the users table. Marked as a todo rather
-// than left as an empty body, which PHPUnit reports as a risky test.
-test('two factor authentication disabled when confirmation abandoned between requests')->todo();
-
 test('password can be updated', function () {
     $user = User::factory()->create([
         'password' => Hash::make('password'),

@@ -35,7 +35,7 @@ Vehicle listings on the public site are read from a static config file, **not** 
 
 | Layer | Choice |
 |---|---|
-| Runtime | PHP 8.4 (`^8.3` required) |
+| Runtime | PHP 8.4.1+ (Symfony 8 components in the lock require it) |
 | Framework | Laravel 13 |
 | Frontend | Livewire 4 + Alpine.js (bundled) |
 | UI components | Flux UI 2 (free tier) |
@@ -51,7 +51,10 @@ Vehicle listings on the public site are read from a static config file, **not** 
 
 ## Requirements
 
-- PHP **8.3+** with the `pdo_mysql`, `mbstring`, `openssl`, `xml`, `curl`, and `fileinfo` extensions
+- PHP **8.4.1+** with the `pdo_mysql`, `mbstring`, `openssl`, `xml`, `curl`, and `fileinfo` extensions
+
+  > Laravel 13 itself allows PHP 8.3, but the Symfony 8 components it pulls in require `>= 8.4.1`. `composer.json` declares `^8.4.1` so an unsupported runtime is reported against this project rather than as 40-odd confusing conflicts deep in the dependency tree.
+
 - Composer 2
 - Node.js **20.19+** or **22.12+**, and npm (Vite 8 requirement)
 - MySQL 8 (or MariaDB 10.6+)
@@ -311,7 +314,30 @@ This is why `composer run test` clears config first. If you run `php artisan tes
 php artisan optimize:clear
 ```
 
-Expected result on a clean run: **73 of 74 passing**, 1 skipped (two-factor authentication is not enabled in Fortify).
+Expected result on a clean run:
+
+```
+Tests:    72 passed (183 assertions)
+```
+
+Everything passes — nothing skipped, no todos, no risky tests. Two-factor authentication is not implemented in this application (no `two_factor_*` columns on the `users` table, feature disabled in `config/fortify.php`, no interface), so the starter kit's 2FA test scaffolding has been removed rather than left permanently skipping. Reintroduce it alongside the feature if 2FA is ever built.
+
+---
+
+## Continuous integration
+
+`.github/workflows/tests.yml` runs `composer setup` then `composer ci:check` (Pint, PHPStan, Pest) on every push to `main` and every pull request.
+
+Two things the workflow has to keep in step with the project:
+
+- **PHP 8.4.** It must satisfy the `^8.4.1` constraint in `composer.json`. Pinning CI to 8.3 makes `composer install` fail with dozens of Symfony conflicts.
+- **A MySQL service.** `composer setup` runs `php artisan migrate`, so CI provisions MySQL 8 and passes `DB_*` environment variables. The test suite itself does not use it — Pest runs against in-memory SQLite — but it smoke-tests the migrations against the real engine.
+
+To reproduce the CI run locally:
+
+```bash
+composer ci:check
+```
 
 ---
 
@@ -362,8 +388,4 @@ The natural next step is scaffolding the domain — `Vehicle`, `Booking`, `Payme
 
 ## Research team
 
-**Researchers** — Jayrald P. Ancheta, Christian J. Neri, Hannah Claire P. Pontillas
-
-**Adviser** — Joemarie Delgado
-
-Department of Computer Science, College of Computing Studies.
+**Researchers** — Jayrald, Christian Nemaria, Hannah Claire
