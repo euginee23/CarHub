@@ -1,0 +1,105 @@
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-zinc-50: #fafafa;
+    --color-zinc-100: #f5f5f5;
+    --color-zinc-200: #e5e5e5;
+    --color-zinc-300: #d4d4d4;
+    --color-zinc-400: #a3a3a3;
+    --color-zinc-500: #737373;
+    --color-zinc-600: #525252;
+    --color-zinc-700: #404040;
+    --color-zinc-800: #262626;
+    --color-zinc-900: #171717;
+    --color-zinc-950: #0a0a0a;
+
+    --color-accent: var(--color-neutral-800);
+    --color-accent-content: var(--color-neutral-800);
+    --color-accent-foreground: var(--color-white);
+
+    /* CarHub brand — electric blue primary */
+    --color-brand-50: #eff4ff;
+    --color-brand-100: #dbe6ff;
+    --color-brand-200: #bfd3ff;
+    --color-brand-300: #93b4ff;
+    --color-brand-400: #608aff;
+    --color-brand-500: #3b62ff;
+    --color-brand-600: #2442f5;
+    --color-brand-700: #1c32d8;
+    --color-brand-800: #1d2daf;
+    --color-brand-900: #1e2d8a;
+    --color-brand-950: #161d54;
+
+    /* Cyan secondary — gradients and glows only */
+    --color-spark-300: #6ee5f8;
+    --color-spark-400: #38d6f5;
+    --color-spark-500: #12bde0;
+    --color-spark-600: #0797b8;
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-white);
+        --color-accent-content: var(--color-white);
+        --color-accent-foreground: var(--color-neutral-800);
+    }
+}
+
+@layer base {
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+@layer base {
+
+    /* Keep Alpine-toggled panels hidden until Alpine boots. */
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+
+    /* Brand gradient text — used for the emphasised phrase in marketing headings. */
+    .text-gradient {
+        @apply bg-linear-to-r from-brand-600 via-brand-500 to-spark-400 bg-clip-text text-transparent;
+    }
+
+    /* Frosted panel used for the AI capability cards and other floating surfaces. */
+    .glass-card {
+        @apply rounded-2xl bg-white/70 shadow-sm ring-1 ring-black/5 backdrop-blur-xl;
+    }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply  !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+}
+
+/* \[:where(&)\]:size-4 {
+    @apply size-4;
+} */
