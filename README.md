@@ -18,6 +18,7 @@ This repository currently contains the **public-facing site** and the **authenti
 - Authentication via Laravel Fortify — registration, login, password reset, and email verification.
 - User settings — profile, password/security, and appearance.
 - Design system — brand tokens, a reusable marketing component library, and a light-only public shell.
+- Branded error pages for 401, 402, 403, 404, 419, 429, 500, and 503.
 
 **Not yet implemented**
 
@@ -186,9 +187,11 @@ resources/
   views/
     layouts/
       marketing.blade.php   Public shell — light-only, no dark class
+      error.blade.php       Error shell — standalone, no Livewire/Flux
       app/                  Authenticated shell (sidebar)
       auth/                 Guest auth shell
     components/marketing/   Marketing component library (12 components)
+    errors/                 Branded 401/402/403/404/419/429/500/503 pages
     pages/marketing/        The eight public pages
     pages/auth/             Fortify's login, register, reset views
     pages/settings/         Livewire settings components
@@ -200,7 +203,24 @@ routes/
   web.php                   Public + authenticated routes
   settings.php              Settings routes
 
-tests/Feature/Marketing/    Public site test coverage
+tests/Feature/
+  Marketing/                Public site test coverage
+  ErrorPagesTest.php        Error page coverage
+```
+
+### Error pages
+
+`resources/views/errors/` overrides Laravel's defaults for 401, 402, 403, 404, 419, 429, 500, and 503, all sharing `layouts/error.blade.php`.
+
+The error shell is deliberately **standalone** — no Livewire, no Flux, no marketing nav or footer — because an error page has to render when the application is unhealthy. Two specific safeguards:
+
+- **`@vite` is guarded.** If `public/build/manifest.json` is missing, the layout falls back to a small inline stylesheet instead of throwing a `ViteException` *from the error page itself*. A fresh clone still gets a legible 404 before the first `npm run build`.
+- **500 and 503 use `url()`, never `route()`.** A routing or config fault is a plausible cause of a 500, so those two pages avoid anything that could fail for the same reason. A test enforces this.
+
+To preview them locally:
+
+```bash
+php artisan down --render=errors::503   # then php artisan up
 ```
 
 ### Blade conventions
@@ -271,25 +291,27 @@ php artisan test --compact tests/Feature/Marketing   # public site only
 php artisan test --compact --filter=browse      # a single group
 ```
 
+The suite runs against an **in-memory SQLite database** configured in `phpunit.xml`, so no MySQL setup is needed to run tests.
+
 Public site coverage lives in `tests/Feature/Marketing/`:
 
 - **`PublicPagesTest.php`** — every public route responds as a guest, the vehicle detail page renders its listing, unknown slugs 404, and the marketing shell never renders dark.
 - **`BrowseTest.php`** — each filter narrows results correctly, sorting orders them, filters clear individually and in bulk, over-filtering shows the empty state, and query parameters from the home page search bar are applied on mount.
 - **`ContactFormTest.php`** — validation rules on the enquiry form.
 
-### Known issue: `RefreshDatabase` is disabled
+`tests/Feature/ErrorPagesTest.php` covers the error views — every code renders with its heading, the 403 page surfaces an authorization message when one is supplied, and the 500/503 views are checked to contain no `route()` calls.
 
-`tests/Pest.php` currently has the `RefreshDatabase` trait commented out:
+### Gotcha: clear the config cache before running tests
 
-```php
-pest()->extend(TestCase::class)
- // ->use(RefreshDatabase::class)
-    ->in('Feature');
+If `bootstrap/cache/config.php` exists, the cached `APP_ENV=local` overrides the `testing` value in `phpunit.xml`. Laravel then stops treating the run as a unit test and **re-enables CSRF verification**, so every `POST` in the auth suite fails with a `419`.
+
+This is why `composer run test` clears config first. If you run `php artisan test` directly and see unexplained 419s:
+
+```bash
+php artisan optimize:clear
 ```
 
-As a result, every test that touches the database — the auth, settings, and dashboard suites — fails with `no such table: users`. The marketing tests pass regardless because they don't hit the database.
-
-Uncommenting that line takes the suite to **59 of 60 passing** (one Fortify feature is skipped). The tests run against an in-memory SQLite database configured in `phpunit.xml`, so no MySQL setup is needed for the suite.
+Expected result on a clean run: **73 of 74 passing**, 1 skipped (two-factor authentication is not enabled in Fortify).
 
 ---
 
