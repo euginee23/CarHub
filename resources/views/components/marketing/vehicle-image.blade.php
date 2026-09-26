@@ -1,19 +1,18 @@
-{{-- Renders the vehicle photo when one has been dropped into public/images/vehicles/,
-     otherwise falls back to a branded illustration so the grid never shows a broken image. --}}
+{{-- Renders the vehicle's cover photo when the owner has uploaded one, otherwise
+     falls back to a branded illustration so the grid never shows a broken image. --}}
 @props([
     'vehicle',
     'class' => 'aspect-[16/10]',
 ])
 
 @php
-    $image = $vehicle['image'] ?? null;
-    $hasImage = filled($image) && file_exists(public_path(ltrim($image, '/')));
+    $photo = $vehicle->relationLoaded('photos') ? $vehicle->photos->first() : $vehicle->coverPhoto;
 @endphp
 
-@if ($hasImage)
+@if ($photo)
     <img
-        src="{{ asset($image) }}"
-        alt="{{ $vehicle['year'] }} {{ $vehicle['name'] }}"
+        src="{{ $photo->url() }}"
+        alt="{{ $vehicle->year }} {{ $vehicle->name }}"
         loading="lazy"
         class="{{ $class }} w-full object-cover"
     />
@@ -26,7 +25,7 @@
         <div class="absolute inset-0 flex flex-col items-center justify-center gap-[6%] px-4">
             <x-app-logo-icon class="w-[38%] min-w-16 max-w-48 text-white/85" />
             <p class="text-center text-xs font-semibold uppercase tracking-wider text-white/70">
-                {{ $vehicle['year'] }} {{ $vehicle['name'] }}
+                {{ $vehicle->year }} {{ $vehicle->name }}
             </p>
         </div>
     </div>

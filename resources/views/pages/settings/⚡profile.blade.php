@@ -1,5 +1,6 @@
 <?php
 
+use App\Concerns\ContactValidationRules;
 use App\Concerns\ProfileValidationRules;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Flux\Flux;
@@ -10,10 +11,13 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Profile settings')] class extends Component {
-    use ProfileValidationRules;
+    use ContactValidationRules, ProfileValidationRules;
 
     public string $name = '';
     public string $email = '';
+    public string $phone = '';
+    public string $address = '';
+    public string $birthdate = '';
 
     /**
      * Mount the component.
@@ -22,6 +26,9 @@ new #[Title('Profile settings')] class extends Component {
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->phone = (string) Auth::user()->phone;
+        $this->address = (string) Auth::user()->address;
+        $this->birthdate = (string) Auth::user()->birthdate?->toDateString();
     }
 
     /**
@@ -31,9 +38,17 @@ new #[Title('Profile settings')] class extends Component {
     {
         $user = Auth::user();
 
-        $validated = $this->validate($this->profileRules($user->id));
+        $validated = $this->validate([
+            ...$this->profileRules($user->id),
+            'phone' => $this->phoneRules(required: false),
+            'address' => $this->addressRules(),
+            'birthdate' => $this->birthdateRules(),
+        ], [
+            'phone.regex' => __('Enter a Philippine mobile number, e.g. 09171234567.'),
+            'birthdate.before_or_equal' => __('You must be at least 18 years old.'),
+        ]);
 
-        $user->fill($validated);
+        $user->fill(array_map(fn (string $value): ?string => $value === '' ? null : $value, $validated));
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -81,7 +96,7 @@ new #[Title('Profile settings')] class extends Component {
 
     <flux:heading class="sr-only">{{ __('Profile settings') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your personal and contact details')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
             <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
 
@@ -106,6 +121,12 @@ new #[Title('Profile settings')] class extends Component {
                     </div>
                 @endif
             </div>
+
+            <flux:input wire:model="phone" :label="__('Mobile number')" type="tel" autocomplete="tel" placeholder="09171234567" />
+
+            <flux:input wire:model="address" :label="__('Address')" type="text" autocomplete="street-address" />
+
+            <flux:input wire:model="birthdate" :label="__('Birthdate')" type="date" autocomplete="bday" />
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center justify-end">

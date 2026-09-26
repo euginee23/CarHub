@@ -1,13 +1,19 @@
 <?php
 
+use App\Models\Vehicle;
+use Database\Seeders\VehicleSeeder;
 use Illuminate\Support\Collection;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
+beforeEach(function () {
+    $this->seed(VehicleSeeder::class);
+});
+
 /**
  * The filtered vehicles a browse component is currently rendering.
  *
- * @return Collection<int, array<string, mixed>>
+ * @return Collection<int, Vehicle>
  */
 function renderedVehicles(Testable $component): Collection
 {
@@ -15,13 +21,13 @@ function renderedVehicles(Testable $component): Collection
 }
 
 /**
- * Every demo vehicle, for building expectations.
+ * Every seeded vehicle, for building expectations.
  *
- * @return Collection<int, array<string, mixed>>
+ * @return Collection<int, Vehicle>
  */
 function demoVehicles(): Collection
 {
-    return collect(config('demo.vehicles'));
+    return Vehicle::listed()->get();
 }
 
 test('the browse page lists every vehicle by default', function () {
@@ -31,13 +37,13 @@ test('the browse page lists every vehicle by default', function () {
 });
 
 test('filtering by body type narrows the results', function () {
-    $expected = demoVehicles()->where('type', 'SUV');
+    $expected = demoVehicles()->filter(fn (Vehicle $vehicle) => $vehicle->type->value === 'SUV');
 
     $component = Livewire::test('pages::marketing.browse')
         ->set('type', 'SUV')
-        ->assertSee($expected->first()['name']);
+        ->assertSee($expected->first()->name);
 
-    expect(renderedVehicles($component)->pluck('type')->unique()->all())->toBe(['SUV']);
+    expect(renderedVehicles($component)->map(fn (Vehicle $vehicle) => $vehicle->type->value)->unique()->values()->all())->toBe(['SUV']);
     expect(renderedVehicles($component))->toHaveCount($expected->count());
 });
 
@@ -75,8 +81,8 @@ test('the minimum seats filter only keeps larger vehicles', function () {
 test('sorting by price orders the results cheapest first', function () {
     $component = Livewire::test('pages::marketing.browse')->set('sort', 'price-asc');
 
-    expect(renderedVehicles($component)->first()['slug'])
-        ->toBe(demoVehicles()->sortBy('price_per_day')->first()['slug']);
+    expect(renderedVehicles($component)->first()->price_per_day)
+        ->toBe(demoVehicles()->min('price_per_day'));
 });
 
 test('a single filter can be cleared', function () {
@@ -115,6 +121,15 @@ test('search terms from the home page search bar are applied on mount', function
         ->assertOk()
         ->assertSee('Toyota Fortuner')
         ->assertDontSee('Suzuki Swift');
+});
+
+test('draft and unlisted vehicles are never shown', function () {
+    $draft = Vehicle::factory()->draft()->create(['brand' => 'Hidden', 'model' => 'Draft']);
+    $unlisted = Vehicle::factory()->unlisted()->create(['brand' => 'Hidden', 'model' => 'Unlisted']);
+
+    $component = Livewire::test('pages::marketing.browse')->set('search', 'Hidden');
+
+    expect(renderedVehicles($component))->toBeEmpty();
 });
 
 test('trip dates carried over from the home page are shown for context', function () {

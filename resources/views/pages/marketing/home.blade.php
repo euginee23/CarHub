@@ -1,8 +1,13 @@
 @php
-    $vehicles = collect(config('demo.vehicles'));
-    $featured = $vehicles->where('featured', true)->take(6);
+    $listedCount = \App\Models\Vehicle::listed()->count();
+    $featured = \App\Models\Vehicle::listed()
+        ->with('coverPhoto')
+        ->orderByDesc('featured')
+        ->orderByDesc('rating')
+        ->take(6)
+        ->get();
     $testimonials = config('demo.testimonials');
-    $types = $vehicles->pluck('type')->unique()->sort()->values();
+    $types = \App\Models\Vehicle::listed()->distinct()->orderBy('type')->pluck('type')->map->value;
     $minDate = now()->addDay()->toDateString();
 @endphp
 
@@ -108,7 +113,7 @@
     {{-- Trust strip --}}
     <section class="border-y border-zinc-200 bg-zinc-50">
         <div class="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-4 py-12 sm:px-6 lg:grid-cols-4 lg:px-8">
-            <x-marketing.stat value="{{ $vehicles->count() }}+" :label="__('Vehicles listed')" />
+            <x-marketing.stat value="{{ $listedCount }}+" :label="__('Vehicles listed')" />
             <x-marketing.stat value="100%" :label="__('ID-verified renters')" />
             <x-marketing.stat value="6" :label="__('Cities served')" />
             <x-marketing.stat value="4.8/5" :label="__('Average trip rating')" />

@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Vehicle;
+
 test('every marketing page is reachable as a guest', function (string $routeName, string $expected) {
     $this->get(route($routeName))
         ->assertOk()
@@ -32,24 +34,30 @@ test('no public page advertises AI capabilities', function (string $routeName) {
 })->with(['home', 'vehicles.index', 'how-it-works', 'about', 'contact', 'faq', 'terms']);
 
 test('the home page shows featured vehicles linking to their detail page', function () {
-    $featured = collect(config('demo.vehicles'))->firstWhere('featured', true);
+    $featured = Vehicle::factory()->featured()->create(['brand' => 'Toyota', 'model' => 'Fortuner']);
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee($featured['name'])
-        ->assertSee(route('vehicles.show', $featured['slug']));
+        ->assertSee('Toyota Fortuner')
+        ->assertSee(route('vehicles.show', $featured));
 });
 
 test('a vehicle detail page shows the listing, its owner, and the ID requirement', function () {
-    $vehicle = collect(config('demo.vehicles'))->first();
+    $vehicle = Vehicle::factory()->create(['price_per_day' => 2750]);
 
-    $this->get(route('vehicles.show', $vehicle['slug']))
+    $this->get(route('vehicles.show', $vehicle))
         ->assertOk()
-        ->assertSee($vehicle['name'])
-        ->assertSee($vehicle['owner']['name'])
-        ->assertSee(number_format($vehicle['price_per_day']))
+        ->assertSee($vehicle->name)
+        ->assertSee($vehicle->owner->name)
+        ->assertSee('2,750')
         ->assertSee('Two valid government-issued IDs');
 });
+
+test('unlisted and draft vehicles are not publicly visible', function (string $state) {
+    $vehicle = Vehicle::factory()->{$state}()->create();
+
+    $this->get(route('vehicles.show', $vehicle))->assertNotFound();
+})->with(['draft', 'unlisted']);
 
 test('an unknown vehicle slug returns a 404', function () {
     $this->get(route('vehicles.show', 'not-a-real-vehicle'))->assertNotFound();

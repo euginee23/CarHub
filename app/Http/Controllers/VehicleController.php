@@ -2,23 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Config;
+use App\Models\Vehicle;
 use Illuminate\View\View;
 
 class VehicleController extends Controller
 {
     /**
-     * Show a single vehicle listing.
-     *
-     * Vehicles are read from config/demo.php while the rental domain is still being
-     * designed; this becomes a route-model-bound Vehicle once the models exist.
+     * Show a single listed vehicle.
      */
-    public function show(string $slug): View
+    public function show(Vehicle $vehicle): View
     {
-        $vehicle = collect(Config::array('demo.vehicles'))->firstWhere('slug', $slug);
+        abort_unless($vehicle->isListed(), 404);
 
-        abort_if($vehicle === null, 404);
+        $vehicle->load(['owner', 'photos']);
 
-        return view('pages::marketing.vehicle', ['vehicle' => $vehicle]);
+        $similar = Vehicle::listed()
+            ->whereKeyNot($vehicle->getKey())
+            ->with('coverPhoto')
+            ->orderByRaw('case when type = ? then 1 else 0 end desc', [$vehicle->type->value])
+            ->orderByDesc('rating')
+            ->take(3)
+            ->get();
+
+        return view('pages::marketing.vehicle', [
+            'vehicle' => $vehicle,
+            'similar' => $similar,
+            'ownerTrips' => (int) $vehicle->owner->vehicles()->sum('trips_count'),
+        ]);
     }
 }

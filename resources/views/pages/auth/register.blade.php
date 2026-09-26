@@ -34,6 +34,42 @@
                 placeholder="email@example.com"
             />
 
+            <!-- Mobile Number -->
+            <flux:input
+                name="phone"
+                :label="__('Mobile number')"
+                :value="old('phone')"
+                type="tel"
+                required
+                autocomplete="tel"
+                placeholder="09171234567"
+            />
+
+            <!-- Account Type -->
+            <fieldset>
+                <legend class="text-sm font-medium text-zinc-800">{{ __('What brings you to CarHub?') }}</legend>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    @foreach ([
+                        'renter' => ['label' => __('I want to rent'), 'description' => __('Find and book vehicles from verified owners.')],
+                        'owner' => ['label' => __('I want to list a vehicle'), 'description' => __('Get verified, then earn from your car.')],
+                    ] as $value => $option)
+                        <label class="flex cursor-pointer gap-3 rounded-xl border border-zinc-300 bg-white p-4 has-checked:border-brand-600 has-checked:ring-1 has-checked:ring-brand-600">
+                            <input
+                                type="radio"
+                                name="account_type"
+                                value="{{ $value }}"
+                                @checked(old('account_type', 'renter') === $value)
+                                class="mt-0.5 accent-brand-600"
+                            />
+                            <span>
+                                <span class="block text-sm font-semibold text-zinc-900">{{ $option['label'] }}</span>
+                                <span class="mt-0.5 block text-xs text-zinc-500">{{ $option['description'] }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+            </fieldset>
+
             <!-- Password -->
             <flux:input
                 name="password"

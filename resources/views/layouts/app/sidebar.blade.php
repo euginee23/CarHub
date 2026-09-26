@@ -15,20 +15,33 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="magnifying-glass" :href="route('vehicles.index')">
+                        {{ __('Browse vehicles') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Owner')" class="grid">
+                    @can('list-vehicles')
+                        <flux:sidebar.item icon="truck" :href="route('owner.vehicles.index')" :current="request()->routeIs('owner.vehicles.*')" wire:navigate>
+                            {{ __('My vehicles') }}
+                        </flux:sidebar.item>
+                    @else
+                        <flux:sidebar.item icon="check-badge" :href="route('owner.apply')" :current="request()->routeIs('owner.apply')" wire:navigate>
+                            {{ __('Become an owner') }}
+                        </flux:sidebar.item>
+                    @endcan
+                </flux:sidebar.group>
+
+                @can('access-admin')
+                    <flux:sidebar.group :heading="__('Administration')" class="grid">
+                        <flux:sidebar.item icon="identification" :href="route('admin.owner-applications')" :current="request()->routeIs('admin.owner-applications')" wire:navigate>
+                            {{ __('Owner applications') }}
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />
-
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
 
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>

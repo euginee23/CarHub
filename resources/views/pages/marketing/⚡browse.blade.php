@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\Transmission;
+use App\Enums\VehicleType;
+use App\Models\Vehicle;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -42,56 +45,51 @@ class extends Component {
     public string $return = '';
 
     /**
-     * All demo vehicles, before any filtering.
-     *
-     * @return Collection<int, array<string, mixed>>
+     * The number of vehicles listed on the marketplace, before any filtering.
      */
     #[Computed]
-    public function allVehicles(): Collection
+    public function listedCount(): int
     {
-        return collect(config('demo.vehicles'));
+        return Vehicle::listed()->count();
     }
 
     /**
      * The vehicles matching the current filters, in the requested order.
      *
-     * @return Collection<int, array<string, mixed>>
+     * @return Collection<int, Vehicle>
      */
     #[Computed]
     public function vehicles(): Collection
     {
-        $vehicles = $this->allVehicles()
-            ->when(filled($this->search), fn (Collection $vehicles) => $vehicles->filter(
-                fn (array $vehicle) => Str::contains(
-                    $vehicle['name'].' '.$vehicle['type'].' '.$vehicle['location'],
-                    trim($this->search),
-                    ignoreCase: true,
-                )
-            ))
-            ->when(filled($this->type), fn (Collection $vehicles) => $vehicles->where('type', $this->type))
-            ->when(filled($this->transmission), fn (Collection $vehicles) => $vehicles->where('transmission', $this->transmission))
-            ->when(filled($this->seats), fn (Collection $vehicles) => $vehicles->where('seats', '>=', (int) $this->seats))
-            ->when(filled($this->maxPrice), fn (Collection $vehicles) => $vehicles->where('price_per_day', '<=', (int) $this->maxPrice));
+        $query = Vehicle::listed()
+            ->with('coverPhoto')
+            ->when(filled($this->search), fn (Builder $query) => $query->search(trim($this->search)))
+            ->when(VehicleType::tryFrom($this->type), fn (Builder $query, VehicleType $type) => $query->where('type', $type))
+            ->when(Transmission::tryFrom($this->transmission), fn (Builder $query, Transmission $transmission) => $query->where('transmission', $transmission))
+            ->when(filled($this->seats), fn (Builder $query) => $query->seatsAtLeast((int) $this->seats))
+            ->when(filled($this->maxPrice), fn (Builder $query) => $query->maxPrice((int) $this->maxPrice));
 
-        return match ($this->sort) {
-            'price-asc' => $vehicles->sortBy('price_per_day')->values(),
-            'price-desc' => $vehicles->sortByDesc('price_per_day')->values(),
-            'rating' => $vehicles->sortByDesc('rating')->values(),
-            default => $vehicles->sortByDesc(fn (array $vehicle) => [$vehicle['featured'], $vehicle['rating']])->values(),
+        match ($this->sort) {
+            'price-asc' => $query->orderBy('price_per_day'),
+            'price-desc' => $query->orderByDesc('price_per_day'),
+            'rating' => $query->orderByDesc('rating'),
+            default => $query->orderByDesc('featured')->orderByDesc('rating'),
         };
+
+        return $query->orderBy('id')->get();
     }
 
     /**
-     * Filter facets derived from the catalogue itself.
+     * Filter facets derived from the listed catalogue itself.
      *
-     * @return array{types: Collection<int, string>, transmissions: Collection<int, string>}
+     * @return array{types: \Illuminate\Support\Collection<int, string>, transmissions: \Illuminate\Support\Collection<int, string>}
      */
     #[Computed]
     public function facets(): array
     {
         return [
-            'types' => $this->allVehicles()->pluck('type')->unique()->sort()->values(),
-            'transmissions' => $this->allVehicles()->pluck('transmission')->unique()->sort()->values(),
+            'types' => Vehicle::listed()->distinct()->orderBy('type')->pluck('type')->map->value,
+            'transmissions' => Vehicle::listed()->distinct()->orderBy('transmission')->pluck('transmission')->map->value,
         ];
     }
 
@@ -320,7 +318,7 @@ class extends Component {
                         </span>
                         <h2 class="mt-5 text-lg font-semibold text-zinc-900">{{ __('No vehicles match those filters') }}</h2>
                         <p class="mx-auto mt-2 max-w-sm text-sm/6 text-zinc-600">
-                            {{ __('Try widening the price range or clearing a filter — there are :count vehicles listed in total.', ['count' => $this->allVehicles->count()]) }}
+                            {{ __('Try widening the price range or clearing a filter — there are :count vehicles listed in total.', ['count' => $this->listedCount]) }}
                         </p>
                         <button
                             type="button"
@@ -333,7 +331,7 @@ class extends Component {
                 @else
                     <div class="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3" wire:loading.class="opacity-60">
                         @foreach ($this->vehicles as $vehicle)
-                            <x-marketing.vehicle-card :key="$vehicle['slug']" :vehicle="$vehicle" />
+                            <x-marketing.vehicle-card wire:key="vehicle-{{ $vehicle->id }}" :vehicle="$vehicle" />
                         @endforeach
                     </div>
                 @endif

@@ -1,28 +1,23 @@
 @php
-    $similar = collect(config('demo.vehicles'))
-        ->where('slug', '!=', $vehicle['slug'])
-        ->sortByDesc(fn (array $candidate) => ($candidate['type'] === $vehicle['type'] ? 10 : 0) + $candidate['rating'])
-        ->take(3);
-
     $minDate = now()->addDay()->toDateString();
     $maxDate = now()->addDays(90)->toDateString();
 
     $specs = [
-        ['label' => __('Body type'), 'value' => $vehicle['type']],
-        ['label' => __('Seats'), 'value' => $vehicle['seats']],
-        ['label' => __('Transmission'), 'value' => $vehicle['transmission']],
-        ['label' => __('Fuel'), 'value' => $vehicle['fuel']],
-        ['label' => __('Year'), 'value' => $vehicle['year']],
+        ['label' => __('Body type'), 'value' => $vehicle->type->value],
+        ['label' => __('Seats'), 'value' => $vehicle->seats],
+        ['label' => __('Transmission'), 'value' => $vehicle->transmission->value],
+        ['label' => __('Fuel'), 'value' => $vehicle->fuel->value],
+        ['label' => __('Year'), 'value' => $vehicle->year],
     ];
 @endphp
 
 <x-layouts::marketing
-    :title="$vehicle['year'].' '.$vehicle['name']"
+    :title="$vehicle->year.' '.$vehicle->name"
     :description="__('Rent a :year :name in :location from ₱:price per day on CarHub.', [
-        'year' => $vehicle['year'],
-        'name' => $vehicle['name'],
-        'location' => $vehicle['location'],
-        'price' => number_format($vehicle['price_per_day']),
+        'year' => $vehicle->year,
+        'name' => $vehicle->name,
+        'location' => $vehicle->location,
+        'price' => number_format($vehicle->price_per_day),
     ])"
     :mobile-action-bar="true"
 >
@@ -32,9 +27,9 @@
             <nav aria-label="{{ __('Breadcrumb') }}" class="-mx-1.5 flex items-center gap-1 text-sm text-zinc-500">
                 <a href="{{ route('vehicles.index') }}" class="rounded px-1.5 py-2 transition-colors hover:text-brand-700">{{ __('Browse') }}</a>
                 <span aria-hidden="true">/</span>
-                <a href="{{ route('vehicles.index', ['type' => $vehicle['type']]) }}" class="rounded px-1.5 py-2 transition-colors hover:text-brand-700">{{ $vehicle['type'] }}</a>
+                <a href="{{ route('vehicles.index', ['type' => $vehicle->type->value]) }}" class="rounded px-1.5 py-2 transition-colors hover:text-brand-700">{{ $vehicle->type->value }}</a>
                 <span aria-hidden="true">/</span>
-                <span class="truncate px-1.5 text-zinc-800">{{ $vehicle['name'] }}</span>
+                <span class="truncate px-1.5 text-zinc-800">{{ $vehicle->name }}</span>
             </nav>
 
             <div class="mt-6 lg:grid lg:grid-cols-[1fr_22rem] lg:items-start lg:gap-10">
@@ -48,27 +43,27 @@
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
                                 <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-                                    {{ $vehicle['year'] }} {{ $vehicle['name'] }}
+                                    {{ $vehicle->year }} {{ $vehicle->name }}
                                 </h1>
                                 <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-zinc-600">
                                     <span class="flex items-center gap-1.5">
                                         <svg class="size-4 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                             <path d="M12 2.5 15 9l7 .8-5.2 4.7 1.5 6.9L12 17.9 5.7 21.4l1.5-6.9L2 9.8 9 9l3-6.5Z" />
                                         </svg>
-                                        <span class="font-semibold text-zinc-900">{{ number_format($vehicle['rating'], 1) }}</span>
-                                        <span class="text-zinc-500">({{ trans_choice('{1} :count trip|[2,*] :count trips', $vehicle['trips'], ['count' => $vehicle['trips']]) }})</span>
+                                        <span class="font-semibold text-zinc-900">{{ number_format($vehicle->rating, 1) }}</span>
+                                        <span class="text-zinc-500">({{ trans_choice('{1} :count trip|[2,*] :count trips', $vehicle->trips_count, ['count' => $vehicle->trips_count]) }})</span>
                                     </span>
                                     <span class="flex items-center gap-1.5">
                                         <svg class="size-4 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z" />
                                             <circle cx="12" cy="10" r="2.5" />
                                         </svg>
-                                        {{ $vehicle['location'] }}
+                                        {{ $vehicle->location }}
                                     </span>
                                 </div>
                             </div>
 
-                            @if ($vehicle['instant_book'])
+                            @if ($vehicle->instant_book)
                                 <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1.5 text-sm font-semibold text-brand-700 ring-1 ring-brand-200">
                                     <svg class="size-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                         <path d="M13.5 2 4 13.5h6L9.5 22 20 9.5h-6.9L13.5 2Z" />
@@ -78,7 +73,7 @@
                             @endif
                         </div>
 
-                        <p class="mt-5 text-base/7 text-zinc-600">{{ $vehicle['description'] }}</p>
+                        <p class="mt-5 text-base/7 text-zinc-600">{{ $vehicle->description }}</p>
                     </div>
 
                     {{-- Specs. Five items over two mobile columns leaves an odd cell, so the
@@ -99,7 +94,7 @@
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6">
                         <h2 class="text-lg font-semibold text-zinc-900">{{ __('What this vehicle has') }}</h2>
                         <ul class="mt-5 grid gap-3 sm:grid-cols-2">
-                            @foreach ($vehicle['features'] as $feature)
+                            @foreach ($vehicle->features as $feature)
                                 <li class="flex items-center gap-2.5 text-sm text-zinc-700">
                                     <svg class="size-4.5 shrink-0 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
@@ -116,13 +111,13 @@
 
                         <div class="mt-5 flex flex-wrap items-center gap-4">
                             <span class="flex size-14 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-600 to-brand-500 text-lg font-semibold text-white">
-                                {{ \Illuminate\Support\Str::of($vehicle['owner']['name'])->explode(' ')->map(fn ($part) => mb_substr($part, 0, 1))->take(2)->implode('') }}
+                                {{ $vehicle->owner->initials() }}
                             </span>
 
                             <div class="min-w-0 flex-1">
                                 <p class="flex items-center gap-2 font-semibold text-zinc-900">
-                                    {{ $vehicle['owner']['name'] }}
-                                    @if ($vehicle['owner']['verified'])
+                                    {{ $vehicle->owner->name }}
+                                    @if ($vehicle->owner->isVerifiedOwner())
                                         <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
                                             <svg class="size-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                                 <path d="M12 2 4 5.5v6c0 4.6 3.4 8.9 8 10 4.6-1.1 8-5.4 8-10v-6L12 2Zm-1 13.4-3.2-3.2 1.4-1.4 1.8 1.8 4.3-4.3 1.4 1.4-5.7 5.7Z" />
@@ -132,11 +127,9 @@
                                     @endif
                                 </p>
                                 <p class="mt-1 text-sm text-zinc-500">
-                                    {{ __('Hosting since :year', ['year' => $vehicle['owner']['joined']]) }}
+                                    {{ __('Hosting since :year', ['year' => $vehicle->owner->owner_verified_at?->year ?? $vehicle->owner->created_at->year]) }}
                                     &middot;
-                                    {{ trans_choice('{1} :count trip|[2,*] :count trips', $vehicle['owner']['trips'], ['count' => $vehicle['owner']['trips']]) }}
-                                    &middot;
-                                    {{ __('Replies in :time', ['time' => $vehicle['owner']['response_time']]) }}
+                                    {{ trans_choice('{1} :count trip|[2,*] :count trips', $ownerTrips, ['count' => $ownerTrips]) }}
                                 </p>
                             </div>
                         </div>
@@ -194,7 +187,7 @@
                     id="book"
                     class="mt-8 scroll-mt-24 lg:sticky lg:top-24 lg:mt-0"
                     x-data="{
-                        rate: {{ $vehicle['price_per_day'] }},
+                        rate: {{ $vehicle->price_per_day }},
                         serviceFeeRate: 0.15,
                         pickup: '',
                         dropoff: '',
@@ -214,7 +207,7 @@
                 >
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-lg shadow-zinc-900/5">
                         <p class="flex items-baseline gap-1.5">
-                            <span class="text-3xl font-bold tracking-tight text-zinc-900">&#8369;{{ number_format($vehicle['price_per_day']) }}</span>
+                            <span class="text-3xl font-bold tracking-tight text-zinc-900">&#8369;{{ number_format($vehicle->price_per_day) }}</span>
                             <span class="text-zinc-500">/ {{ __('day') }}</span>
                         </p>
 
@@ -269,7 +262,7 @@
                             href="{{ route('register') }}"
                             class="mt-6 block rounded-xl bg-brand-600 px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
                         >
-                            {{ $vehicle['instant_book'] ? __('Book instantly') : __('Request to book') }}
+                            {{ $vehicle->instant_book ? __('Book instantly') : __('Request to book') }}
                         </a>
 
                         <p class="mt-3 text-center text-xs text-zinc-500">
@@ -320,14 +313,14 @@
             <div class="flex items-center gap-3 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 <p class="min-w-0 flex-1">
                     <span class="block text-lg font-bold leading-tight text-zinc-900">
-                        &#8369;{{ number_format($vehicle['price_per_day']) }}
+                        &#8369;{{ number_format($vehicle->price_per_day) }}
                         <span class="text-sm font-normal text-zinc-500">/{{ __('day') }}</span>
                     </span>
                     <span class="mt-0.5 flex items-center gap-1 text-xs text-zinc-500">
                         <svg class="size-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d="M12 2.5 15 9l7 .8-5.2 4.7 1.5 6.9L12 17.9 5.7 21.4l1.5-6.9L2 9.8 9 9l3-6.5Z" />
                         </svg>
-                        {{ number_format($vehicle['rating'], 1) }} &middot; {{ $vehicle['location'] }}
+                        {{ number_format($vehicle->rating, 1) }} &middot; {{ $vehicle->location }}
                     </span>
                 </p>
 
@@ -335,7 +328,7 @@
                     href="#book"
                     class="shrink-0 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
                 >
-                    {{ $vehicle['instant_book'] ? __('Book now') : __('Request') }}
+                    {{ $vehicle->instant_book ? __('Book now') : __('Request') }}
                 </a>
             </div>
         </div>

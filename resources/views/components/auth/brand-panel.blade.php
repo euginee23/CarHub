@@ -44,7 +44,7 @@
 
         <dl class="mt-12 grid grid-cols-3 gap-6 border-t border-white/15 pt-8">
             @foreach ([
-                ['value' => count(config('demo.vehicles')).'+', 'label' => __('Vehicles listed')],
+                ['value' => \App\Models\Vehicle::listed()->count().'+', 'label' => __('Vehicles listed')],
                 ['value' => '6', 'label' => __('Cities served')],
                 ['value' => '4.8/5', 'label' => __('Trip rating')],
             ] as $stat)

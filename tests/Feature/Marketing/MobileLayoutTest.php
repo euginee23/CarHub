@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Vehicle;
+
 test('every public page declares a responsive viewport', function (string $routeName) {
     $this->get(route($routeName))
         ->assertOk()
@@ -16,9 +18,9 @@ test('the auth and error shells declare a responsive viewport too', function () 
 });
 
 test('the vehicle page pins a booking bar for phones', function () {
-    $vehicle = collect(config('demo.vehicles'))->first();
+    $vehicle = Vehicle::factory()->create();
 
-    $this->get(route('vehicles.show', $vehicle['slug']))
+    $this->get(route('vehicles.show', $vehicle))
         ->assertOk()
         // Fixed to the viewport foot, hidden once the sticky desktop panel is available.
         ->assertSee('fixed inset-x-0 bottom-0', escape: false)
@@ -30,9 +32,9 @@ test('the vehicle page pins a booking bar for phones', function () {
 
 test('only pages with a mobile action bar raise the floating assistant', function () {
     // The assistant is positioned from --fab-offset, which this class overrides below lg.
-    $vehicle = collect(config('demo.vehicles'))->first();
+    $vehicle = Vehicle::factory()->create();
 
-    $this->get(route('vehicles.show', $vehicle['slug']))
+    $this->get(route('vehicles.show', $vehicle))
         ->assertOk()
         ->assertSee('has-mobile-actionbar', escape: false);
 
