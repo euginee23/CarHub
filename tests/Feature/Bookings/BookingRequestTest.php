@@ -156,3 +156,16 @@ test('the booking panel offers the request button once dates are available', fun
         ->set('returnDate', '2026-10-07')
         ->assertSee('Message to the owner');
 });
+
+test('administrators cannot book vehicles', function () {
+    requestVehicle($this->vehicle, User::factory()->admin()->create())->assertHasErrors('schedule');
+
+    expect(Booking::count())->toBe(0);
+});
+
+test('administrators see a notice instead of the booking button', function () {
+    Livewire::actingAs(User::factory()->admin()->create())
+        ->test('vehicle.booking-panel', ['vehicle' => $this->vehicle])
+        ->assertSee('Admin accounts manage the marketplace and cannot book vehicles.')
+        ->assertDontSee('Request to book');
+});

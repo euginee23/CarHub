@@ -19,6 +19,10 @@ class SubmitIdentityDocument
      */
     public function handle(User $user, DocumentType $type, UploadedFile $file): VerificationDocument
     {
+        if ($user->is_admin) {
+            throw ValidationException::withMessages(['type' => __('Administrator accounts do not need identity verification.')]);
+        }
+
         if (! in_array($type, DocumentType::governmentIds(), true)) {
             throw ValidationException::withMessages(['type' => __('Choose a government-issued ID.')]);
         }

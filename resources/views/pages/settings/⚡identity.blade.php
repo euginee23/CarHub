@@ -7,12 +7,12 @@ new #[Title('ID verification')] class extends Component {
     //
 }; ?>
 
-<section class="w-full">
-    @include('partials.settings-heading')
+<div>
+    <x-app.page-header :title="__('ID verification')" :description="__('Verify your identity once with two government IDs, and use it for every booking.')" />
 
-    <flux:heading class="sr-only">{{ __('ID verification') }}</flux:heading>
-
-    <x-pages::settings.layout :heading="__('ID verification')" :subheading="__('Verify your identity once, and use it for every booking.')">
-        <livewire:identity.id-documents />
-    </x-pages::settings.layout>
-</section>
+    <x-app.content width="3xl">
+        <flux:card>
+            <livewire:identity.id-documents />
+        </flux:card>
+    </x-app.content>
+</div>

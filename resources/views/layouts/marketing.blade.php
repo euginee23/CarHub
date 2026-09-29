@@ -1,15 +1,19 @@
-{{-- Public/guest shell. Deliberately light-only: no `dark` class and no @fluxAppearance,
-     so a persisted dark preference from the app never leaks onto the marketing site. --}}
+{{-- The one CarHub shell, used by the public site and (through layouts::app) the
+     signed-in app. Light-only: no `dark` class and no @fluxAppearance. --}}
 @props([
     'title' => null,
     'description' => null,
     'mobileActionBar' => false,
+    'noindex' => false,
 ])
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
     <head>
         @include('partials.marketing-head', ['title' => $title, 'description' => $description])
+        @if ($noindex)
+            <meta name="robots" content="noindex" />
+        @endif
     </head>
     <body @class([
         'min-h-screen bg-white text-zinc-900 antialiased',

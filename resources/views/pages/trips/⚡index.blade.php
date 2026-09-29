@@ -44,39 +44,39 @@ new #[Title('My trips')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
-    <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-            <flux:heading size="xl" level="1">{{ __('My trips') }}</flux:heading>
-            <flux:subheading size="lg" class="mt-2">{{ __('Your booking requests and rentals.') }}</flux:subheading>
+<div>
+    <x-app.page-header :title="__('My trips')" :description="__('Your booking requests and rentals.')">
+        <x-slot:actions>
+            <flux:button :href="route('vehicles.index')" icon="magnifying-glass">{{ __('Find a vehicle') }}</flux:button>
+        </x-slot:actions>
+    </x-app.page-header>
+
+    <x-app.content class="space-y-6">
+        <div class="flex flex-wrap gap-2">
+            @foreach (['upcoming' => __('Upcoming'), 'past' => __('Past'), 'cancelled' => __('Cancelled')] as $key => $label)
+                <flux:button wire:key="tab-{{ $key }}" size="sm" :variant="$tab === $key ? 'primary' : 'outline'" wire:click="$set('tab', '{{ $key }}')">{{ $label }}</flux:button>
+            @endforeach
         </div>
-        <flux:button :href="route('vehicles.index')" icon="magnifying-glass">{{ __('Find a vehicle') }}</flux:button>
-    </div>
 
-    <div class="flex flex-wrap gap-2">
-        @foreach (['upcoming' => __('Upcoming'), 'past' => __('Past'), 'cancelled' => __('Cancelled')] as $key => $label)
-            <flux:button wire:key="tab-{{ $key }}" size="sm" :variant="$tab === $key ? 'primary' : 'outline'" wire:click="$set('tab', '{{ $key }}')">{{ $label }}</flux:button>
-        @endforeach
-    </div>
-
-    @forelse ($this->bookings as $booking)
-        <a wire:key="booking-{{ $booking->id }}" href="{{ route('trips.show', $booking) }}" wire:navigate class="block">
-            <flux:card class="flex flex-wrap items-center gap-4 transition hover:border-zinc-300 dark:hover:border-zinc-500">
-                <x-marketing.vehicle-image :vehicle="$booking->vehicle" class="aspect-[4/3] !w-20 shrink-0 rounded-lg" />
-                <div class="min-w-0 flex-1">
-                    <flux:heading>{{ $booking->vehicle->year }} {{ $booking->vehicle->name }}</flux:heading>
-                    <flux:text class="mt-1">{{ $booking->pickup_at->format('M j, g:i A') }} &rarr; {{ $booking->return_at->format('M j, g:i A') }}</flux:text>
-                </div>
-                <div class="text-end">
-                    <flux:badge size="sm" :color="$booking->status->color()">{{ $booking->status->label() }}</flux:badge>
-                    <p class="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">&#8369;{{ number_format($booking->total) }}</p>
-                </div>
+        @forelse ($this->bookings as $booking)
+            <a wire:key="booking-{{ $booking->id }}" href="{{ route('trips.show', $booking) }}" wire:navigate class="block">
+                <flux:card class="flex flex-wrap items-center gap-4 transition hover:border-zinc-300 dark:hover:border-zinc-500">
+                    <x-marketing.vehicle-image :vehicle="$booking->vehicle" :caption="false" class="aspect-[4/3] !w-20 shrink-0 rounded-lg" />
+                    <div class="min-w-0 flex-1">
+                        <flux:heading>{{ $booking->vehicle->year }} {{ $booking->vehicle->name }}</flux:heading>
+                        <flux:text class="mt-1">{{ $booking->pickup_at->format('M j, g:i A') }} &rarr; {{ $booking->return_at->format('M j, g:i A') }}</flux:text>
+                    </div>
+                    <div class="text-end">
+                        <flux:badge size="sm" :color="$booking->status->color()">{{ $booking->status->label() }}</flux:badge>
+                        <p class="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">&#8369;{{ number_format($booking->total) }}</p>
+                    </div>
+                </flux:card>
+            </a>
+        @empty
+            <flux:card class="text-center">
+                <flux:heading>{{ __('No trips here yet') }}</flux:heading>
+                <flux:text class="mt-2">{{ __('Find a vehicle and request your dates — your bookings will show up here.') }}</flux:text>
             </flux:card>
-        </a>
-    @empty
-        <flux:card class="text-center">
-            <flux:heading>{{ __('No trips here yet') }}</flux:heading>
-            <flux:text class="mt-2">{{ __('Find a vehicle and request your dates — your bookings will show up here.') }}</flux:text>
-        </flux:card>
-    @endforelse
+        @endforelse
+    </x-app.content>
 </div>

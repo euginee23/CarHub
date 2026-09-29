@@ -93,79 +93,79 @@ new #[Title('Become a vehicle owner')] class extends Component {
     }
 }; ?>
 
-<div class="mx-auto w-full max-w-3xl space-y-8">
-    <div>
-        <flux:heading size="xl" level="1">{{ __('Become a vehicle owner') }}</flux:heading>
-        <flux:subheading size="lg" class="mt-2">
-            {{ __('Every owner on CarHub is verified before their first listing goes live. Upload your documents and an administrator will review them.') }}
-        </flux:subheading>
-    </div>
+<div>
+    <x-app.page-header
+        :title="__('Become a vehicle owner')"
+        :description="__('Every owner on CarHub is verified before their first listing goes live. Upload your documents and an administrator will review them.')"
+    />
 
-    @if (auth()->user()->isVerifiedOwner())
-        <flux:callout variant="success" icon="check-badge" :heading="__('You are a verified owner')">
-            <flux:callout.text>{{ __('You can list vehicles for rent on CarHub.') }}</flux:callout.text>
-            <x-slot name="actions">
-                <flux:button :href="route('owner.vehicles.index')" variant="primary" wire:navigate>{{ __('Manage my vehicles') }}</flux:button>
-            </x-slot>
-        </flux:callout>
-    @elseif ($this->application?->isPending())
-        <flux:callout variant="warning" icon="clock" :heading="__('Your application is under review')">
-            <flux:callout.text>
-                {{ __('Submitted :date. We will notify you by email once an administrator has reviewed your documents.', ['date' => $this->application->created_at->format('M j, Y')]) }}
-            </flux:callout.text>
-        </flux:callout>
-
-        <flux:card class="space-y-3">
-            <flux:heading>{{ __('Submitted documents') }}</flux:heading>
-            @foreach ($this->application->documents as $document)
-                <div wire:key="document-{{ $document->id }}" class="flex items-center justify-between gap-4 text-sm">
-                    <flux:link :href="route('documents.show', $document)" target="_blank">{{ $document->type->label() }}</flux:link>
-                    <flux:badge size="sm" :color="$document->status->color()">{{ $document->status->label() }}</flux:badge>
-                </div>
-            @endforeach
-        </flux:card>
-    @endif
-
-    @if ($this->canApply)
-        @if ($this->application?->status === ApplicationStatus::Rejected)
-            <flux:callout variant="danger" icon="x-circle" :heading="__('Your previous application was not approved')">
-                <flux:callout.text>{{ $this->application->rejection_reason }}</flux:callout.text>
-                <flux:callout.text>{{ __('Fix the issue above and submit your documents again.') }}</flux:callout.text>
+    <x-app.content width="3xl" class="space-y-8">
+        @if (auth()->user()->isVerifiedOwner())
+            <flux:callout variant="success" icon="check-badge" :heading="__('You are a verified owner')">
+                <flux:callout.text>{{ __('You can list vehicles for rent on CarHub.') }}</flux:callout.text>
+                <x-slot name="actions">
+                    <flux:button :href="route('owner.vehicles.index')" variant="primary" wire:navigate>{{ __('Manage my vehicles') }}</flux:button>
+                </x-slot>
             </flux:callout>
+        @elseif ($this->application?->isPending())
+            <flux:callout variant="warning" icon="clock" :heading="__('Your application is under review')">
+                <flux:callout.text>
+                    {{ __('Submitted :date. We will notify you by email once an administrator has reviewed your documents.', ['date' => $this->application->created_at->format('M j, Y')]) }}
+                </flux:callout.text>
+            </flux:callout>
+
+            <flux:card class="space-y-3">
+                <flux:heading>{{ __('Submitted documents') }}</flux:heading>
+                @foreach ($this->application->documents as $document)
+                    <div wire:key="document-{{ $document->id }}" class="flex items-center justify-between gap-4 text-sm">
+                        <flux:link :href="route('documents.show', $document)" target="_blank">{{ $document->type->label() }}</flux:link>
+                        <flux:badge size="sm" :color="$document->status->color()">{{ $document->status->label() }}</flux:badge>
+                    </div>
+                @endforeach
+            </flux:card>
         @endif
 
-        <form wire:submit="submit" class="space-y-6">
-            <flux:card class="space-y-6">
-                <div class="grid gap-6 sm:grid-cols-2">
-                    <flux:select wire:model="governmentIdType" :label="__('Government ID type')">
-                        @foreach ($this->governmentIdTypes as $type)
-                            <flux:select.option :value="$type->value">{{ $type->label() }}</flux:select.option>
-                        @endforeach
-                    </flux:select>
+        @if ($this->canApply)
+            @if ($this->application?->status === ApplicationStatus::Rejected)
+                <flux:callout variant="danger" icon="x-circle" :heading="__('Your previous application was not approved')">
+                    <flux:callout.text>{{ $this->application->rejection_reason }}</flux:callout.text>
+                    <flux:callout.text>{{ __('Fix the issue above and submit your documents again.') }}</flux:callout.text>
+                </flux:callout>
+            @endif
 
-                    <flux:input type="file" wire:model="governmentId" :label="__('Government ID')" accept="image/*,application/pdf" />
+            <form wire:submit="submit" class="space-y-6">
+                <flux:card class="space-y-6">
+                    <div class="grid gap-6 sm:grid-cols-2">
+                        <flux:select wire:model="governmentIdType" :label="__('Government ID type')">
+                            @foreach ($this->governmentIdTypes as $type)
+                                <flux:select.option :value="$type->value">{{ $type->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+
+                        <flux:input type="file" wire:model="governmentId" :label="__('Government ID')" accept="image/*,application/pdf" />
+                    </div>
+
+                    <flux:input type="file" wire:model="driversLicense" :label="__('Driver\'s license')" accept="image/*,application/pdf" />
+
+                    <flux:input
+                        type="file"
+                        wire:model="vehicleRegistration"
+                        :label="__('Vehicle OR/CR')"
+                        :description="__('Official receipt and certificate of registration of a vehicle you intend to list.')"
+                        accept="image/*,application/pdf"
+                    />
+
+                    <flux:textarea wire:model="notes" :label="__('Notes for the reviewer (optional)')" rows="3" />
+
+                    <flux:text class="text-xs">{{ __('JPG, PNG, or PDF up to 5 MB each. Documents are stored privately and only visible to CarHub administrators.') }}</flux:text>
+                </flux:card>
+
+                <div class="flex justify-end">
+                    <flux:button type="submit" variant="primary" data-test="submit-owner-application">
+                        {{ __('Submit for review') }}
+                    </flux:button>
                 </div>
-
-                <flux:input type="file" wire:model="driversLicense" :label="__('Driver\'s license')" accept="image/*,application/pdf" />
-
-                <flux:input
-                    type="file"
-                    wire:model="vehicleRegistration"
-                    :label="__('Vehicle OR/CR')"
-                    :description="__('Official receipt and certificate of registration of a vehicle you intend to list.')"
-                    accept="image/*,application/pdf"
-                />
-
-                <flux:textarea wire:model="notes" :label="__('Notes for the reviewer (optional)')" rows="3" />
-
-                <flux:text class="text-xs">{{ __('JPG, PNG, or PDF up to 5 MB each. Documents are stored privately and only visible to CarHub administrators.') }}</flux:text>
-            </flux:card>
-
-            <div class="flex justify-end">
-                <flux:button type="submit" variant="primary" data-test="submit-owner-application">
-                    {{ __('Submit for review') }}
-                </flux:button>
-            </div>
-        </form>
-    @endif
+            </form>
+        @endif
+    </x-app.content>
 </div>

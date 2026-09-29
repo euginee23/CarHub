@@ -165,101 +165,105 @@ new #[Title('Checkout')] class extends Component {
     }
 }; ?>
 
-<div class="mx-auto w-full max-w-5xl space-y-6">
-    <div>
-        <flux:link :href="route('trips.show', $booking)" wire:navigate class="text-sm">&larr; {{ __('Trip :reference', ['reference' => $booking->reference]) }}</flux:link>
-        <flux:heading size="xl" level="1" class="mt-2">{{ __('Checkout') }}</flux:heading>
-    </div>
+<div>
+    <x-app.page-header
+        :title="__('Checkout')"
+        :description="__('Four steps to confirm your :vehicle.', ['vehicle' => $booking->vehicle->name])"
+        :back="route('trips.show', $booking)"
+        :back-label="__('Trip :reference', ['reference' => $booking->reference])"
+    />
 
-    <ol class="grid gap-2 sm:grid-cols-4">
-        @foreach ($this->steps as $key => $step)
-            <li wire:key="step-{{ $key }}" @class([
-                'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm',
-                'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $step['state'] === 'done',
-                'border-brand-300 bg-brand-50 font-semibold text-brand-800 dark:border-brand-700 dark:bg-zinc-800 dark:text-white' => $step['state'] === 'current',
-                'border-zinc-200 text-zinc-400 dark:border-zinc-700' => $step['state'] === 'locked',
-            ])>
-                <span class="flex size-5 shrink-0 items-center justify-center rounded-full border border-current text-xs">
-                    @if ($step['state'] === 'done') &#10003; @else {{ $loop->iteration }} @endif
-                </span>
-                {{ $step['label'] }}
-            </li>
-        @endforeach
-    </ol>
+    <x-app.content class="space-y-6">
+        <ol class="grid gap-2 sm:grid-cols-4">
+            @foreach ($this->steps as $key => $step)
+                <li wire:key="step-{{ $key }}" @class([
+                    'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm',
+                    'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' => $step['state'] === 'done',
+                    'border-brand-300 bg-brand-50 font-semibold text-brand-800 dark:border-brand-700 dark:bg-zinc-800 dark:text-white' => $step['state'] === 'current',
+                    'border-zinc-200 text-zinc-400 dark:border-zinc-700' => $step['state'] === 'locked',
+                ])>
+                    <span class="flex size-5 shrink-0 items-center justify-center rounded-full border border-current text-xs">
+                        @if ($step['state'] === 'done') &#10003; @else {{ $loop->iteration }} @endif
+                    </span>
+                    {{ $step['label'] }}
+                </li>
+            @endforeach
+        </ol>
 
-    <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div class="space-y-6">
-            {{-- 1. Terms --}}
-            <flux:card class="space-y-4">
-                <div class="flex items-center justify-between gap-4">
-                    <flux:heading size="lg">{{ __('1. Rental terms') }}</flux:heading>
-                    @if ($this->termsAccepted)
-                        <flux:badge color="green" size="sm">{{ __('Accepted :date', ['date' => $booking->terms_accepted_at->format('M j')]) }}</flux:badge>
-                    @endif
-                </div>
-
-                @if ($this->currentTerms)
-                    <x-booking.legal-text class="max-h-72 overflow-y-auto rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        {{ $this->currentTerms->html() }}
-                    </x-booking.legal-text>
-                    <flux:text class="text-xs">{{ __('Version :version', ['version' => $this->currentTerms->version]) }}</flux:text>
-
-                    @unless ($this->termsAccepted)
-                        <form wire:submit="acceptTerms" class="space-y-4">
-                            <flux:checkbox wire:model="agreeToTerms" :label="__('I have read and agree to the rental terms, including the cancellation, payment, and GPS tracking conditions.')" />
-                            <flux:error name="terms" />
-                            <flux:button type="submit" variant="primary" data-test="accept-terms">{{ __('Accept terms') }}</flux:button>
-                        </form>
-                    @endunless
-                @else
-                    <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('Rental terms are being updated. Please check back shortly.')" />
-                @endif
-            </flux:card>
-
-            {{-- 2. IDs --}}
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">{{ __('2. Two valid IDs') }}</flux:heading>
-                <livewire:identity.id-documents />
-            </flux:card>
-
-            {{-- 3. Contract --}}
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">{{ __('3. Rental contract') }}</flux:heading>
-
-                @if ($this->contract)
-                    <div class="max-h-96 overflow-y-auto rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        @include('contracts.document', ['contract' => $this->contract])
+        <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
+            <div class="space-y-6">
+                {{-- 1. Terms --}}
+                <flux:card class="space-y-4">
+                    <div class="flex items-center justify-between gap-4">
+                        <flux:heading size="lg">{{ __('1. Rental terms') }}</flux:heading>
+                        @if ($this->termsAccepted)
+                            <flux:badge color="green" size="sm">{{ __('Accepted :date', ['date' => $booking->terms_accepted_at->format('M j')]) }}</flux:badge>
+                        @endif
                     </div>
-                    <flux:button size="sm" :href="route('bookings.contract', $booking)" target="_blank" icon="printer">{{ __('Open printable copy') }}</flux:button>
 
-                    @unless ($this->contract->isSigned())
-                        <form wire:submit="signContract" class="space-y-4">
-                            <flux:input wire:model="signature" :label="__('Type your full name to sign')" :placeholder="auth()->user()->name" />
-                            <flux:checkbox wire:model="agreeToContract" :label="__('I agree to this rental contract and understand that typing my name is my electronic signature.')" />
-                            <flux:button type="submit" variant="primary" data-test="sign-contract">{{ __('Sign contract') }}</flux:button>
-                        </form>
-                    @endunless
-                @elseif ($booking->status === BookingStatus::Requested)
-                    <flux:text>{{ __('The contract is prepared once the owner approves your request.') }}</flux:text>
-                @else
-                    <flux:text>{{ __('Accept the rental terms and get two IDs approved to prepare your contract.') }}</flux:text>
-                @endif
-            </flux:card>
+                    @if ($this->currentTerms)
+                        <x-booking.legal-text class="max-h-72 overflow-y-auto rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                            {{ $this->currentTerms->html() }}
+                        </x-booking.legal-text>
+                        <flux:text class="text-xs">{{ __('Version :version', ['version' => $this->currentTerms->version]) }}</flux:text>
 
-            {{-- 4. Payment --}}
-            <flux:card class="space-y-4">
-                <flux:heading size="lg">{{ __('4. Payment') }}</flux:heading>
-                @if ($booking->status === BookingStatus::AwaitingPayment)
-                    <flux:text>{{ __('Your contract is signed and the vehicle is held for you. Pay the total to confirm the booking.') }}</flux:text>
-                    <flux:button variant="primary" disabled>{{ __('Pay ₱:amount', ['amount' => number_format($booking->total)]) }}</flux:button>
-                @else
-                    <flux:text>{{ __('Payment opens after you sign the contract.') }}</flux:text>
-                @endif
-            </flux:card>
+                        @unless ($this->termsAccepted)
+                            <form wire:submit="acceptTerms" class="space-y-4">
+                                <flux:checkbox wire:model="agreeToTerms" :label="__('I have read and agree to the rental terms, including the cancellation, payment, and GPS tracking conditions.')" />
+                                <flux:error name="terms" />
+                                <flux:button type="submit" variant="primary" data-test="accept-terms">{{ __('Accept terms') }}</flux:button>
+                            </form>
+                        @endunless
+                    @else
+                        <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('Rental terms are being updated. Please check back shortly.')" />
+                    @endif
+                </flux:card>
+
+                {{-- 2. IDs --}}
+                <flux:card class="space-y-4">
+                    <flux:heading size="lg">{{ __('2. Two valid IDs') }}</flux:heading>
+                    <livewire:identity.id-documents />
+                </flux:card>
+
+                {{-- 3. Contract --}}
+                <flux:card class="space-y-4">
+                    <flux:heading size="lg">{{ __('3. Rental contract') }}</flux:heading>
+
+                    @if ($this->contract)
+                        <div class="max-h-96 overflow-y-auto rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                            @include('contracts.document', ['contract' => $this->contract])
+                        </div>
+                        <flux:button size="sm" :href="route('bookings.contract', $booking)" target="_blank" icon="printer">{{ __('Open printable copy') }}</flux:button>
+
+                        @unless ($this->contract->isSigned())
+                            <form wire:submit="signContract" class="space-y-4">
+                                <flux:input wire:model="signature" :label="__('Type your full name to sign')" :placeholder="auth()->user()->name" />
+                                <flux:checkbox wire:model="agreeToContract" :label="__('I agree to this rental contract and understand that typing my name is my electronic signature.')" />
+                                <flux:button type="submit" variant="primary" data-test="sign-contract">{{ __('Sign contract') }}</flux:button>
+                            </form>
+                        @endunless
+                    @elseif ($booking->status === BookingStatus::Requested)
+                        <flux:text>{{ __('The contract is prepared once the owner approves your request.') }}</flux:text>
+                    @else
+                        <flux:text>{{ __('Accept the rental terms and get two IDs approved to prepare your contract.') }}</flux:text>
+                    @endif
+                </flux:card>
+
+                {{-- 4. Payment --}}
+                <flux:card class="space-y-4">
+                    <flux:heading size="lg">{{ __('4. Payment') }}</flux:heading>
+                    @if ($booking->status === BookingStatus::AwaitingPayment)
+                        <flux:text>{{ __('Your contract is signed and the vehicle is held for you. Pay the total to confirm the booking.') }}</flux:text>
+                        <flux:button variant="primary" disabled>{{ __('Pay ₱:amount', ['amount' => number_format($booking->total)]) }}</flux:button>
+                    @else
+                        <flux:text>{{ __('Payment opens after you sign the contract.') }}</flux:text>
+                    @endif
+                </flux:card>
+            </div>
+
+            <div>
+                <x-booking.summary :booking="$booking" class="lg:sticky lg:top-6" />
+            </div>
         </div>
-
-        <div>
-            <x-booking.summary :booking="$booking" class="lg:sticky lg:top-6" />
-        </div>
-    </div>
+    </x-app.content>
 </div>

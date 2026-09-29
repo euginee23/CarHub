@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('access-admin', fn (User $user): bool => $user->is_admin);
 
-        Gate::define('list-vehicles', fn (User $user): bool => $user->isVerifiedOwner());
+        Gate::define('list-vehicles', fn (User $user): bool => ! $user->is_admin && $user->isVerifiedOwner());
     }
 
     /**

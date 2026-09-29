@@ -88,80 +88,84 @@ new #[Title('Booking')] class extends Component {
     }
 }; ?>
 
-<div class="mx-auto w-full max-w-4xl space-y-6">
-    <div>
-        <flux:link :href="route('owner.bookings.index')" wire:navigate class="text-sm">&larr; {{ __('Booking requests') }}</flux:link>
-        <flux:heading size="xl" level="1" class="mt-2">{{ __('Booking :reference', ['reference' => $booking->reference]) }}</flux:heading>
-    </div>
+<div>
+    <x-app.page-header
+        :title="$booking->vehicle->year.' '.$booking->vehicle->name"
+        :description="__('Booking :reference', ['reference' => $booking->reference])"
+        :back="route('owner.bookings.index')"
+        :back-label="__('Booking requests')"
+    />
 
-    <flux:error name="booking" />
+    <x-app.content width="5xl" class="space-y-6">
+        <flux:error name="booking" />
 
-    @if ($booking->status === BookingStatus::Requested)
-        <flux:card class="space-y-4">
-            <flux:heading size="lg">{{ __(':name wants to rent your :vehicle', ['name' => $booking->renter->name, 'vehicle' => $booking->vehicle->name]) }}</flux:heading>
-            @if ($booking->renter_notes)
-                <flux:text>&ldquo;{{ $booking->renter_notes }}&rdquo;</flux:text>
-            @endif
-            @if ($this->competingRequests > 0)
-                <flux:callout variant="warning" icon="exclamation-triangle">
-                    <flux:callout.text>{{ trans_choice('{1} Approving will decline :count other request for overlapping dates.|[2,*] Approving will decline :count other requests for overlapping dates.', $this->competingRequests, ['count' => $this->competingRequests]) }}</flux:callout.text>
-                </flux:callout>
-            @endif
-            <div class="flex gap-2">
-                <flux:button variant="primary" wire:click="approve" data-test="approve-booking">{{ __('Approve') }}</flux:button>
-                <flux:modal.trigger name="decline-booking">
-                    <flux:button variant="danger">{{ __('Decline') }}</flux:button>
-                </flux:modal.trigger>
-            </div>
-        </flux:card>
-    @endif
-
-    <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
-        <div class="space-y-6">
-            <x-booking.summary :booking="$booking" />
-
-            @if ($booking->contract)
-                <flux:card class="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <flux:heading>{{ __('Rental contract :number', ['number' => $booking->contract->contract_number]) }}</flux:heading>
-                        <flux:text class="mt-1">{{ $booking->contract->isSigned() ? __('Signed by the renter') : __('Waiting for the renter to sign') }}</flux:text>
-                    </div>
-                    <flux:button :href="route('bookings.contract', $booking)" target="_blank" icon="document-text">{{ __('View contract') }}</flux:button>
-                </flux:card>
-            @endif
-        </div>
-
-        <div class="space-y-6">
-            <flux:card class="space-y-2">
-                <flux:heading>{{ __('Renter') }}</flux:heading>
-                <flux:text>{{ $booking->renter->name }}</flux:text>
-                @if ($booking->renter->hasVerifiedIdentity())
-                    <flux:badge size="sm" color="green" icon="check-badge">{{ __('Two IDs verified') }}</flux:badge>
-                @else
-                    <flux:badge size="sm" color="zinc">{{ __('IDs not yet verified') }}</flux:badge>
+        @if ($booking->status === BookingStatus::Requested)
+            <flux:card class="space-y-4">
+                <flux:heading size="lg">{{ __(':name wants to rent your :vehicle', ['name' => $booking->renter->name, 'vehicle' => $booking->vehicle->name]) }}</flux:heading>
+                @if ($booking->renter_notes)
+                    <flux:text>&ldquo;{{ $booking->renter_notes }}&rdquo;</flux:text>
                 @endif
-                @if (in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::Ongoing], true))
-                    <flux:text>{{ $booking->renter->phone }}</flux:text>
+                @if ($this->competingRequests > 0)
+                    <flux:callout variant="warning" icon="exclamation-triangle">
+                        <flux:callout.text>{{ trans_choice('{1} Approving will decline :count other request for overlapping dates.|[2,*] Approving will decline :count other requests for overlapping dates.', $this->competingRequests, ['count' => $this->competingRequests]) }}</flux:callout.text>
+                    </flux:callout>
                 @endif
+                <div class="flex gap-2">
+                    <flux:button variant="primary" wire:click="approve" data-test="approve-booking">{{ __('Approve') }}</flux:button>
+                    <flux:modal.trigger name="decline-booking">
+                        <flux:button variant="danger">{{ __('Decline') }}</flux:button>
+                    </flux:modal.trigger>
+                </div>
             </flux:card>
+        @endif
 
-            <x-booking.timeline :booking="$booking" />
+        <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
+            <div class="space-y-6">
+                <x-booking.summary :booking="$booking" />
+
+                @if ($booking->contract)
+                    <flux:card class="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <flux:heading>{{ __('Rental contract :number', ['number' => $booking->contract->contract_number]) }}</flux:heading>
+                            <flux:text class="mt-1">{{ $booking->contract->isSigned() ? __('Signed by the renter') : __('Waiting for the renter to sign') }}</flux:text>
+                        </div>
+                        <flux:button :href="route('bookings.contract', $booking)" target="_blank" icon="document-text">{{ __('View contract') }}</flux:button>
+                    </flux:card>
+                @endif
+            </div>
+
+            <div class="space-y-6">
+                <flux:card class="space-y-2">
+                    <flux:heading>{{ __('Renter') }}</flux:heading>
+                    <flux:text>{{ $booking->renter->name }}</flux:text>
+                    @if ($booking->renter->hasVerifiedIdentity())
+                        <flux:badge size="sm" color="green" icon="check-badge">{{ __('Two IDs verified') }}</flux:badge>
+                    @else
+                        <flux:badge size="sm" color="zinc">{{ __('IDs not yet verified') }}</flux:badge>
+                    @endif
+                    @if (in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::Ongoing], true))
+                        <flux:text>{{ $booking->renter->phone }}</flux:text>
+                    @endif
+                </flux:card>
+
+                <x-booking.timeline :booking="$booking" />
+            </div>
         </div>
-    </div>
 
-    <flux:modal name="decline-booking" class="md:w-md">
-        <form wire:submit="decline" class="space-y-6">
-            <div>
-                <flux:heading size="lg">{{ __('Decline this request?') }}</flux:heading>
-                <flux:text class="mt-2">{{ __('The renter will see your reason.') }}</flux:text>
-            </div>
-            <flux:textarea wire:model="declineReason" :label="__('Reason')" rows="3" :placeholder="__('e.g. The vehicle is in for repairs that week.')" />
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                </flux:modal.close>
-                <flux:button type="submit" variant="danger">{{ __('Decline') }}</flux:button>
-            </div>
-        </form>
-    </flux:modal>
+        <flux:modal name="decline-booking" class="md:w-md">
+            <form wire:submit="decline" class="space-y-6">
+                <div>
+                    <flux:heading size="lg">{{ __('Decline this request?') }}</flux:heading>
+                    <flux:text class="mt-2">{{ __('The renter will see your reason.') }}</flux:text>
+                </div>
+                <flux:textarea wire:model="declineReason" :label="__('Reason')" rows="3" :placeholder="__('e.g. The vehicle is in for repairs that week.')" />
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="danger">{{ __('Decline') }}</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+    </x-app.content>
 </div>

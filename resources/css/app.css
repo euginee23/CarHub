@@ -22,11 +22,11 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    /* Drives Flux's `variant="primary"` buttons and every Flux focus ring. Pointing it
-       at the brand keeps light-mode surfaces (marketing + auth) on-palette; the .dark
-       block below flips it back to white for the authenticated application. */
+    /* Drives Flux's `variant="primary"` buttons, links, the current sidebar item, and
+       every focus ring. The whole product (marketing, auth, and the app) is light-only
+       and on the CarHub brand palette. */
     --color-accent: var(--color-brand-600);
-    --color-accent-content: var(--color-neutral-800);
+    --color-accent-content: var(--color-brand-700);
     --color-accent-foreground: var(--color-white);
 
     /* CarHub brand — electric blue primary */
@@ -47,14 +47,6 @@
     --color-spark-400: #38d6f5;
     --color-spark-500: #12bde0;
     --color-spark-600: #0797b8;
-}
-
-@layer theme {
-    .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
-    }
 }
 
 @layer base {

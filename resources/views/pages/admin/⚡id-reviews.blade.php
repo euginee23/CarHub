@@ -86,60 +86,61 @@ new #[Title('ID reviews')] class extends Component {
     }
 }; ?>
 
-<div class="space-y-6">
-    <div>
-        <flux:heading size="xl" level="1">{{ __('ID reviews') }}</flux:heading>
-        <flux:subheading size="lg" class="mt-2">{{ __('Check that each ID is genuine, readable, current, and matches the renter\'s name.') }}</flux:subheading>
-    </div>
+<div>
+    <x-app.page-header :title="__('ID reviews')" :description="__('Check that each ID is genuine, readable, current, and matches the renter\'s name.')" />
 
-    @if ($this->documents->isEmpty())
-        <flux:card>
-            <flux:text>{{ __('No IDs are waiting for review.') }}</flux:text>
-        </flux:card>
-    @else
-        <flux:table :paginate="$this->documents">
-            <flux:table.columns>
-                <flux:table.column>{{ __('Renter') }}</flux:table.column>
-                <flux:table.column>{{ __('ID type') }}</flux:table.column>
-                <flux:table.column>{{ __('Submitted') }}</flux:table.column>
-                <flux:table.column></flux:table.column>
-            </flux:table.columns>
-            <flux:table.rows>
-                @foreach ($this->documents as $document)
-                    <flux:table.row :key="$document->id">
-                        <flux:table.cell>
-                            <div class="font-medium text-zinc-900 dark:text-white">{{ $document->user->name }}</div>
-                            <div class="text-xs text-zinc-500">{{ $document->user->email }}</div>
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            <flux:link :href="route('documents.show', $document)" target="_blank">{{ $document->type->label() }}</flux:link>
-                        </flux:table.cell>
-                        <flux:table.cell>{{ $document->created_at->diffForHumans() }}</flux:table.cell>
-                        <flux:table.cell align="end">
-                            <div class="flex justify-end gap-2">
-                                <flux:button size="sm" variant="primary" wire:click="approve({{ $document->id }})">{{ __('Approve') }}</flux:button>
-                                <flux:button size="sm" variant="danger" wire:click="startRejecting({{ $document->id }})">{{ __('Reject') }}</flux:button>
-                            </div>
-                        </flux:table.cell>
-                    </flux:table.row>
-                @endforeach
-            </flux:table.rows>
-        </flux:table>
-    @endif
+    <x-app.content class="space-y-6">
+        @if ($this->documents->isEmpty())
+            <flux:card>
+                <flux:text>{{ __('No IDs are waiting for review.') }}</flux:text>
+            </flux:card>
+        @else
+            <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white px-4 sm:px-6">
+                <flux:table :paginate="$this->documents">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Renter') }}</flux:table.column>
+                        <flux:table.column>{{ __('ID type') }}</flux:table.column>
+                        <flux:table.column>{{ __('Submitted') }}</flux:table.column>
+                        <flux:table.column></flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->documents as $document)
+                            <flux:table.row :key="$document->id">
+                                <flux:table.cell>
+                                    <div class="font-medium text-zinc-900 dark:text-white">{{ $document->user->name }}</div>
+                                    <div class="text-xs text-zinc-500">{{ $document->user->email }}</div>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:link :href="route('documents.show', $document)" target="_blank">{{ $document->type->label() }}</flux:link>
+                                </flux:table.cell>
+                                <flux:table.cell>{{ $document->created_at->diffForHumans() }}</flux:table.cell>
+                                <flux:table.cell align="end">
+                                    <div class="flex justify-end gap-2">
+                                        <flux:button size="sm" variant="primary" wire:click="approve({{ $document->id }})">{{ __('Approve') }}</flux:button>
+                                        <flux:button size="sm" variant="danger" wire:click="startRejecting({{ $document->id }})">{{ __('Reject') }}</flux:button>
+                                    </div>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </div>
+        @endif
 
-    <flux:modal name="reject-id" class="md:w-md">
-        <form wire:submit="reject" class="space-y-6">
-            <div>
-                <flux:heading size="lg">{{ __('Reject ID') }}</flux:heading>
-                <flux:text class="mt-2">{{ __('Tell the renter what was wrong so they can upload a replacement.') }}</flux:text>
-            </div>
-            <flux:textarea wire:model="rejectionReason" :label="__('Reason')" rows="3" :placeholder="__('e.g. The photo is blurry, or the ID has expired.')" />
-            <div class="flex justify-end gap-2">
-                <flux:modal.close>
-                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
-                </flux:modal.close>
-                <flux:button type="submit" variant="danger">{{ __('Reject') }}</flux:button>
-            </div>
-        </form>
-    </flux:modal>
+        <flux:modal name="reject-id" class="md:w-md">
+            <form wire:submit="reject" class="space-y-6">
+                <div>
+                    <flux:heading size="lg">{{ __('Reject ID') }}</flux:heading>
+                    <flux:text class="mt-2">{{ __('Tell the renter what was wrong so they can upload a replacement.') }}</flux:text>
+                </div>
+                <flux:textarea wire:model="rejectionReason" :label="__('Reason')" rows="3" :placeholder="__('e.g. The photo is blurry, or the ID has expired.')" />
+                <div class="flex justify-end gap-2">
+                    <flux:modal.close>
+                        <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                    </flux:modal.close>
+                    <flux:button type="submit" variant="danger">{{ __('Reject') }}</flux:button>
+                </div>
+            </form>
+        </flux:modal>
+    </x-app.content>
 </div>

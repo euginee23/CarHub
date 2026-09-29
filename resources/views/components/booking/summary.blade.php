@@ -3,7 +3,7 @@
 
 <flux:card {{ $attributes->class('space-y-5') }}>
     <div class="flex items-start gap-4">
-        <x-marketing.vehicle-image :vehicle="$booking->vehicle" class="aspect-[4/3] !w-24 shrink-0 rounded-lg" />
+        <x-marketing.vehicle-image :vehicle="$booking->vehicle" :caption="false" class="aspect-[4/3] !w-24 shrink-0 rounded-lg" />
         <div class="min-w-0 flex-1">
             <flux:heading size="lg">{{ $booking->vehicle->year }} {{ $booking->vehicle->name }}</flux:heading>
             <flux:text class="mt-1">{{ $booking->pickup_location }}</flux:text>

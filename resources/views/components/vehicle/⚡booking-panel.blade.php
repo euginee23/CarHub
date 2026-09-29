@@ -244,29 +244,35 @@ new class extends Component {
         </div>
     @endif
 
-    @auth
-        @if ($this->isAvailable)
-            <flux:textarea wire:model="notes" :label="__('Message to the owner (optional)')" rows="2" class="mt-6" :placeholder="__('Where you are headed, who is driving…')" />
-        @endif
-    @endauth
+    @if (auth()->user()?->is_admin)
+        <p class="mt-6 rounded-xl bg-zinc-100 px-4 py-3 text-center text-sm text-zinc-600">
+            {{ __('You are signed in as an administrator. Admin accounts manage the marketplace and cannot book vehicles.') }}
+        </p>
+    @else
+        @auth
+            @if ($this->isAvailable)
+                <flux:textarea wire:model="notes" :label="__('Message to the owner (optional)')" rows="2" class="mt-6" :placeholder="__('Where you are headed, who is driving…')" />
+            @endif
+        @endauth
 
-    @error('schedule')
-        <p class="mt-3 text-sm text-red-600" role="alert">{{ $message }}</p>
-    @enderror
+        @error('schedule')
+            <p class="mt-3 text-sm text-red-600" role="alert">{{ $message }}</p>
+        @enderror
 
-    <button
-        type="button"
-        wire:click="requestBooking"
-        @disabled(auth()->check() && ! $this->isAvailable)
-        data-test="request-booking"
-        class="mt-6 block w-full rounded-xl bg-brand-600 px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-        @guest
-            {{ __('Sign in to book') }}
-        @else
-            {{ $vehicle->instant_book ? __('Book instantly') : __('Request to book') }}
-        @endguest
-    </button>
+        <button
+            type="button"
+            wire:click="requestBooking"
+            @disabled(auth()->check() && ! $this->isAvailable)
+            data-test="request-booking"
+            class="mt-6 block w-full rounded-xl bg-brand-600 px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+            @guest
+                {{ __('Sign in to book') }}
+            @else
+                {{ $vehicle->instant_book ? __('Book instantly') : __('Request to book') }}
+            @endguest
+        </button>
+    @endif
 
     <p class="mt-3 text-center text-xs text-zinc-500">
         {{ __('You will not be charged until the owner confirms.') }}

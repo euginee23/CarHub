@@ -91,55 +91,55 @@ new #[Title('Profile settings')] class extends Component {
     }
 }; ?>
 
-<section class="w-full">
-    @include('partials.settings-heading')
+<div>
+    <x-app.page-header :title="__('Account settings')" :description="__('Manage your profile, contact details, and sign-in security.')" />
 
-    <flux:heading class="sr-only">{{ __('Profile settings') }}</flux:heading>
+    <x-app.content width="3xl">
+        <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your personal and contact details')">
+            <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
+                <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
 
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your personal and contact details')">
-        <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
+                <div>
+                    <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
 
-            <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+                    @if ($this->hasUnverifiedEmail)
+                        <div>
+                            <flux:text class="mt-4">
+                                {{ __('Your email address is unverified.') }}
 
-                @if ($this->hasUnverifiedEmail)
-                    <div>
-                        <flux:text class="mt-4">
-                            {{ __('Your email address is unverified.') }}
-
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
-                                {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
-
-                        @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
-                                {{ __('A new verification link has been sent to your email address.') }}
+                                <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
+                                    {{ __('Click here to re-send the verification email.') }}
+                                </flux:link>
                             </flux:text>
-                        @endif
-                    </div>
-                @endif
-            </div>
 
-            <flux:input wire:model="phone" :label="__('Mobile number')" type="tel" autocomplete="tel" placeholder="09171234567" />
-
-            <flux:input wire:model="address" :label="__('Address')" type="text" autocomplete="street-address" />
-
-            <flux:input wire:model="birthdate" :label="__('Birthdate')" type="date" autocomplete="bday" />
-
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
-                        {{ __('Save') }}
-                    </flux:button>
+                            @if (session('status') === 'verification-link-sent')
+                                <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
+                                    {{ __('A new verification link has been sent to your email address.') }}
+                                </flux:text>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
-            </div>
-        </form>
+                <flux:input wire:model="phone" :label="__('Mobile number')" type="tel" autocomplete="tel" placeholder="09171234567" />
 
-        @if ($this->showDeleteUser)
-            <livewire:pages::settings.delete-user-form />
-        @endif
-    </x-pages::settings.layout>
-</section>
+                <flux:input wire:model="address" :label="__('Address')" type="text" autocomplete="street-address" />
+
+                <flux:input wire:model="birthdate" :label="__('Birthdate')" type="date" autocomplete="bday" />
+
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center justify-end">
+                        <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
+                            {{ __('Save') }}
+                        </flux:button>
+                    </div>
+
+                </div>
+            </form>
+
+            @if ($this->showDeleteUser)
+                <livewire:pages::settings.delete-user-form />
+            @endif
+        </x-pages::settings.layout>
+    </x-app.content>
+</div>

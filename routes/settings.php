@@ -9,9 +9,7 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::livewire('settings/appearance', 'pages::settings.appearance')->name('appearance.edit');
-
-    Route::livewire('settings/identity', 'pages::settings.identity')->name('identity.edit');
+    Route::livewire('settings/identity', 'pages::settings.identity')->middleware('marketplace')->name('identity.edit');
 
     Route::livewire('settings/security', 'pages::settings.security')
         ->middleware([

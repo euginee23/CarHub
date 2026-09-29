@@ -219,162 +219,166 @@ new #[Title('Vehicle listing')] class extends Component {
     }
 }; ?>
 
-<div class="mx-auto w-full max-w-4xl space-y-8">
-    <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-            <flux:heading size="xl" level="1">{{ $vehicle ? __('Edit :name', ['name' => $vehicle->name]) : __('List a vehicle') }}</flux:heading>
-            <flux:subheading size="lg" class="mt-2">{{ __('Describe the vehicle, set its rate, and pin where renters pick it up.') }}</flux:subheading>
-        </div>
-
+<div>
+    <x-app.page-header
+        :title="$vehicle ? __('Edit :name', ['name' => $vehicle->name]) : __('List a vehicle')"
+        :description="__('Describe the vehicle, set its rate, and pin where renters pick it up.')"
+        :back="route('owner.vehicles.index')"
+        :back-label="__('My vehicles')"
+    >
         @if ($vehicle?->isListed())
-            <flux:button :href="route('vehicles.show', $vehicle)" icon="arrow-top-right-on-square" target="_blank">{{ __('View listing') }}</flux:button>
+            <x-slot:actions>
+                <flux:button :href="route('vehicles.show', $vehicle)" icon="arrow-top-right-on-square" target="_blank">{{ __('View listing') }}</flux:button>
+            </x-slot:actions>
         @endif
-    </div>
+    </x-app.page-header>
 
-    @if (session('status'))
-        <flux:callout variant="success" icon="check-circle" :heading="session('status')" />
-    @endif
+    <x-app.content width="4xl" class="space-y-8">
+        @if (session('status'))
+            <flux:callout variant="success" icon="check-circle" :heading="session('status')" />
+        @endif
 
-    <form wire:submit="save" class="space-y-6">
-        <flux:card class="space-y-6">
-            <flux:heading size="lg">{{ __('Vehicle details') }}</flux:heading>
-
-            <div class="grid gap-6 sm:grid-cols-3">
-                <flux:input wire:model="form.brand" :label="__('Brand')" placeholder="Toyota" required />
-                <flux:input wire:model="form.model" :label="__('Model')" placeholder="Vios" required />
-                <flux:input wire:model="form.year" :label="__('Year')" type="number" required />
-            </div>
-
-            <div class="grid gap-6 sm:grid-cols-4">
-                <flux:select wire:model="form.type" :label="__('Body type')" :placeholder="__('Choose…')">
-                    @foreach (VehicleType::cases() as $option)
-                        <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:select wire:model="form.transmission" :label="__('Transmission')">
-                    @foreach (Transmission::cases() as $option)
-                        <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:select wire:model="form.fuel" :label="__('Fuel')">
-                    @foreach (FuelType::cases() as $option)
-                        <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-                <flux:input wire:model="form.seats" :label="__('Seats')" type="number" min="2" max="30" required />
-            </div>
-
-            <flux:textarea wire:model="form.description" :label="__('Description')" rows="4" :placeholder="__('Condition, what the vehicle is good for, anything renters should know.')" />
-
-            <flux:checkbox.group wire:model="form.features" :label="__('Features')" class="grid gap-3 sm:grid-cols-3">
-                @foreach ($this->featureOptions as $feature)
-                    <flux:checkbox wire:key="feature-{{ $loop->index }}" :value="$feature" :label="$feature" />
-                @endforeach
-            </flux:checkbox.group>
-        </flux:card>
-
-        <flux:card class="space-y-6">
-            <flux:heading size="lg">{{ __('Pricing & availability') }}</flux:heading>
-
-            <div class="grid gap-6 sm:grid-cols-2">
-                <flux:input wire:model="form.price_per_day" :label="__('Daily rate (₱)')" type="number" min="500" step="50" required />
-
-                <flux:select wire:model="form.status" :label="__('Listing status')">
-                    @foreach (VehicleStatus::cases() as $option)
-                        <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            </div>
-
-            <flux:switch wire:model="form.instant_book" :label="__('Instant book')" :description="__('Approve matching requests automatically instead of reviewing each one.')" />
-        </flux:card>
-
-        <flux:card class="space-y-6">
-            <flux:heading size="lg">{{ __('Pickup location') }}</flux:heading>
-
-            <flux:input wire:model="form.location" :label="__('Area or city')" placeholder="Cebu City" required />
-
-            <div
-                x-data="locationPicker({ latitude: @js($form->latitude), longitude: @js($form->longitude), latProperty: 'form.latitude', lngProperty: 'form.longitude' })"
-                class="space-y-3"
-            >
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <flux:text>{{ __('Click the map or drag the pin to set the exact pickup point.') }}</flux:text>
-                    <flux:button size="sm" icon="map-pin" x-on:click="useMyLocation()">{{ __('Use my location') }}</flux:button>
-                </div>
-
-                <div wire:ignore>
-                    <div x-ref="map" class="z-0 h-80 w-full rounded-lg border border-zinc-200 dark:border-zinc-700"></div>
-                </div>
-
-                <flux:text class="text-xs">
-                    @if ($form->latitude !== null && $form->longitude !== null)
-                        {{ __('Pinned at :lat, :lng', ['lat' => number_format($form->latitude, 5), 'lng' => number_format($form->longitude, 5)]) }}
-                    @else
-                        {{ __('No pin yet.') }}
-                    @endif
-                </flux:text>
-                <flux:error name="form.latitude" />
-            </div>
-        </flux:card>
-
-        <flux:card class="space-y-6">
-            <flux:heading size="lg">{{ __('Photos') }}</flux:heading>
-
-            @if ($this->photos->isNotEmpty())
-                <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                    @foreach ($this->photos as $photo)
-                        <div wire:key="photo-{{ $photo->id }}" class="space-y-2">
-                            <img src="{{ $photo->url() }}" alt="" class="aspect-[4/3] w-full rounded-lg object-cover" />
-                            <div class="flex justify-between gap-1">
-                                <flux:button size="xs" icon="arrow-left" wire:click="movePhoto({{ $photo->id }}, 'up')" :disabled="$loop->first" :aria-label="__('Move earlier')" />
-                                <flux:button size="xs" icon="trash" variant="danger" wire:click="deletePhoto({{ $photo->id }})" wire:confirm="{{ __('Delete this photo?') }}" :aria-label="__('Delete photo')" />
-                                <flux:button size="xs" icon="arrow-right" wire:click="movePhoto({{ $photo->id }}, 'down')" :disabled="$loop->last" :aria-label="__('Move later')" />
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
-            <flux:input type="file" wire:model="newPhotos" :label="__('Add photos')" :description="__('Up to 10 photos, 5 MB each. The first photo is the cover.')" accept="image/*" multiple />
-            <flux:error name="newPhotos.*" />
-        </flux:card>
-
-        <div class="flex justify-end gap-2">
-            <flux:button :href="route('owner.vehicles.index')" variant="ghost" wire:navigate>{{ __('Cancel') }}</flux:button>
-            <flux:button type="submit" variant="primary" data-test="save-vehicle">{{ __('Save vehicle') }}</flux:button>
-        </div>
-    </form>
-
-        @if ($vehicle)
+        <form wire:submit="save" class="space-y-6">
             <flux:card class="space-y-6">
-                <div>
-                    <flux:heading size="lg">{{ __('Unavailable dates') }}</flux:heading>
-                    <flux:text class="mt-1">{{ __('Block days you need the vehicle yourself or it is in the shop. Renters cannot book across them.') }}</flux:text>
+                <flux:heading size="lg">{{ __('Vehicle details') }}</flux:heading>
+
+                <div class="grid gap-6 sm:grid-cols-3">
+                    <flux:input wire:model="form.brand" :label="__('Brand')" placeholder="Toyota" required />
+                    <flux:input wire:model="form.model" :label="__('Model')" placeholder="Vios" required />
+                    <flux:input wire:model="form.year" :label="__('Year')" type="number" required />
                 </div>
 
-                @if ($this->blackouts->isNotEmpty())
-                    <ul class="divide-y divide-zinc-100 dark:divide-zinc-700">
-                        @foreach ($this->blackouts as $blackout)
-                            <li wire:key="blackout-{{ $blackout->id }}" class="flex items-center justify-between gap-4 py-2 text-sm">
-                                <span>
-                                    <span class="font-medium">{{ $blackout->starts_on->format('M j, Y') }} &ndash; {{ $blackout->ends_on->format('M j, Y') }}</span>
-                                    @if ($blackout->reason)
-                                        <span class="text-zinc-500">&middot; {{ $blackout->reason }}</span>
-                                    @endif
-                                </span>
-                                <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="deleteBlackout({{ $blackout->id }})" :aria-label="__('Remove blocked dates')" />
-                            </li>
+                <div class="grid gap-6 sm:grid-cols-4">
+                    <flux:select wire:model="form.type" :label="__('Body type')" :placeholder="__('Choose…')">
+                        @foreach (VehicleType::cases() as $option)
+                            <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
                         @endforeach
-                    </ul>
-                @endif
+                    </flux:select>
+                    <flux:select wire:model="form.transmission" :label="__('Transmission')">
+                        @foreach (Transmission::cases() as $option)
+                            <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <flux:select wire:model="form.fuel" :label="__('Fuel')">
+                        @foreach (FuelType::cases() as $option)
+                            <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <flux:input wire:model="form.seats" :label="__('Seats')" type="number" min="2" max="30" required />
+                </div>
 
-                <div class="grid items-end gap-4 sm:grid-cols-[1fr_1fr_2fr_auto]">
-                    <flux:input type="date" wire:model="blackoutStart" :label="__('From')" min="{{ now()->toDateString() }}" />
-                    <flux:input type="date" wire:model="blackoutEnd" :label="__('Until')" min="{{ now()->toDateString() }}" />
-                    <flux:input wire:model="blackoutReason" :label="__('Reason (optional)')" :placeholder="__('e.g. Maintenance')" />
-                    <flux:button wire:click="addBlackout">{{ __('Block dates') }}</flux:button>
+                <flux:textarea wire:model="form.description" :label="__('Description')" rows="4" :placeholder="__('Condition, what the vehicle is good for, anything renters should know.')" />
+
+                <flux:checkbox.group wire:model="form.features" :label="__('Features')" class="grid gap-3 sm:grid-cols-3">
+                    @foreach ($this->featureOptions as $feature)
+                        <flux:checkbox wire:key="feature-{{ $loop->index }}" :value="$feature" :label="$feature" />
+                    @endforeach
+                </flux:checkbox.group>
+            </flux:card>
+
+            <flux:card class="space-y-6">
+                <flux:heading size="lg">{{ __('Pricing & availability') }}</flux:heading>
+
+                <div class="grid gap-6 sm:grid-cols-2">
+                    <flux:input wire:model="form.price_per_day" :label="__('Daily rate (₱)')" type="number" min="500" step="50" required />
+
+                    <flux:select wire:model="form.status" :label="__('Listing status')">
+                        @foreach (VehicleStatus::cases() as $option)
+                            <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                </div>
+
+                <flux:switch wire:model="form.instant_book" :label="__('Instant book')" :description="__('Approve matching requests automatically instead of reviewing each one.')" />
+            </flux:card>
+
+            <flux:card class="space-y-6">
+                <flux:heading size="lg">{{ __('Pickup location') }}</flux:heading>
+
+                <flux:input wire:model="form.location" :label="__('Area or city')" placeholder="Cebu City" required />
+
+                <div
+                    x-data="locationPicker({ latitude: @js($form->latitude), longitude: @js($form->longitude), latProperty: 'form.latitude', lngProperty: 'form.longitude' })"
+                    class="space-y-3"
+                >
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <flux:text>{{ __('Click the map or drag the pin to set the exact pickup point.') }}</flux:text>
+                        <flux:button size="sm" icon="map-pin" x-on:click="useMyLocation()">{{ __('Use my location') }}</flux:button>
+                    </div>
+
+                    <div wire:ignore>
+                        <div x-ref="map" class="z-0 h-80 w-full rounded-lg border border-zinc-200 dark:border-zinc-700"></div>
+                    </div>
+
+                    <flux:text class="text-xs">
+                        @if ($form->latitude !== null && $form->longitude !== null)
+                            {{ __('Pinned at :lat, :lng', ['lat' => number_format($form->latitude, 5), 'lng' => number_format($form->longitude, 5)]) }}
+                        @else
+                            {{ __('No pin yet.') }}
+                        @endif
+                    </flux:text>
+                    <flux:error name="form.latitude" />
                 </div>
             </flux:card>
-        @endif
+
+            <flux:card class="space-y-6">
+                <flux:heading size="lg">{{ __('Photos') }}</flux:heading>
+
+                @if ($this->photos->isNotEmpty())
+                    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        @foreach ($this->photos as $photo)
+                            <div wire:key="photo-{{ $photo->id }}" class="space-y-2">
+                                <img src="{{ $photo->url() }}" alt="" class="aspect-[4/3] w-full rounded-lg object-cover" />
+                                <div class="flex justify-between gap-1">
+                                    <flux:button size="xs" icon="arrow-left" wire:click="movePhoto({{ $photo->id }}, 'up')" :disabled="$loop->first" :aria-label="__('Move earlier')" />
+                                    <flux:button size="xs" icon="trash" variant="danger" wire:click="deletePhoto({{ $photo->id }})" wire:confirm="{{ __('Delete this photo?') }}" :aria-label="__('Delete photo')" />
+                                    <flux:button size="xs" icon="arrow-right" wire:click="movePhoto({{ $photo->id }}, 'down')" :disabled="$loop->last" :aria-label="__('Move later')" />
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <flux:input type="file" wire:model="newPhotos" :label="__('Add photos')" :description="__('Up to 10 photos, 5 MB each. The first photo is the cover.')" accept="image/*" multiple />
+                <flux:error name="newPhotos.*" />
+            </flux:card>
+
+            <div class="flex justify-end gap-2">
+                <flux:button :href="route('owner.vehicles.index')" variant="ghost" wire:navigate>{{ __('Cancel') }}</flux:button>
+                <flux:button type="submit" variant="primary" data-test="save-vehicle">{{ __('Save vehicle') }}</flux:button>
+            </div>
+        </form>
+
+            @if ($vehicle)
+                <flux:card class="space-y-6">
+                    <div>
+                        <flux:heading size="lg">{{ __('Unavailable dates') }}</flux:heading>
+                        <flux:text class="mt-1">{{ __('Block days you need the vehicle yourself or it is in the shop. Renters cannot book across them.') }}</flux:text>
+                    </div>
+
+                    @if ($this->blackouts->isNotEmpty())
+                        <ul class="divide-y divide-zinc-100 dark:divide-zinc-700">
+                            @foreach ($this->blackouts as $blackout)
+                                <li wire:key="blackout-{{ $blackout->id }}" class="flex items-center justify-between gap-4 py-2 text-sm">
+                                    <span>
+                                        <span class="font-medium">{{ $blackout->starts_on->format('M j, Y') }} &ndash; {{ $blackout->ends_on->format('M j, Y') }}</span>
+                                        @if ($blackout->reason)
+                                            <span class="text-zinc-500">&middot; {{ $blackout->reason }}</span>
+                                        @endif
+                                    </span>
+                                    <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="deleteBlackout({{ $blackout->id }})" :aria-label="__('Remove blocked dates')" />
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+
+                    <div class="grid items-end gap-4 sm:grid-cols-[1fr_1fr_2fr_auto]">
+                        <flux:input type="date" wire:model="blackoutStart" :label="__('From')" min="{{ now()->toDateString() }}" />
+                        <flux:input type="date" wire:model="blackoutEnd" :label="__('Until')" min="{{ now()->toDateString() }}" />
+                        <flux:input wire:model="blackoutReason" :label="__('Reason (optional)')" :placeholder="__('e.g. Maintenance')" />
+                        <flux:button wire:click="addBlackout">{{ __('Block dates') }}</flux:button>
+                    </div>
+                </flux:card>
+            @endif
+    </x-app.content>
 </div>
