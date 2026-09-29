@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
+use App\Services\Matching\VehicleSimilarity;
 use Illuminate\View\View;
 
 class VehicleController extends Controller
@@ -10,23 +11,15 @@ class VehicleController extends Controller
     /**
      * Show a single listed vehicle.
      */
-    public function show(Vehicle $vehicle): View
+    public function show(Vehicle $vehicle, VehicleSimilarity $similarity): View
     {
         abort_unless($vehicle->isListed(), 404);
 
         $vehicle->load(['owner', 'photos']);
 
-        $similar = Vehicle::listed()
-            ->whereKeyNot($vehicle->getKey())
-            ->with('coverPhoto')
-            ->orderByRaw('case when type = ? then 1 else 0 end desc', [$vehicle->type->value])
-            ->orderByDesc('rating')
-            ->take(3)
-            ->get();
-
         return view('pages::marketing.vehicle', [
             'vehicle' => $vehicle,
-            'similar' => $similar,
+            'similar' => $similarity->similarTo($vehicle),
             'ownerTrips' => (int) $vehicle->owner->vehicles()->sum('trips_count'),
         ]);
     }

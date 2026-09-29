@@ -1,7 +1,4 @@
 @php
-    $minDate = now()->addDay()->toDateString();
-    $maxDate = now()->addDays(90)->toDateString();
-
     $specs = [
         ['label' => __('Body type'), 'value' => $vehicle->type->value],
         ['label' => __('Seats'), 'value' => $vehicle->seats],
@@ -135,6 +132,31 @@
                         </div>
                     </div>
 
+                    {{-- Availability --}}
+                    <div class="rounded-2xl border border-zinc-200 bg-white p-6">
+                        <h2 class="text-lg font-semibold text-zinc-900">{{ __('Availability') }}</h2>
+                        <p class="mt-1 text-sm text-zinc-600">{{ __('Pick your pickup and return days on the calendar.') }}</p>
+                        <div class="mt-5">
+                            <livewire:vehicle.availability-calendar :vehicle="$vehicle" />
+                        </div>
+                    </div>
+
+                    @if ($vehicle->latitude !== null && $vehicle->longitude !== null)
+                        {{-- Pickup area --}}
+                        <div class="rounded-2xl border border-zinc-200 bg-white p-6">
+                            <h2 class="text-lg font-semibold text-zinc-900">{{ __('Pickup area') }}</h2>
+                            <p class="mt-1 text-sm text-zinc-600">
+                                {{ __('Around :location. The exact pickup point is shared once your booking is confirmed.', ['location' => $vehicle->location]) }}
+                            </p>
+                            <div
+                                class="mt-5"
+                                x-data="pickupAreaMap({ latitude: {{ round($vehicle->latitude, 3) }}, longitude: {{ round($vehicle->longitude, 3) }} })"
+                            >
+                                <div x-ref="map" class="z-0 h-64 w-full overflow-hidden rounded-xl border border-zinc-200"></div>
+                            </div>
+                        </div>
+                    @endif
+
                     {{-- Requirements --}}
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6">
                         <h2 class="text-lg font-semibold text-zinc-900">{{ __('What you will need') }}</h2>
@@ -183,107 +205,8 @@
                 </div>
 
                 {{-- Booking panel --}}
-                <div
-                    id="book"
-                    class="mt-8 scroll-mt-24 lg:sticky lg:top-24 lg:mt-0"
-                    x-data="{
-                        rate: {{ $vehicle->price_per_day }},
-                        serviceFeeRate: 0.15,
-                        pickup: '',
-                        dropoff: '',
-                        get days() {
-                            if (! this.pickup || ! this.dropoff) return 0;
-                            const diff = (new Date(this.dropoff) - new Date(this.pickup)) / 86400000;
-                            return diff > 0 ? Math.round(diff) : 0;
-                        },
-                        get datesInvalid() {
-                            return !! this.pickup && !! this.dropoff && this.days === 0;
-                        },
-                        get subtotal() { return this.days * this.rate; },
-                        get serviceFee() { return Math.round(this.subtotal * this.serviceFeeRate); },
-                        get total() { return this.subtotal + this.serviceFee; },
-                        peso(amount) { return '₱' + amount.toLocaleString('en-PH'); },
-                    }"
-                >
-                    <div class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-lg shadow-zinc-900/5">
-                        <p class="flex items-baseline gap-1.5">
-                            <span class="text-3xl font-bold tracking-tight text-zinc-900">&#8369;{{ number_format($vehicle->price_per_day) }}</span>
-                            <span class="text-zinc-500">/ {{ __('day') }}</span>
-                        </p>
-
-                        <div class="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-zinc-300 bg-zinc-300">
-                            <label class="bg-white p-3">
-                                <span class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">{{ __('Pickup') }}</span>
-                                <input
-                                    type="date"
-                                    x-model="pickup"
-                                    min="{{ $minDate }}"
-                                    max="{{ $maxDate }}"
-                                    class="mt-1 w-full border-0 bg-transparent p-0 text-sm text-zinc-900 outline-hidden"
-                                />
-                            </label>
-                            <label class="bg-white p-3">
-                                <span class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">{{ __('Return') }}</span>
-                                <input
-                                    type="date"
-                                    x-model="dropoff"
-                                    x-bind:min="pickup || '{{ $minDate }}'"
-                                    max="{{ $maxDate }}"
-                                    class="mt-1 w-full border-0 bg-transparent p-0 text-sm text-zinc-900 outline-hidden"
-                                />
-                            </label>
-                        </div>
-
-                        {{-- Scheduling validation --}}
-                        <p x-show="datesInvalid" x-cloak class="mt-3 flex items-start gap-2 text-sm text-red-600">
-                            <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                <circle cx="12" cy="12" r="9" />
-                                <path stroke-linecap="round" d="M12 8v4.5m0 3h.01" />
-                            </svg>
-                            {{ __('The return date must be at least one day after pickup.') }}
-                        </p>
-
-                        <div x-show="days > 0" x-cloak class="mt-6 space-y-3 border-t border-zinc-100 pt-5 text-sm">
-                            <div class="flex items-center justify-between text-zinc-600">
-                                <span x-text="peso(rate) + ' × ' + days + (days === 1 ? ' {{ __('day') }}' : ' {{ __('days') }}')"></span>
-                                <span class="font-medium text-zinc-900" x-text="peso(subtotal)"></span>
-                            </div>
-                            <div class="flex items-center justify-between text-zinc-600">
-                                <span>{{ __('Service fee (15%)') }}</span>
-                                <span class="font-medium text-zinc-900" x-text="peso(serviceFee)"></span>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-zinc-100 pt-3 text-base font-semibold text-zinc-900">
-                                <span>{{ __('Total') }}</span>
-                                <span x-text="peso(total)"></span>
-                            </div>
-                        </div>
-
-                        <a
-                            href="{{ route('register') }}"
-                            class="mt-6 block rounded-xl bg-brand-600 px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
-                        >
-                            {{ $vehicle->instant_book ? __('Book instantly') : __('Request to book') }}
-                        </a>
-
-                        <p class="mt-3 text-center text-xs text-zinc-500">
-                            {{ __('You will not be charged until the owner confirms.') }}
-                        </p>
-
-                        <ul class="mt-6 space-y-2.5 border-t border-zinc-100 pt-5 text-sm text-zinc-600">
-                            @foreach ([
-                                __('Free cancellation up to 24 hours before pickup'),
-                                __('Third-party liability coverage included'),
-                                __('Roadside assistance on every trip'),
-                            ] as $assurance)
-                                <li class="flex items-start gap-2.5">
-                                    <svg class="mt-0.5 size-4 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                                    </svg>
-                                    {{ $assurance }}
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
+                <div id="book" class="mt-8 scroll-mt-24 lg:sticky lg:top-24 lg:mt-0">
+                    <livewire:vehicle.booking-panel :vehicle="$vehicle" />
                 </div>
             </div>
 
@@ -292,7 +215,7 @@
                 <div class="flex items-end justify-between gap-4">
                     <div>
                         <h2 class="text-2xl font-bold tracking-tight text-zinc-900">{{ __('You might also like') }}</h2>
-                        <p class="mt-2 text-sm text-zinc-600">{{ __('Matched on body type, rating, and price band.') }}</p>
+                        <p class="mt-2 text-sm text-zinc-600">{{ __('The closest listings by body type, size, price, and features.') }}</p>
                     </div>
                     <a href="{{ route('vehicles.index') }}" class="shrink-0 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700">
                         {{ __('See all') }} <span aria-hidden="true">&rarr;</span>

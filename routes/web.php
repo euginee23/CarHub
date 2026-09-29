@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'pages::marketing.home')->name('home');
 
 Route::livewire('vehicles', 'pages::marketing.browse')->name('vehicles.index');
+Route::livewire('compare', 'pages::marketing.compare')->name('vehicles.compare');
 Route::get('vehicles/{vehicle:slug}', [VehicleController::class, 'show'])->name('vehicles.show');
 
 Route::view('how-it-works', 'pages::marketing.how-it-works')->name('how-it-works');

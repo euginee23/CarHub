@@ -6,6 +6,8 @@ use App\Enums\FuelType;
 use App\Enums\Transmission;
 use App\Enums\VehicleStatus;
 use App\Enums\VehicleType;
+use App\Support\Geo;
+use Carbon\CarbonInterface;
 use Database\Factories\VehicleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,9 +46,12 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read string $name
+ * @property float|null $distance_km Set on search results that have an origin.
+ * @property float|null $similarity Set on content-based matches.
  * @property-read User $owner
  * @property-read Collection<int, VehiclePhoto> $photos
  * @property-read VehiclePhoto|null $coverPhoto
+ * @property-read Collection<int, VehicleBlackout> $blackouts
  */
 #[Fillable([
     'brand', 'model', 'year', 'type', 'transmission', 'fuel', 'seats', 'price_per_day',
@@ -154,6 +159,16 @@ class Vehicle extends Model
     }
 
     /**
+     * The date ranges the owner has blocked the vehicle for.
+     *
+     * @return HasMany<VehicleBlackout, $this>
+     */
+    public function blackouts(): HasMany
+    {
+        return $this->hasMany(VehicleBlackout::class)->orderBy('starts_on');
+    }
+
+    /**
      * Only vehicles that are publicly listed for rent.
      *
      * @param  Builder<Vehicle>  $query
@@ -197,6 +212,45 @@ class Vehicle extends Model
     public function scopeMaxPrice(Builder $query, int $price): void
     {
         $query->where('price_per_day', '<=', $price);
+    }
+
+    /**
+     * Only vehicles free for the whole of the given rental window.
+     *
+     * @param  Builder<Vehicle>  $query
+     */
+    public function scopeAvailableBetween(Builder $query, CarbonInterface $from, CarbonInterface $to): void
+    {
+        $query->whereNotIn(
+            $this->qualifyColumn('id'),
+            VehicleBlackout::query()->overlapping($from->toDateString(), $to->toDateString())->select('vehicle_id'),
+        );
+    }
+
+    /**
+     * Only pinned vehicles inside the box around a point. This is a cheap SQL
+     * pre-filter; use distanceFrom() for the exact radius check.
+     *
+     * @param  Builder<Vehicle>  $query
+     */
+    public function scopeNear(Builder $query, float $latitude, float $longitude, float $radiusKm): void
+    {
+        $box = Geo::boundingBox($latitude, $longitude, $radiusKm);
+
+        $query->whereBetween('latitude', [$box['minLat'], $box['maxLat']])
+            ->whereBetween('longitude', [$box['minLng'], $box['maxLng']]);
+    }
+
+    /**
+     * The straight-line distance from a point to the vehicle's pickup pin, in kilometres.
+     */
+    public function distanceFrom(float $latitude, float $longitude): ?float
+    {
+        if ($this->latitude === null || $this->longitude === null) {
+            return null;
+        }
+
+        return Geo::distanceInKm($latitude, $longitude, $this->latitude, $this->longitude);
     }
 
     /**

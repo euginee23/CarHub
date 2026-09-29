@@ -6,6 +6,7 @@ use App\Enums\VehicleStatus;
 use App\Enums\VehicleType;
 use App\Livewire\Forms\VehicleForm;
 use App\Models\Vehicle;
+use App\Models\VehicleBlackout;
 use App\Models\VehiclePhoto;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,12 @@ new #[Title('Vehicle listing')] class extends Component {
 
     /** @var array<int, \Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
     public array $newPhotos = [];
+
+    public string $blackoutStart = '';
+
+    public string $blackoutEnd = '';
+
+    public string $blackoutReason = '';
 
     /**
      * Load the listing being edited, or prepare a blank one.
@@ -53,6 +60,56 @@ new #[Title('Vehicle listing')] class extends Component {
     public function photos(): \Illuminate\Database\Eloquent\Collection
     {
         return $this->vehicle?->photos()->get() ?? new \Illuminate\Database\Eloquent\Collection;
+    }
+
+    /**
+     * The upcoming and current date ranges the owner has blocked.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, VehicleBlackout>
+     */
+    #[Computed]
+    public function blackouts(): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->vehicle?->blackouts()->whereDate('ends_on', '>=', today())->get()
+            ?? new \Illuminate\Database\Eloquent\Collection;
+    }
+
+    /**
+     * Block a date range so renters cannot book the vehicle for it.
+     */
+    public function addBlackout(): void
+    {
+        Gate::authorize('update', $this->vehicle);
+
+        $validated = $this->validate([
+            'blackoutStart' => ['required', 'date', 'after_or_equal:today'],
+            'blackoutEnd' => ['required', 'date', 'after_or_equal:blackoutStart'],
+            'blackoutReason' => ['nullable', 'string', 'max:100'],
+        ], attributes: [
+            'blackoutStart' => __('start date'),
+            'blackoutEnd' => __('end date'),
+        ]);
+
+        $this->vehicle->blackouts()->create([
+            'starts_on' => $validated['blackoutStart'],
+            'ends_on' => $validated['blackoutEnd'],
+            'reason' => filled($validated['blackoutReason']) ? $validated['blackoutReason'] : null,
+        ]);
+
+        $this->reset(['blackoutStart', 'blackoutEnd', 'blackoutReason']);
+        unset($this->blackouts);
+    }
+
+    /**
+     * Remove a blocked date range.
+     */
+    public function deleteBlackout(int $blackoutId): void
+    {
+        Gate::authorize('update', $this->vehicle);
+
+        $this->vehicle->blackouts()->whereKey($blackoutId)->delete();
+
+        unset($this->blackouts);
     }
 
     /**
@@ -288,4 +345,36 @@ new #[Title('Vehicle listing')] class extends Component {
             <flux:button type="submit" variant="primary" data-test="save-vehicle">{{ __('Save vehicle') }}</flux:button>
         </div>
     </form>
+
+        @if ($vehicle)
+            <flux:card class="space-y-6">
+                <div>
+                    <flux:heading size="lg">{{ __('Unavailable dates') }}</flux:heading>
+                    <flux:text class="mt-1">{{ __('Block days you need the vehicle yourself or it is in the shop. Renters cannot book across them.') }}</flux:text>
+                </div>
+
+                @if ($this->blackouts->isNotEmpty())
+                    <ul class="divide-y divide-zinc-100 dark:divide-zinc-700">
+                        @foreach ($this->blackouts as $blackout)
+                            <li wire:key="blackout-{{ $blackout->id }}" class="flex items-center justify-between gap-4 py-2 text-sm">
+                                <span>
+                                    <span class="font-medium">{{ $blackout->starts_on->format('M j, Y') }} &ndash; {{ $blackout->ends_on->format('M j, Y') }}</span>
+                                    @if ($blackout->reason)
+                                        <span class="text-zinc-500">&middot; {{ $blackout->reason }}</span>
+                                    @endif
+                                </span>
+                                <flux:button size="xs" variant="ghost" icon="x-mark" wire:click="deleteBlackout({{ $blackout->id }})" :aria-label="__('Remove blocked dates')" />
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                <div class="grid items-end gap-4 sm:grid-cols-[1fr_1fr_2fr_auto]">
+                    <flux:input type="date" wire:model="blackoutStart" :label="__('From')" min="{{ now()->toDateString() }}" />
+                    <flux:input type="date" wire:model="blackoutEnd" :label="__('Until')" min="{{ now()->toDateString() }}" />
+                    <flux:input wire:model="blackoutReason" :label="__('Reason (optional)')" :placeholder="__('e.g. Maintenance')" />
+                    <flux:button wire:click="addBlackout">{{ __('Block dates') }}</flux:button>
+                </div>
+            </flux:card>
+        @endif
 </div>

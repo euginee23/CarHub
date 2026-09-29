@@ -87,4 +87,86 @@ document.addEventListener('alpine:init', () => {
             this.map?.remove();
         },
     }));
+
+    /**
+     * Plots search results as price-tagged pins. Livewire re-sends the markers
+     * after every filter change through the `vehicle-markers` browser event.
+     */
+    window.Alpine.data('vehicleMap', ({ markers = [], origin = null } = {}) => ({
+        map: null,
+        layer: null,
+        originLayer: null,
+
+        init() {
+            this.map = createMap(this.$refs.map, DEFAULT_CENTER, 12);
+            this.layer = L.featureGroup().addTo(this.map);
+            this.render(markers, origin);
+        },
+
+        render(nextMarkers, nextOrigin) {
+            this.layer.clearLayers();
+            this.originLayer?.remove();
+            this.originLayer = null;
+
+            nextMarkers.forEach((marker) => {
+                const icon = L.divIcon({
+                    className: '',
+                    html: `<span class="inline-block -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full bg-brand-600 px-2.5 py-1 text-xs font-bold text-white shadow-md ring-2 ring-white">${escapeHtml(marker.price)}</span>`,
+                });
+
+                L.marker([marker.lat, marker.lng], { icon, title: marker.name })
+                    .bindPopup(`<a href="${encodeURI(marker.url)}" class="font-semibold">${escapeHtml(marker.name)}</a><br>${escapeHtml(marker.subtitle)}`)
+                    .addTo(this.layer);
+            });
+
+            if (nextOrigin) {
+                this.originLayer = L.circleMarker([nextOrigin.lat, nextOrigin.lng], {
+                    radius: 8, color: '#fff', weight: 3, fillColor: '#2442f5', fillOpacity: 1,
+                }).bindTooltip('You').addTo(this.map);
+            }
+
+            const bounds = this.layer.getBounds();
+
+            if (nextOrigin) {
+                bounds.extend([nextOrigin.lat, nextOrigin.lng]);
+            }
+
+            if (bounds.isValid()) {
+                this.map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+            }
+        },
+
+        destroy() {
+            this.map?.remove();
+        },
+    }));
+
+    /**
+     * Shows roughly where a vehicle is picked up. The exact pin is only shared
+     * with the renter once a booking is confirmed, so this draws a circle.
+     */
+    window.Alpine.data('pickupAreaMap', ({ latitude, longitude, radiusMeters = 600 }) => ({
+        map: null,
+
+        init() {
+            this.map = createMap(this.$refs.map, [latitude, longitude], 14);
+            this.map.scrollWheelZoom.disable();
+
+            L.circle([latitude, longitude], { radius: radiusMeters, color: '#2442f5', fillOpacity: 0.15 }).addTo(this.map);
+        },
+
+        destroy() {
+            this.map?.remove();
+        },
+    }));
 });
+
+/**
+ * Escape text for safe interpolation into popup HTML.
+ */
+function escapeHtml(value) {
+    const element = document.createElement('div');
+    element.textContent = String(value ?? '');
+
+    return element.innerHTML;
+}

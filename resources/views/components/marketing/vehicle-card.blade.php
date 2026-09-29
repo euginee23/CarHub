@@ -1,9 +1,11 @@
-@props(['vehicle'])
+{{-- `compare` adds a compare toggle that calls the surrounding Livewire component's
+     toggleCompare(): null hides it, otherwise 'on', 'off', or 'full'. --}}
+@props(['vehicle', 'compare' => null])
 
+<div {{ $attributes->class('relative') }}>
 <a
-    {{ $attributes }}
     href="{{ route('vehicles.show', $vehicle) }}"
-    class="group flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg hover:shadow-brand-900/5"
+    class="group flex h-full flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white transition duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg hover:shadow-brand-900/5"
 >
     <div class="relative overflow-hidden">
         <x-marketing.vehicle-image :vehicle="$vehicle" class="aspect-[16/10] transition duration-300 group-hover:scale-105" />
@@ -55,6 +57,9 @@
                 <circle cx="12" cy="10" r="2.5" />
             </svg>
             <span class="truncate">{{ $vehicle->location }}</span>
+            @if ($vehicle->distance_km !== null)
+                <span class="shrink-0 text-zinc-400">&middot; {{ __(':km km away', ['km' => number_format($vehicle->distance_km, 1)]) }}</span>
+            @endif
         </p>
 
         <div class="mt-auto flex items-baseline justify-between gap-2 border-t border-zinc-100 pt-4">
@@ -68,3 +73,29 @@
         </div>
     </div>
 </a>
+
+@if ($compare !== null)
+    <button
+        type="button"
+        wire:click="toggleCompare({{ $vehicle->id }})"
+        aria-pressed="{{ $compare === 'on' ? 'true' : 'false' }}"
+        @disabled($compare === 'full')
+        @class([
+            'absolute end-3 top-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shadow-sm backdrop-blur transition',
+            'bg-brand-600 text-white hover:bg-brand-700' => $compare === 'on',
+            'bg-white/95 text-zinc-800 hover:bg-white' => $compare === 'off',
+            'cursor-not-allowed bg-white/80 text-zinc-400' => $compare === 'full',
+        ])
+        @if ($compare === 'full') title="{{ __('You can compare up to :count vehicles.', ['count' => config('carhub.compare_limit')]) }}" @endif
+    >
+        <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            @if ($compare === 'on')
+                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+            @else
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+            @endif
+        </svg>
+        {{ $compare === 'on' ? __('Comparing') : __('Compare') }}
+    </button>
+@endif
+</div>
