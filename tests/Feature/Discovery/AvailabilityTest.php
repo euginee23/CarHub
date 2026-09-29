@@ -42,7 +42,7 @@ test('schedules are checked against the booking rules', function (string $pickup
 
     expect($errors)->toContain($message);
 })->with([
-    'too soon' => ['2026-10-01 12:00', '2026-10-03 12:00', 'Pickup must be at least 12 hours from now.'],
+    'too soon' => ['2026-10-01 09:00', '2026-10-03 09:00', 'Pickup must be at least 2 hours from now.'],
     'too far ahead' => ['2027-02-01 09:00', '2027-02-03 09:00', 'Bookings open up to 90 days ahead.'],
     'return before pickup' => ['2026-10-05 09:00', '2026-10-04 09:00', 'The return must be after pickup.'],
     'too short' => ['2026-10-05 09:00', '2026-10-05 18:00', 'The minimum rental is 24 hours.'],

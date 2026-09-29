@@ -2,6 +2,7 @@
 
 namespace App\Services\Availability;
 
+use App\Models\Booking;
 use App\Models\Vehicle;
 use App\Models\VehicleBlackout;
 use Carbon\CarbonImmutable;
@@ -42,16 +43,18 @@ class AvailabilityChecker
     }
 
     /**
-     * Determine whether the vehicle is listed and free for the whole rental window.
+     * Determine whether the vehicle is listed and free for the whole rental window,
+     * optionally disregarding one booking (the one being approved or re-checked).
      */
-    public function isAvailable(Vehicle $vehicle, CarbonInterface $pickup, CarbonInterface $return): bool
+    public function isAvailable(Vehicle $vehicle, CarbonInterface $pickup, CarbonInterface $return, ?int $ignoreBookingId = null): bool
     {
         return $vehicle->isListed()
-            && Vehicle::whereKey($vehicle->getKey())->availableBetween($pickup, $return)->exists();
+            && Vehicle::whereKey($vehicle->getKey())->availableBetween($pickup, $return, $ignoreBookingId)->exists();
     }
 
     /**
-     * Every calendar day between the two dates on which the vehicle cannot be rented.
+     * Every calendar day between the two dates on which the vehicle is blocked by
+     * the owner or held, even partly, by a booking.
      *
      * @return array<string, true> Keyed by Y-m-d date.
      */
@@ -72,6 +75,25 @@ class AvailabilityChecker
                     $dates[$day->toDateString()] = true;
                 }
             });
+
+        $vehicle->bookings()
+            ->holdingVehicle()
+            ->overlapping($from->startOfDay(), $to->endOfDay())
+            ->get(['pickup_at', 'return_at'])
+            ->each(function (Booking $booking) use (&$dates, $from, $to): void {
+                $lastDay = $booking->return_at->isStartOfDay() ? $booking->return_at->subDay() : $booking->return_at;
+
+                $period = CarbonPeriod::create(
+                    max($booking->pickup_at->toDateString(), $from->toDateString()),
+                    min($lastDay->toDateString(), $to->toDateString()),
+                );
+
+                foreach ($period as $day) {
+                    $dates[$day->toDateString()] = true;
+                }
+            });
+
+        ksort($dates);
 
         return $dates;
     }

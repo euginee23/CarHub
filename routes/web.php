@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\RentalContractController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,7 +34,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
 
+    Route::livewire('trips', 'pages::trips.index')->name('trips.index');
+    Route::livewire('trips/{booking}', 'pages::trips.show')->name('trips.show');
+    Route::livewire('trips/{booking}/checkout', 'pages::trips.checkout')->name('trips.checkout');
+    Route::get('bookings/{booking}/contract', [RentalContractController::class, 'show'])->name('bookings.contract');
+
     Route::livewire('owner/apply', 'pages::owner.apply')->name('owner.apply');
+
+    Route::middleware('can:list-vehicles')->prefix('owner/bookings')->name('owner.bookings.')->group(function () {
+        Route::livewire('/', 'pages::owner.bookings.index')->name('index');
+        Route::livewire('{booking}', 'pages::owner.bookings.show')->name('show');
+    });
 
     Route::middleware('can:list-vehicles')->prefix('owner/vehicles')->name('owner.vehicles.')->group(function () {
         Route::livewire('/', 'pages::owner.vehicles.index')->name('index');

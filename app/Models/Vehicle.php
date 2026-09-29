@@ -52,6 +52,7 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, VehiclePhoto> $photos
  * @property-read VehiclePhoto|null $coverPhoto
  * @property-read Collection<int, VehicleBlackout> $blackouts
+ * @property-read Collection<int, Booking> $bookings
  */
 #[Fillable([
     'brand', 'model', 'year', 'type', 'transmission', 'fuel', 'seats', 'price_per_day',
@@ -169,6 +170,16 @@ class Vehicle extends Model
     }
 
     /**
+     * Every booking made on the vehicle.
+     *
+     * @return HasMany<Booking, $this>
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
      * Only vehicles that are publicly listed for rent.
      *
      * @param  Builder<Vehicle>  $query
@@ -215,16 +226,26 @@ class Vehicle extends Model
     }
 
     /**
-     * Only vehicles free for the whole of the given rental window.
+     * Only vehicles free for the whole of the given rental window: no day of it is
+     * blocked by the owner, and no booking that holds the vehicle overlaps it.
      *
      * @param  Builder<Vehicle>  $query
      */
-    public function scopeAvailableBetween(Builder $query, CarbonInterface $from, CarbonInterface $to): void
+    public function scopeAvailableBetween(Builder $query, CarbonInterface $from, CarbonInterface $to, ?int $ignoreBookingId = null): void
     {
-        $query->whereNotIn(
-            $this->qualifyColumn('id'),
-            VehicleBlackout::query()->overlapping($from->toDateString(), $to->toDateString())->select('vehicle_id'),
-        );
+        $query
+            ->whereNotIn(
+                $this->qualifyColumn('id'),
+                VehicleBlackout::query()->overlapping($from->toDateString(), $to->toDateString())->select('vehicle_id'),
+            )
+            ->whereNotIn(
+                $this->qualifyColumn('id'),
+                Booking::query()
+                    ->holdingVehicle()
+                    ->overlapping($from, $to)
+                    ->when($ignoreBookingId, fn (Builder $query, int $id) => $query->whereKeyNot($id))
+                    ->select('vehicle_id'),
+            );
     }
 
     /**

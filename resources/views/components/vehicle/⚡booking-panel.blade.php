@@ -1,9 +1,13 @@
 <?php
 
+use App\Actions\Bookings\CreateBookingRequest;
+use App\Enums\BookingStatus;
 use App\Models\Vehicle;
 use App\Services\Availability\AvailabilityChecker;
 use App\Services\Pricing\RentalQuote;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
@@ -20,6 +24,8 @@ new class extends Component {
     public string $returnDate = '';
 
     public string $returnTime = '09:00';
+
+    public string $notes = '';
 
     /**
      * The requested rental window, once both dates and times parse.
@@ -97,6 +103,45 @@ new class extends Component {
         return collect(range(6 * 2, 21 * 2))
             ->map(fn (int $halfHour) => sprintf('%02d:%02d', intdiv($halfHour, 2), ($halfHour % 2) * 30))
             ->all();
+    }
+
+    /**
+     * Send the booking request. Guests are asked to sign in first and brought
+     * back to this vehicle afterwards.
+     */
+    public function requestBooking(CreateBookingRequest $createBookingRequest): void
+    {
+        $user = Auth::user();
+
+        if ($user === null) {
+            session()->put('url.intended', route('vehicles.show', $this->vehicle));
+
+            $this->redirectRoute('login');
+
+            return;
+        }
+
+        if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+            $this->redirectRoute('verification.notice');
+
+            return;
+        }
+
+        $this->validate(['notes' => ['nullable', 'string', 'max:500']]);
+
+        if (! $this->schedule) {
+            $this->addError('schedule', __('Choose your pickup and return dates first.'));
+
+            return;
+        }
+
+        $booking = $createBookingRequest->handle($user, $this->vehicle, $this->schedule['pickup'], $this->schedule['return'], filled($this->notes) ? $this->notes : null);
+
+        session()->flash('status', $booking->status === BookingStatus::Approved
+            ? __('Booked! The owner uses instant book, so you can go straight to checkout.')
+            : __('Request sent. The owner has been notified.'));
+
+        $this->redirectRoute('trips.show', $booking);
     }
 
     /**
@@ -199,22 +244,29 @@ new class extends Component {
         </div>
     @endif
 
-    @guest
-        <a
-            href="{{ route('register') }}"
-            class="mt-6 block rounded-xl bg-brand-600 px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
-        >
+    @auth
+        @if ($this->isAvailable)
+            <flux:textarea wire:model="notes" :label="__('Message to the owner (optional)')" rows="2" class="mt-6" :placeholder="__('Where you are headed, who is driving…')" />
+        @endif
+    @endauth
+
+    @error('schedule')
+        <p class="mt-3 text-sm text-red-600" role="alert">{{ $message }}</p>
+    @enderror
+
+    <button
+        type="button"
+        wire:click="requestBooking"
+        @disabled(auth()->check() && ! $this->isAvailable)
+        data-test="request-booking"
+        class="mt-6 block w-full rounded-xl bg-brand-600 px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+        @guest
+            {{ __('Sign in to book') }}
+        @else
             {{ $vehicle->instant_book ? __('Book instantly') : __('Request to book') }}
-        </a>
-    @else
-        <button
-            type="button"
-            disabled
-            class="mt-6 block w-full rounded-xl bg-brand-600 px-5 py-3.5 text-center text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition disabled:cursor-not-allowed disabled:opacity-60"
-        >
-            {{ $vehicle->instant_book ? __('Book instantly') : __('Request to book') }}
-        </button>
-    @endguest
+        @endguest
+    </button>
 
     <p class="mt-3 text-center text-xs text-zinc-500">
         {{ __('You will not be charged until the owner confirms.') }}

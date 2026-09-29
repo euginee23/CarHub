@@ -18,12 +18,18 @@
                     <flux:sidebar.item icon="magnifying-glass" :href="route('vehicles.index')">
                         {{ __('Browse vehicles') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="map" :href="route('trips.index')" :current="request()->routeIs('trips.*')" wire:navigate>
+                        {{ __('My trips') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
 
                 <flux:sidebar.group :heading="__('Owner')" class="grid">
                     @can('list-vehicles')
                         <flux:sidebar.item icon="truck" :href="route('owner.vehicles.index')" :current="request()->routeIs('owner.vehicles.*')" wire:navigate>
                             {{ __('My vehicles') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="inbox" :href="route('owner.bookings.index')" :current="request()->routeIs('owner.bookings.*')" wire:navigate>
+                            {{ __('Booking requests') }}
                         </flux:sidebar.item>
                     @else
                         <flux:sidebar.item icon="check-badge" :href="route('owner.apply')" :current="request()->routeIs('owner.apply')" wire:navigate>
@@ -36,6 +42,9 @@
                     <flux:sidebar.group :heading="__('Administration')" class="grid">
                         <flux:sidebar.item icon="identification" :href="route('admin.owner-applications')" :current="request()->routeIs('admin.owner-applications')" wire:navigate>
                             {{ __('Owner applications') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="shield-check" :href="route('admin.id-reviews')" :current="request()->routeIs('admin.id-reviews')" wire:navigate>
+                            {{ __('ID reviews') }}
                         </flux:sidebar.item>
                     </flux:sidebar.group>
                 @endcan

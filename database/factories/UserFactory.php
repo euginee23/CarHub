@@ -2,7 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\DocumentStatus;
+use App\Enums\DocumentType;
 use App\Models\User;
+use App\Models\VerificationDocument;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -72,5 +75,23 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'suspended_at' => now(),
         ]);
+    }
+
+    /**
+     * Indicate that the user has two approved government IDs, so they can rent.
+     */
+    public function withVerifiedIdentity(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            foreach ([DocumentType::DriversLicense, DocumentType::Passport] as $type) {
+                VerificationDocument::factory()->create([
+                    'documentable_type' => $user->getMorphClass(),
+                    'documentable_id' => $user->id,
+                    'user_id' => $user->id,
+                    'type' => $type,
+                    'status' => DocumentStatus::Approved,
+                ]);
+            }
+        });
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\DocumentStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -36,6 +38,9 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, Vehicle> $vehicles
  * @property-read Collection<int, OwnerApplication> $ownerApplications
  * @property-read OwnerApplication|null $latestOwnerApplication
+ * @property-read Collection<int, Booking> $bookings
+ * @property-read Collection<int, Booking> $ownerBookings
+ * @property-read Collection<int, VerificationDocument> $identityDocuments
  */
 #[Fillable(['name', 'email', 'phone', 'address', 'birthdate', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -43,6 +48,11 @@ class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * How many different government IDs a renter must have approved.
+     */
+    public const int REQUIRED_IDENTITY_DOCUMENTS = 2;
 
     /**
      * The model's default values for attributes.
@@ -98,6 +108,48 @@ class User extends Authenticatable
     public function latestOwnerApplication(): HasOne
     {
         return $this->hasOne(OwnerApplication::class)->latestOfMany();
+    }
+
+    /**
+     * The bookings this user has made as a renter.
+     *
+     * @return HasMany<Booking, $this>
+     */
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'renter_id');
+    }
+
+    /**
+     * The bookings made on this user's vehicles.
+     *
+     * @return HasMany<Booking, $this>
+     */
+    public function ownerBookings(): HasMany
+    {
+        return $this->hasMany(Booking::class, 'owner_id');
+    }
+
+    /**
+     * The government IDs this user has submitted to verify their identity as a renter.
+     *
+     * @return MorphMany<VerificationDocument, $this>
+     */
+    public function identityDocuments(): MorphMany
+    {
+        return $this->morphMany(VerificationDocument::class, 'documentable');
+    }
+
+    /**
+     * Whether an administrator has approved at least two different kinds of
+     * government ID for this user — the two-valid-ID requirement for renting.
+     */
+    public function hasVerifiedIdentity(): bool
+    {
+        return $this->identityDocuments()
+            ->where('status', DocumentStatus::Approved)
+            ->distinct()
+            ->count('type') >= self::REQUIRED_IDENTITY_DOCUMENTS;
     }
 
     /**

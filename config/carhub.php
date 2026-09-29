@@ -25,7 +25,7 @@ return [
     */
 
     'booking' => [
-        'min_lead_hours' => 12,
+        'min_lead_hours' => 2,
         'max_advance_days' => 90,
         'min_rental_hours' => 24,
         'max_rental_days' => 30,

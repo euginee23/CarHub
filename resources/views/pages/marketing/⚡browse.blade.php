@@ -95,7 +95,7 @@ class extends Component {
             ->when(Transmission::tryFrom($this->transmission), fn (Builder $query, Transmission $transmission) => $query->where('transmission', $transmission))
             ->when(filled($this->seats), fn (Builder $query) => $query->seatsAtLeast((int) $this->seats))
             ->when(filled($this->maxPrice), fn (Builder $query) => $query->maxPrice((int) $this->maxPrice))
-            ->when($trip, fn (Builder $query) => $query->availableBetween($trip['pickup'], $trip['return']))
+            ->when($trip, fn (Builder $query) => $query->availableBetween($trip['pickup'], $trip['return']->endOfDay()))
             ->when($origin && $this->radiusKm, fn (Builder $query) => $query->near($origin['lat'], $origin['lng'], (float) $this->radiusKm));
 
         match ($this->sort) {
