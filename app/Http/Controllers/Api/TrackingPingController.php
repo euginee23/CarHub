@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Actions\Tracking\RecordVehicleLocations;
 use App\Http\Controllers\Controller;
 use App\Models\GpsDevice;
+use App\Support\TrackerRequestLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Receives GPS fixes from a vehicle's tracker (e.g. an ESP32 with a GPS module).
@@ -33,25 +35,51 @@ class TrackingPingController extends Controller
      */
     public function __invoke(Request $request, RecordVehicleLocations $recordVehicleLocations): JsonResponse
     {
+        /** @var GpsDevice $device */
+        $device = $request->attributes->get('gpsDevice');
         $single = ! $request->has('pings');
 
-        $validated = $request->validate($single ? $this->pingRules('') : [
-            'pings' => ['required', 'array', 'min:1', 'max:100'],
-            ...$this->pingRules('pings.*.'),
-        ]);
+        try {
+            $validated = $request->validate($single ? $this->pingRules('') : [
+                'pings' => ['required', 'array', 'min:1', 'max:100'],
+                ...$this->pingRules('pings.*.'),
+            ]);
+        } catch (ValidationException $exception) {
+            $this->log($request, $device, 422, received: 0, stored: 0, error: $exception->validator->errors()->first());
+
+            throw $exception;
+        }
 
         $pings = $single ? [$validated] : $validated['pings'];
 
-        /** @var GpsDevice $device */
-        $device = $request->attributes->get('gpsDevice');
-
         $stored = $recordVehicleLocations->handle($device, $pings);
+
+        $this->log($request, $device, 202, received: count($pings), stored: $stored, latest: end($pings) ?: null);
 
         return response()->json([
             'received' => count($pings),
             'stored' => $stored,
             'tracking' => $stored > 0,
         ], 202);
+    }
+
+    /**
+     * Keep a short record of the request for the GPS test page.
+     *
+     * @param  array<string, mixed>|null  $latest
+     */
+    protected function log(Request $request, GpsDevice $device, int $status, int $received, int $stored, ?string $error = null, ?array $latest = null): void
+    {
+        TrackerRequestLog::record($device, [
+            'status' => $status,
+            'received' => $received,
+            'stored' => $stored,
+            'error' => $error,
+            'lat' => isset($latest['lat']) ? (float) $latest['lat'] : null,
+            'lng' => isset($latest['lng']) ? (float) $latest['lng'] : null,
+            'ip' => $request->ip(),
+            'agent' => $request->userAgent(),
+        ]);
     }
 
     /**

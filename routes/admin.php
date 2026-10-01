@@ -17,3 +17,8 @@ Route::middleware(['auth', 'verified', 'can:access-admin'])->prefix('admin')->na
     Route::livewire('bookings', 'pages::admin.bookings.index')->name('bookings.index');
     Route::livewire('bookings/{booking}', 'pages::admin.bookings.show')->name('bookings.show');
 });
+
+// GPS tracker test page; switched off by config('carhub.tracking.test_page').
+Route::livewire('test-track-gps-map', 'pages::admin.tracking-test')
+    ->middleware(['auth', 'verified', 'can:access-admin'])
+    ->name('tracking.test');

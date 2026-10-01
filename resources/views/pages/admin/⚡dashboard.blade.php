@@ -76,7 +76,13 @@ new #[Title('Admin overview')] class extends Component {
 }; ?>
 
 <div>
-    <x-dashboard.greeting :subtitle="__('The state of the CarHub marketplace today.')" />
+    <x-dashboard.greeting :subtitle="__('The state of the CarHub marketplace today.')">
+        @if (config('carhub.tracking.test_page'))
+            <x-slot:actions>
+                <flux:button :href="route('tracking.test')" icon="signal" wire:navigate>{{ __('GPS test page') }}</flux:button>
+            </x-slot:actions>
+        @endif
+    </x-dashboard.greeting>
 
     <x-app.content class="space-y-8">
         @if ($this->stats['pendingApplications'] + $this->stats['pendingIds'] > 0)

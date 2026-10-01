@@ -79,4 +79,19 @@ return [
         'late_grace_minutes' => 60,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tracking
+    |--------------------------------------------------------------------------
+    |
+    | `test_page` turns on the admin GPS test page at /test-track-gps-map, for
+    | pairing an ESP or phone with a vehicle and watching it on the map. It is
+    | on outside production unless TRACKING_TEST_PAGE says otherwise.
+    |
+    */
+
+    'tracking' => [
+        'test_page' => (bool) env('TRACKING_TEST_PAGE', env('APP_ENV') !== 'production'),
+    ],
+
 ];
