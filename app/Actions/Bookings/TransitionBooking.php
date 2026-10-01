@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
 use App\Notifications\BookingStatusUpdated;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -47,6 +48,16 @@ class TransitionBooking
             'changed_by' => $actor?->id,
             'note' => $note,
         ]);
+
+        ActivityLogger::record(
+            'booking.'.$to->value,
+            $from === null
+                ? __('Booking :reference requested.', ['reference' => $booking->reference])
+                : __('Booking :reference moved from :from to :to.', ['reference' => $booking->reference, 'from' => mb_strtolower($from->label()), 'to' => mb_strtolower($to->label())]),
+            $booking,
+            array_filter(['note' => $note]),
+            $actor,
+        );
     }
 
     /**

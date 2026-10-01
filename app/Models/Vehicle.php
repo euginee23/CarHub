@@ -39,6 +39,8 @@ use Illuminate\Support\Str;
  * @property float|null $latitude
  * @property float|null $longitude
  * @property VehicleStatus $status
+ * @property Carbon|null $moderated_at
+ * @property string|null $moderation_reason
  * @property bool $instant_book
  * @property bool $featured
  * @property float $rating
@@ -115,6 +117,7 @@ class Vehicle extends Model
             'latitude' => 'float',
             'longitude' => 'float',
             'status' => VehicleStatus::class,
+            'moderated_at' => 'datetime',
             'instant_book' => 'boolean',
             'featured' => 'boolean',
             'rating' => 'float',
@@ -204,13 +207,14 @@ class Vehicle extends Model
     }
 
     /**
-     * Only vehicles that are publicly listed for rent.
+     * Only vehicles that are publicly listed for rent by an owner in good standing.
      *
      * @param  Builder<Vehicle>  $query
      */
     public function scopeListed(Builder $query): void
     {
-        $query->where('status', VehicleStatus::Listed);
+        $query->where('status', VehicleStatus::Listed)
+            ->whereNotIn('owner_id', User::query()->whereNotNull('suspended_at')->select('id'));
     }
 
     /**
@@ -299,11 +303,19 @@ class Vehicle extends Model
     }
 
     /**
-     * Determine whether the vehicle is publicly listed.
+     * Determine whether the vehicle is publicly listed by an owner in good standing.
      */
     public function isListed(): bool
     {
-        return $this->status === VehicleStatus::Listed;
+        return $this->status === VehicleStatus::Listed && ! $this->owner->isSuspended();
+    }
+
+    /**
+     * Whether an administrator took the listing down and has not yet allowed it back.
+     */
+    public function isTakenDown(): bool
+    {
+        return $this->moderated_at !== null;
     }
 
     /**

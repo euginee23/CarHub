@@ -162,6 +162,12 @@ new #[Title('Vehicle listing')] class extends Component {
 
         $validated = $this->form->validate();
 
+        if ($this->vehicle?->isTakenDown() && $validated['status'] === VehicleStatus::Listed->value) {
+            $this->addError('form.status', __('An administrator took this listing down. It can be listed again once they allow it.'));
+
+            return;
+        }
+
         $this->validate([
             'newPhotos' => ['array', 'max:'.max(0, 10 - $this->photos->count())],
             'newPhotos.*' => ['image', 'max:5120'],
@@ -264,6 +270,13 @@ new #[Title('Vehicle listing')] class extends Component {
     <x-app.content width="4xl" class="space-y-8">
         @if (session('status'))
             <flux:callout variant="success" icon="check-circle" :heading="session('status')" />
+        @endif
+
+        @if ($vehicle?->isTakenDown())
+            <flux:callout variant="danger" icon="no-symbol" :heading="__('This listing was taken down by an administrator.')">
+                <flux:callout.text>{{ __('Reason: :reason', ['reason' => $vehicle->moderation_reason]) }}</flux:callout.text>
+                <flux:callout.text>{{ __('You can still edit it, but it stays off the marketplace until CarHub allows it back. Existing bookings are not affected.') }}</flux:callout.text>
+            </flux:callout>
         @endif
 
         <form wire:submit="save" class="space-y-6">

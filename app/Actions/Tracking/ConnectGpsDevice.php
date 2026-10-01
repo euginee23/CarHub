@@ -4,6 +4,7 @@ namespace App\Actions\Tracking;
 
 use App\Models\GpsDevice;
 use App\Models\Vehicle;
+use App\Support\ActivityLogger;
 
 class ConnectGpsDevice
 {
@@ -23,6 +24,12 @@ class ConnectGpsDevice
         $device->save();
 
         $vehicle->setRelation('gpsDevice', $device);
+
+        ActivityLogger::record(
+            $device->wasRecentlyCreated ? 'tracker.connected' : 'tracker.token_reissued',
+            __('GPS tracker :action for the :vehicle.', ['action' => $device->wasRecentlyCreated ? __('connected') : __('given a new token'), 'vehicle' => $vehicle->name]),
+            $vehicle,
+        );
 
         return $token;
     }

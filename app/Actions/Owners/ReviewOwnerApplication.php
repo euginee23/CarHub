@@ -7,6 +7,7 @@ use App\Enums\DocumentStatus;
 use App\Models\OwnerApplication;
 use App\Models\User;
 use App\Notifications\OwnerApplicationReviewed;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -55,6 +56,14 @@ class ReviewOwnerApplication
                 $application->user->forceFill(['owner_verified_at' => now()])->save();
             }
         });
+
+        ActivityLogger::record(
+            'owner_application.'.$decision->value,
+            __('Owner application from :name :decision.', ['name' => $application->user->name, 'decision' => mb_strtolower($decision->label())]),
+            $application,
+            array_filter(['reason' => $reason]),
+            $reviewer,
+        );
 
         $application->user->notify(new OwnerApplicationReviewed($application));
     }

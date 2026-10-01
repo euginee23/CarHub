@@ -30,6 +30,7 @@ use Illuminate\Support\Str;
  * @property UserRole $role
  * @property Carbon|null $owner_verified_at
  * @property Carbon|null $suspended_at
+ * @property string|null $suspension_reason
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at

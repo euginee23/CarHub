@@ -6,6 +6,7 @@ use App\Enums\DocumentType;
 use App\Models\OwnerApplication;
 use App\Models\User;
 use App\Models\VerificationDocument;
+use App\Support\ActivityLogger;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -42,6 +43,8 @@ class SubmitOwnerApplication
                     'original_name' => $document['file']->getClientOriginalName(),
                 ]);
             }
+
+            ActivityLogger::record('owner_application.submitted', __(':name applied to become a vehicle owner.', ['name' => $user->name]), $application, actor: $user);
 
             return $application;
         });

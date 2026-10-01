@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Review;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,6 +39,8 @@ class SubmitReview
             ])->save();
 
             $this->refreshRating($booking->vehicle);
+
+            ActivityLogger::record('review.submitted', __(':name rated the :vehicle :rating/5.', ['name' => $renter->name, 'vehicle' => $booking->vehicle->name, 'rating' => $rating]), $review, actor: $renter);
 
             return $review;
         });

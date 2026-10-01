@@ -6,6 +6,7 @@ use App\Enums\DocumentStatus;
 use App\Models\User;
 use App\Models\VerificationDocument;
 use App\Notifications\IdentityDocumentReviewed;
+use App\Support\ActivityLogger;
 use LogicException;
 
 class ReviewIdentityDocument
@@ -41,6 +42,14 @@ class ReviewIdentityDocument
             'reviewed_at' => now(),
             'rejection_reason' => $reason,
         ])->save();
+
+        ActivityLogger::record(
+            'identity_document.'.$decision->value,
+            __(':type from :name :decision.', ['type' => $document->type->label(), 'name' => $document->user->name, 'decision' => mb_strtolower($decision->label())]),
+            $document,
+            array_filter(['reason' => $reason]),
+            $reviewer,
+        );
 
         $document->user->notify(new IdentityDocumentReviewed($document));
     }

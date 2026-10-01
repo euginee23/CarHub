@@ -9,6 +9,7 @@ enum PaymentStatus: string
     case Failed = 'failed';
     case Expired = 'expired';
     case RefundDue = 'refund_due';
+    case Refunded = 'refunded';
 
     /**
      * The human-readable name of the status.
@@ -21,6 +22,7 @@ enum PaymentStatus: string
             self::Failed => __('Failed'),
             self::Expired => __('Expired'),
             self::RefundDue => __('Refund due'),
+            self::Refunded => __('Refunded'),
         };
     }
 
@@ -34,6 +36,7 @@ enum PaymentStatus: string
             self::Paid => 'green',
             self::Failed, self::Expired => 'red',
             self::RefundDue => 'orange',
+            self::Refunded => 'zinc',
         };
     }
 }

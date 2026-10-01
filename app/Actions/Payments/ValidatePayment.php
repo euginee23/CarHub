@@ -8,6 +8,7 @@ use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Services\Payments\CheckoutResult;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 
 class ValidatePayment
@@ -58,6 +59,8 @@ class ValidatePayment
                     'payload' => $result->raw,
                 ])->save();
 
+                ActivityLogger::record('payment.rejected', __('Payment :reference rejected: :reason', ['reference' => $payment->reference, 'reason' => $problem]), $payment);
+
                 return $payment;
             }
 
@@ -71,6 +74,14 @@ class ValidatePayment
                 'failure_reason' => $confirmable ? null : __('Paid after the booking was :status; the renter must be refunded.', ['status' => mb_strtolower($booking->status->label())]),
                 'payload' => $result->raw,
             ])->save();
+
+            ActivityLogger::record(
+                $confirmable ? 'payment.paid' : 'payment.refund_due',
+                $confirmable
+                    ? __('Payment :reference of ₱:amount received.', ['reference' => $payment->reference, 'amount' => number_format($payment->amountInPesos(), 2)])
+                    : __('Payment :reference arrived after the booking closed; refund due.', ['reference' => $payment->reference]),
+                $payment,
+            );
 
             if ($confirmable) {
                 $this->transitions->handle($booking, BookingStatus::Confirmed, note: __('Payment :reference of ₱:amount received via :method.', [

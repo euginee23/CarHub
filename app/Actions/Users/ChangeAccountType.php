@@ -4,6 +4,7 @@ namespace App\Actions\Users;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Support\ActivityLogger;
 use Illuminate\Validation\ValidationException;
 
 class ChangeAccountType
@@ -38,7 +39,15 @@ class ChangeAccountType
         }
 
         // A renter account never carries owner verification; a new owner starts unverified.
+        $previous = $user->role;
+
         $user->forceFill(['role' => $role, 'owner_verified_at' => null])->save();
+
+        ActivityLogger::record('user.account_type_changed', __(':name changed from :from to :to account.', [
+            'name' => $user->name,
+            'from' => mb_strtolower($previous->label()),
+            'to' => mb_strtolower($role->label()),
+        ]), $user, actor: $administrator);
 
         return $user;
     }
