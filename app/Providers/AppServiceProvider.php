@@ -2,13 +2,17 @@
 
 namespace App\Providers;
 
+use App\Contracts\PaymentGateway;
 use App\Models\User;
+use App\Services\Payments\PayMongoGateway;
+use App\Services\Payments\SimulatedGateway;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,7 +21,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(PaymentGateway::class, function (): PaymentGateway {
+            $driver = config('carhub.payments.driver');
+
+            if ($driver === 'simulated' && app()->isProduction()) {
+                throw new RuntimeException('The simulated payment gateway cannot be used in production.');
+            }
+
+            return match ($driver) {
+                'paymongo' => new PayMongoGateway(config('services.paymongo.secret_key'), config('services.paymongo.base_url')),
+                'simulated' => new SimulatedGateway,
+                default => throw new RuntimeException("Unknown payment driver [{$driver}]."),
+            };
+        });
     }
 
     /**

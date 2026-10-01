@@ -50,6 +50,8 @@
 
         <div class="ms-auto flex items-center gap-2">
             @auth
+                <livewire:notifications.bell />
+
                 {{-- Account menu: every area of the app the user can reach. --}}
                 <div x-data="{ menu: false }" x-on:keydown.escape.window="menu = false" class="relative hidden lg:block">
                     <button

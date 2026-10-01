@@ -27,7 +27,7 @@ class BookingRequested extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     /**
@@ -55,6 +55,13 @@ class BookingRequested extends Notification implements ShouldQueue
     public function toArray(object $notifiable): array
     {
         return [
+            'title' => __('New booking request'),
+            'body' => __(':renter wants to rent your :vehicle from :pickup.', [
+                'renter' => $this->booking->renter->name,
+                'vehicle' => $this->booking->vehicle->name,
+                'pickup' => $this->booking->pickup_at->format('M j, g:i A'),
+            ]),
+            'url' => route('owner.bookings.show', $this->booking),
             'booking' => $this->booking->reference,
         ];
     }

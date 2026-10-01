@@ -45,4 +45,23 @@ return [
 
     'compare_limit' => 3,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Payments
+    |--------------------------------------------------------------------------
+    |
+    | `driver` picks the payment gateway: "paymongo" charges through PayMongo
+    | (keys live in config/services.php), while "simulated" shows a local test
+    | checkout so the flow can be demoed without keys. Simulated payments are
+    | refused in production. Renters must pay within `window_hours` of signing
+    | the contract, or the booking expires and the vehicle is released.
+    |
+    */
+
+    'payments' => [
+        'driver' => env('PAYMENT_DRIVER', 'simulated'),
+        'methods' => ['gcash', 'maya', 'card', 'grab_pay'],
+        'window_hours' => 24,
+    ],
+
 ];

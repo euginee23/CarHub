@@ -28,7 +28,7 @@ class OwnerApplicationReviewed extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     /**
@@ -57,7 +57,14 @@ class OwnerApplicationReviewed extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
+        $approved = $this->application->status === ApplicationStatus::Approved;
+
         return [
+            'title' => $approved ? __('You are a verified owner') : __('Owner application not approved'),
+            'body' => $approved
+                ? __('You can now list vehicles for rent.')
+                : __('Reason: :reason', ['reason' => $this->application->rejection_reason]),
+            'url' => $approved ? route('owner.vehicles.index') : route('owner.apply'),
             'owner_application_id' => $this->application->id,
             'status' => $this->application->status->value,
         ];

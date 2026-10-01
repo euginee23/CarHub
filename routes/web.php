@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\Payments\PaymentReturnController;
+use App\Http\Controllers\Payments\PayMongoWebhookController;
+use App\Http\Controllers\Payments\SimulatedCheckoutController;
 use App\Http\Controllers\RentalContractController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +47,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::livewire('trips', 'pages::trips.index')->name('trips.index');
         Route::livewire('trips/{booking}', 'pages::trips.show')->name('trips.show');
         Route::livewire('trips/{booking}/checkout', 'pages::trips.checkout')->name('trips.checkout');
+
+        Route::get('payments/{payment}/return', PaymentReturnController::class)->name('payments.return');
+        Route::get('payments/{payment}/simulated', [SimulatedCheckoutController::class, 'show'])->middleware('signed')->name('payments.simulated.show');
+        Route::post('payments/{payment}/simulated', [SimulatedCheckoutController::class, 'complete'])->name('payments.simulated.complete');
     });
 
     // Owner accounts: verification, then listing vehicles and handling bookings.
@@ -66,6 +73,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Payment gateway webhooks (signature-verified, CSRF-exempt)
+|--------------------------------------------------------------------------
+*/
+
+Route::post('webhooks/paymongo', PayMongoWebhookController::class)->name('webhooks.paymongo');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/admin.php';

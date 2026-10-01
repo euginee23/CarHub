@@ -28,7 +28,7 @@ class IdentityDocumentReviewed extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     /**
@@ -59,7 +59,14 @@ class IdentityDocumentReviewed extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
+        $approved = $this->document->status === DocumentStatus::Approved;
+
         return [
+            'title' => $approved ? __('ID approved') : __('ID not accepted'),
+            'body' => $approved
+                ? __('Your :type has been verified.', ['type' => $this->document->type->label()])
+                : __('Your :type could not be verified: :reason', ['type' => $this->document->type->label(), 'reason' => $this->document->rejection_reason]),
+            'url' => route('identity.edit'),
             'document_id' => $this->document->id,
             'status' => $this->document->status->value,
         ];

@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAccountIsActive::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*',
+        ]);
+
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
         ]);

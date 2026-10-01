@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BookingStatus;
+use App\Enums\PaymentStatus;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -36,6 +37,7 @@ use Illuminate\Support\Str;
  * @property int|null $terms_version_id
  * @property Carbon|null $terms_accepted_at
  * @property string|null $terms_accepted_ip
+ * @property Carbon|null $payment_due_at
  * @property Carbon|null $cancelled_at
  * @property int|null $cancelled_by
  * @property string|null $cancellation_reason
@@ -47,6 +49,9 @@ use Illuminate\Support\Str;
  * @property-read TermsVersion|null $termsVersion
  * @property-read RentalContract|null $contract
  * @property-read Collection<int, BookingStatusChange> $statusChanges
+ * @property-read Collection<int, Payment> $payments
+ * @property-read Payment|null $latestPayment
+ * @property-read Payment|null $successfulPayment
  */
 #[Fillable([
     'pickup_at', 'return_at', 'pickup_location', 'daily_rate', 'days', 'subtotal', 'service_fee', 'total', 'renter_notes',
@@ -84,6 +89,7 @@ class Booking extends Model
             'status' => BookingStatus::class,
             'approved_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
+            'payment_due_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
     }
@@ -144,6 +150,44 @@ class Booking extends Model
     public function contract(): HasOne
     {
         return $this->hasOne(RentalContract::class);
+    }
+
+    /**
+     * Every payment attempt for the booking.
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * The most recent payment attempt.
+     *
+     * @return HasOne<Payment, $this>
+     */
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
+    }
+
+    /**
+     * The payment that confirmed the booking, if any.
+     *
+     * @return HasOne<Payment, $this>
+     */
+    public function successfulPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->ofMany(['paid_at' => 'max'], fn ($query) => $query->where('status', PaymentStatus::Paid));
+    }
+
+    /**
+     * The total owed for the booking, in centavos as payment gateways expect.
+     */
+    public function totalInCentavos(): int
+    {
+        return $this->total * 100;
     }
 
     /**

@@ -84,7 +84,7 @@ new #[Title('Booking')] class extends Component {
      */
     protected function loadRelations(): void
     {
-        $this->booking->refresh()->load(['vehicle.coverPhoto', 'renter', 'statusChanges.actor', 'contract']);
+        $this->booking->refresh()->load(['vehicle.coverPhoto', 'renter', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment']);
     }
 }; ?>
 
@@ -147,6 +147,8 @@ new #[Title('Booking')] class extends Component {
                         <flux:text>{{ $booking->renter->phone }}</flux:text>
                     @endif
                 </flux:card>
+
+                <x-booking.payment :booking="$booking" />
 
                 <x-booking.timeline :booking="$booking" />
             </div>

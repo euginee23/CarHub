@@ -23,7 +23,7 @@ new #[Title('Trip details')] class extends Component {
     {
         Gate::authorize('checkout', $booking);
 
-        $this->booking = $booking->load(['vehicle.coverPhoto', 'owner', 'statusChanges.actor', 'contract']);
+        $this->booking = $booking->load(['vehicle.coverPhoto', 'owner', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment']);
     }
 
     /**
@@ -82,6 +82,16 @@ new #[Title('Trip details')] class extends Component {
                     </x-slot>
                 </flux:callout>
                 @break
+            @case(BookingStatus::Confirmed)
+                <flux:callout variant="success" icon="check-badge" :heading="__('Your booking is confirmed')">
+                    <flux:callout.text>{{ __('Pick up the :vehicle on :date at the pin below. Bring the two IDs you verified.', ['vehicle' => $booking->vehicle->name, 'date' => $booking->pickup_at->format('D, M j, g:i A')]) }}</flux:callout.text>
+                </flux:callout>
+                @break
+            @case(BookingStatus::Expired)
+                <flux:callout variant="danger" icon="clock" :heading="__('This booking expired')">
+                    <flux:callout.text>{{ $booking->statusChanges->last()?->note }}</flux:callout.text>
+                </flux:callout>
+                @break
             @case(BookingStatus::Declined)
                 <flux:callout variant="danger" icon="x-circle" :heading="__('The owner declined this request')">
                     <flux:callout.text>{{ $booking->decline_reason }}</flux:callout.text>
@@ -92,6 +102,19 @@ new #[Title('Trip details')] class extends Component {
         <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
             <div class="space-y-6">
                 <x-booking.summary :booking="$booking" />
+
+                @if (in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::Ongoing], true) && $booking->vehicle->latitude !== null)
+                    <flux:card class="space-y-3">
+                        <flux:heading>{{ __('Pickup point') }}</flux:heading>
+                        <flux:text>{{ $booking->pickup_location }}</flux:text>
+                        <div wire:ignore x-data="pickupAreaMap({ latitude: {{ $booking->vehicle->latitude }}, longitude: {{ $booking->vehicle->longitude }}, exact: true })">
+                            <div x-ref="map" class="z-0 h-64 w-full overflow-hidden rounded-xl border border-zinc-200"></div>
+                        </div>
+                        <flux:link :href="'https://www.openstreetmap.org/?mlat='.$booking->vehicle->latitude.'&mlon='.$booking->vehicle->longitude.'#map=17/'.$booking->vehicle->latitude.'/'.$booking->vehicle->longitude" target="_blank" class="text-sm">
+                            {{ __('Open in maps') }}
+                        </flux:link>
+                    </flux:card>
+                @endif
 
                 @if ($booking->contract)
                     <flux:card class="flex flex-wrap items-center justify-between gap-4">
@@ -114,6 +137,8 @@ new #[Title('Trip details')] class extends Component {
                         <flux:text>{{ $booking->owner->phone }}</flux:text>
                     @endif
                 </flux:card>
+
+                <x-booking.payment :booking="$booking" />
 
                 <x-booking.timeline :booking="$booking" />
 

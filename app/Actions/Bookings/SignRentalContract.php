@@ -49,6 +49,15 @@ class SignRentalContract
             'renter_signed_ip' => $ipAddress,
         ])->save();
 
-        return $this->transitions->handle($booking, BookingStatus::AwaitingPayment, $renter, __('Rental contract :number signed.', ['number' => $contract->contract_number]));
+        // The vehicle is held while the renter pays, but not indefinitely.
+        $paymentDueAt = now()->addHours((int) config('carhub.payments.window_hours'))->min($booking->pickup_at);
+
+        return $this->transitions->handle(
+            $booking,
+            BookingStatus::AwaitingPayment,
+            $renter,
+            __('Rental contract :number signed.', ['number' => $contract->contract_number]),
+            ['payment_due_at' => $paymentDueAt],
+        );
     }
 }

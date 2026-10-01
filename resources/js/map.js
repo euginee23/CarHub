@@ -145,14 +145,19 @@ document.addEventListener('alpine:init', () => {
      * Shows roughly where a vehicle is picked up. The exact pin is only shared
      * with the renter once a booking is confirmed, so this draws a circle.
      */
-    window.Alpine.data('pickupAreaMap', ({ latitude, longitude, radiusMeters = 600 }) => ({
+    window.Alpine.data('pickupAreaMap', ({ latitude, longitude, radiusMeters = 600, exact = false }) => ({
         map: null,
 
         init() {
-            this.map = createMap(this.$refs.map, [latitude, longitude], 14);
+            this.map = createMap(this.$refs.map, [latitude, longitude], exact ? 16 : 14);
             this.map.scrollWheelZoom.disable();
 
-            L.circle([latitude, longitude], { radius: radiusMeters, color: '#2442f5', fillOpacity: 0.15 }).addTo(this.map);
+            // Confirmed renters get the exact pin; everyone else sees a rough circle.
+            if (exact) {
+                L.marker([latitude, longitude]).addTo(this.map);
+            } else {
+                L.circle([latitude, longitude], { radius: radiusMeters, color: '#2442f5', fillOpacity: 0.15 }).addTo(this.map);
+            }
         },
 
         destroy() {

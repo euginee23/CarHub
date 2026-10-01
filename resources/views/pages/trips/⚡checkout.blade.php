@@ -3,13 +3,16 @@
 use App\Actions\Bookings\AcceptRentalTerms;
 use App\Actions\Bookings\GenerateRentalContract;
 use App\Actions\Bookings\SignRentalContract;
+use App\Actions\Payments\StartPayment;
 use App\Enums\BookingStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Booking;
 use App\Models\RentalContract;
 use App\Models\TermsVersion;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
@@ -26,6 +29,8 @@ new #[Title('Checkout')] class extends Component {
 
     public bool $agreeToContract = false;
 
+    public string $paymentMethod = 'gcash';
+
     /**
      * Load the renter's booking, sending them back to the trip if checkout is over.
      */
@@ -39,7 +44,7 @@ new #[Title('Checkout')] class extends Component {
             return;
         }
 
-        $this->booking = $booking->load(['vehicle.coverPhoto', 'termsVersion', 'contract']);
+        $this->booking = $booking->load(['vehicle.coverPhoto', 'termsVersion', 'contract', 'latestPayment']);
     }
 
     /**
@@ -156,6 +161,31 @@ new #[Title('Checkout')] class extends Component {
     }
 
     /**
+     * The payment methods renters can choose from.
+     *
+     * @return array<int, PaymentMethod>
+     */
+    #[Computed]
+    public function paymentMethods(): array
+    {
+        return array_map(fn (string $method) => PaymentMethod::from($method), config('carhub.payments.methods'));
+    }
+
+    /**
+     * Open the gateway's hosted checkout for the booking total.
+     */
+    public function pay(StartPayment $startPayment): void
+    {
+        Gate::authorize('checkout', $this->booking);
+
+        $this->validate(['paymentMethod' => ['required', Rule::in(config('carhub.payments.methods'))]]);
+
+        $payment = $startPayment->handle($this->booking, PaymentMethod::from($this->paymentMethod));
+
+        $this->redirect($payment->checkout_url);
+    }
+
+    /**
      * Re-evaluate the steps after the renter's IDs change.
      */
     #[On('identity-documents-updated')]
@@ -253,8 +283,47 @@ new #[Title('Checkout')] class extends Component {
                 <flux:card class="space-y-4">
                     <flux:heading size="lg">{{ __('4. Payment') }}</flux:heading>
                     @if ($booking->status === BookingStatus::AwaitingPayment)
-                        <flux:text>{{ __('Your contract is signed and the vehicle is held for you. Pay the total to confirm the booking.') }}</flux:text>
-                        <flux:button variant="primary" disabled>{{ __('Pay ₱:amount', ['amount' => number_format($booking->total)]) }}</flux:button>
+                        <flux:text>
+                            {{ __('Your contract is signed and the vehicle is held for you until :deadline. Pay the total to confirm the booking.', ['deadline' => $booking->payment_due_at?->format('M j, g:i A') ?? '—']) }}
+                        </flux:text>
+
+                        @if ($booking->latestPayment && in_array($booking->latestPayment->status, [\App\Enums\PaymentStatus::Failed, \App\Enums\PaymentStatus::Expired], true))
+                            <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('Your last payment attempt did not go through.')">
+                                @if ($booking->latestPayment->failure_reason)
+                                    <flux:callout.text>{{ $booking->latestPayment->failure_reason }}</flux:callout.text>
+                                @endif
+                            </flux:callout>
+                        @endif
+
+                        <form wire:submit="pay" class="space-y-4">
+                            <flux:radio.group wire:model="paymentMethod" :label="__('Payment method')">
+                                @foreach ($this->paymentMethods as $method)
+                                    <flux:radio :value="$method->value" :label="$method->label()" />
+                                @endforeach
+                            </flux:radio.group>
+
+                            <div class="space-y-1 rounded-xl bg-zinc-50 p-4 text-sm">
+                                <div class="flex justify-between text-zinc-600">
+                                    <span>{{ __('Rental') }}</span>
+                                    <span>&#8369;{{ number_format($booking->subtotal) }}</span>
+                                </div>
+                                <div class="flex justify-between text-zinc-600">
+                                    <span>{{ __('Service fee') }}</span>
+                                    <span>&#8369;{{ number_format($booking->service_fee) }}</span>
+                                </div>
+                                <div class="flex justify-between border-t border-zinc-200 pt-2 font-semibold text-zinc-900">
+                                    <span>{{ __('Total due now') }}</span>
+                                    <span>&#8369;{{ number_format($booking->total) }}</span>
+                                </div>
+                            </div>
+
+                            <flux:error name="payment" />
+
+                            <flux:button type="submit" variant="primary" data-test="pay-now">
+                                {{ __('Pay ₱:amount', ['amount' => number_format($booking->total)]) }}
+                            </flux:button>
+                            <flux:text class="text-xs">{{ __('You will be taken to our secure payment partner to finish paying.') }}</flux:text>
+                        </form>
                     @else
                         <flux:text>{{ __('Payment opens after you sign the contract.') }}</flux:text>
                     @endif
