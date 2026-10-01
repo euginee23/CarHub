@@ -12,7 +12,7 @@ class VerificationDocumentPolicy
      */
     public function view(User $user, VerificationDocument $document): bool
     {
-        return $user->is_admin || $document->user_id === $user->id;
+        return $user->isAdmin() || $document->user_id === $user->id;
     }
 
     /**
@@ -20,6 +20,6 @@ class VerificationDocumentPolicy
      */
     public function review(User $user, VerificationDocument $document): bool
     {
-        return $user->is_admin;
+        return $user->isAdmin();
     }
 }

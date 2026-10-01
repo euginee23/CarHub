@@ -37,14 +37,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::get('bookings/{booking}/contract', [RentalContractController::class, 'show'])->name('bookings.contract');
 
-    // Renting and hosting: marketplace members only, never administrators.
-    Route::middleware('marketplace')->group(function () {
+    // Renter accounts: finding, booking, and taking trips.
+    Route::middleware('role:renter')->group(function () {
         Route::livewire('renter', 'pages::renter.dashboard')->name('renter.dashboard');
 
         Route::livewire('trips', 'pages::trips.index')->name('trips.index');
         Route::livewire('trips/{booking}', 'pages::trips.show')->name('trips.show');
         Route::livewire('trips/{booking}/checkout', 'pages::trips.checkout')->name('trips.checkout');
+    });
 
+    // Owner accounts: verification, then listing vehicles and handling bookings.
+    Route::middleware('role:owner')->group(function () {
         Route::livewire('owner/apply', 'pages::owner.apply')->name('owner.apply');
 
         Route::middleware('can:list-vehicles')->group(function () {

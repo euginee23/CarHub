@@ -19,8 +19,8 @@ class SubmitOwnerApplication
      */
     public function handle(User $user, array $documents, ?string $notes = null): OwnerApplication
     {
-        if ($user->is_admin) {
-            throw new LogicException('Administrators cannot apply to become owners.');
+        if (! $user->isOwner()) {
+            throw new LogicException('Only owner accounts can apply for owner verification.');
         }
 
         if ($user->isVerifiedOwner()) {

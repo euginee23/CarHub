@@ -244,9 +244,13 @@ new class extends Component {
         </div>
     @endif
 
-    @if (auth()->user()?->is_admin)
+    @if (auth()->check() && ! auth()->user()->isRenter())
         <p class="mt-6 rounded-xl bg-zinc-100 px-4 py-3 text-center text-sm text-zinc-600">
-            {{ __('You are signed in as an administrator. Admin accounts manage the marketplace and cannot book vehicles.') }}
+            @if (auth()->user()->isAdmin())
+                {{ __('You are signed in as an administrator. Admin accounts manage the marketplace and cannot book vehicles.') }}
+            @else
+                {{ __('You are signed in with an owner account. Owner accounts list vehicles; renting needs a separate renter account.') }}
+            @endif
         </p>
     @else
         @auth

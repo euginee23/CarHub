@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\DocumentStatus;
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -26,7 +27,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $birthdate
  * @property Carbon|null $email_verified_at
  * @property string $password
- * @property bool $is_admin
+ * @property UserRole $role
  * @property Carbon|null $owner_verified_at
  * @property Carbon|null $suspended_at
  * @property string|null $two_factor_secret
@@ -60,7 +61,7 @@ class User extends Authenticatable
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'is_admin' => false,
+        'role' => 'renter',
     ];
 
     /**
@@ -74,7 +75,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'birthdate' => 'date',
             'password' => 'hashed',
-            'is_admin' => 'boolean',
+            'role' => UserRole::class,
             'owner_verified_at' => 'datetime',
             'suspended_at' => 'datetime',
         ];
@@ -153,11 +154,35 @@ class User extends Authenticatable
     }
 
     /**
-     * Determine whether the user has been verified to list vehicles.
+     * Whether this is an administrator account, which runs the platform.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
+    }
+
+    /**
+     * Whether this is an owner account, which lists vehicles.
+     */
+    public function isOwner(): bool
+    {
+        return $this->role === UserRole::Owner;
+    }
+
+    /**
+     * Whether this is a renter account, which books vehicles.
+     */
+    public function isRenter(): bool
+    {
+        return $this->role === UserRole::Renter;
+    }
+
+    /**
+     * Determine whether the user is an owner who has been verified to list vehicles.
      */
     public function isVerifiedOwner(): bool
     {
-        return $this->owner_verified_at !== null;
+        return $this->isOwner() && $this->owner_verified_at !== null;
     }
 
     /**

@@ -163,11 +163,7 @@ new #[Title('Admin overview')] class extends Component {
                                     <p class="truncate font-medium text-zinc-900">{{ $member->name }}</p>
                                     <p class="text-xs text-zinc-500">{{ $member->created_at?->diffForHumans() }}</p>
                                 </div>
-                                @if ($member->is_admin)
-                                    <flux:badge size="sm" color="zinc">{{ __('Admin') }}</flux:badge>
-                                @elseif ($member->isVerifiedOwner())
-                                    <flux:badge size="sm" color="blue">{{ __('Owner') }}</flux:badge>
-                                @endif
+                                <flux:badge size="sm" :color="match (true) { $member->isAdmin() => 'zinc', $member->isOwner() => 'green', default => 'blue' }">{{ $member->role->label() }}</flux:badge>
                             </li>
                         @endforeach
                     </ul>

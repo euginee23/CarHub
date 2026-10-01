@@ -13,7 +13,7 @@ use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
-new #[Title('Become a vehicle owner')] class extends Component {
+new #[Title('Owner verification')] class extends Component {
     use WithFileUploads;
 
     public string $governmentIdType = 'national_id';
@@ -95,7 +95,7 @@ new #[Title('Become a vehicle owner')] class extends Component {
 
 <div>
     <x-app.page-header
-        :title="__('Become a vehicle owner')"
+        :title="__('Owner verification')"
         :description="__('Every owner on CarHub is verified before their first listing goes live. Upload your documents and an administrator will review them.')"
     />
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Laravel\Fortify\Features;
 
@@ -18,6 +19,7 @@ test('new users can register', function () {
         'name' => 'John Doe',
         'email' => 'test@example.com',
         'phone' => '09171234567',
+        'account_type' => 'renter',
         'password' => 'password',
         'password_confirmation' => 'password',
     ]);
@@ -33,6 +35,7 @@ test('registration stores the mobile number', function () {
         'name' => 'John Doe',
         'email' => 'test@example.com',
         'phone' => '+639171234567',
+        'account_type' => 'renter',
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertSessionHasNoErrors();
@@ -45,6 +48,7 @@ test('registration requires a valid philippine mobile number', function (?string
         'name' => 'John Doe',
         'email' => 'test@example.com',
         'phone' => $phone,
+        'account_type' => 'renter',
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertSessionHasErrors('phone');
@@ -67,4 +71,46 @@ test('users registering to list a vehicle are sent to the owner application', fu
     ])->assertRedirect(route('owner.apply'));
 
     $this->assertAuthenticated();
+
+    expect(User::firstWhere('email', 'owner@example.com')->role)->toBe(UserRole::Owner);
+});
+
+test('renters are registered as renter accounts', function () {
+    $this->post(route('register.store'), [
+        'name' => 'Ana Renter',
+        'email' => 'renter@example.com',
+        'phone' => '09171234567',
+        'account_type' => 'renter',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertSessionHasNoErrors();
+
+    expect(User::firstWhere('email', 'renter@example.com')->role)->toBe(UserRole::Renter);
+});
+
+test('an account type must be chosen and cannot be admin', function (?string $accountType) {
+    $this->post(route('register.store'), [
+        'name' => 'Sneaky',
+        'email' => 'sneaky@example.com',
+        'phone' => '09171234567',
+        'account_type' => $accountType,
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertSessionHasErrors('account_type');
+
+    $this->assertGuest();
+})->with(['missing' => null, 'admin' => 'admin']);
+
+test('the list your vehicle links open owner sign-up', function () {
+    $this->get(route('home'))->assertSee(route('register', ['as' => 'owner']), escape: false);
+
+    $this->get(route('register', ['as' => 'owner']))
+        ->assertOk()
+        ->assertSee('Create your owner account')
+        ->assertSee('value="owner"'."\n".'                                checked', escape: false);
+
+    $this->get(route('register'))
+        ->assertOk()
+        ->assertSee('Create your account')
+        ->assertDontSee('Create your owner account');
 });

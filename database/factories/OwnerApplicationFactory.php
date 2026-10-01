@@ -20,7 +20,7 @@ class OwnerApplicationFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
+            'user_id' => User::factory()->owner(),
             'status' => ApplicationStatus::Pending,
             'notes' => fake()->optional()->sentence(),
         ];

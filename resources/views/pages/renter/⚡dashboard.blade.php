@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\ApplicationStatus;
 use App\Enums\BookingStatus;
 use App\Enums\DocumentStatus;
 use App\Models\Booking;
@@ -187,18 +186,6 @@ new #[Title('Overview')] class extends Component {
                         <flux:button size="sm" class="mt-3" :href="route('identity.edit')" wire:navigate>{{ __('Manage IDs') }}</flux:button>
                     @endif
                 </x-dashboard.panel>
-
-                @unless ($this->user->isVerifiedOwner())
-                    <x-dashboard.panel :title="__('Earn from your car')">
-                        @php($application = $this->user->latestOwnerApplication)
-                        @if ($application?->status === ApplicationStatus::Pending)
-                            <p class="text-sm text-zinc-600">{{ __('Your owner application is being reviewed. We will email you once it is approved.') }}</p>
-                        @else
-                            <p class="text-sm text-zinc-600">{{ __('Get verified as an owner and list your vehicle for other renters.') }}</p>
-                            <flux:button size="sm" class="mt-3" :href="route('owner.apply')" wire:navigate>{{ __('Become an owner') }}</flux:button>
-                        @endif
-                    </x-dashboard.panel>
-                @endunless
             </div>
         </div>
 

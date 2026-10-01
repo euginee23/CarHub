@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Enums\UserRole;
 use App\Models\User;
 use App\Models\VerificationDocument;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -53,16 +54,37 @@ class UserFactory extends Factory
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_admin' => true,
+            'role' => UserRole::Admin,
         ]);
     }
 
     /**
-     * Indicate that the user has been verified to list vehicles.
+     * Indicate that the account is a renter account (the default).
+     */
+    public function renter(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Renter,
+        ]);
+    }
+
+    /**
+     * Indicate that the account is an owner account that has not been verified yet.
+     */
+    public function owner(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Owner,
+        ]);
+    }
+
+    /**
+     * Indicate that the account is an owner account verified to list vehicles.
      */
     public function verifiedOwner(): static
     {
         return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Owner,
             'owner_verified_at' => now(),
         ]);
     }

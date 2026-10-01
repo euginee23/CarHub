@@ -28,7 +28,8 @@ test('the renter can open checkout', function () {
 });
 
 test('nobody else can open the renter\'s checkout', function () {
-    $this->actingAs($this->booking->owner)->get(route('trips.checkout', $this->booking))->assertForbidden();
+    // Owners have no renting area at all; other renters are refused by the policy.
+    $this->actingAs($this->booking->owner)->get(route('trips.checkout', $this->booking))->assertRedirect(route('dashboard'));
     $this->actingAs(User::factory()->create())->get(route('trips.checkout', $this->booking))->assertForbidden();
 });
 

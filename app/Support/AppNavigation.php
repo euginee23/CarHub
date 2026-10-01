@@ -2,8 +2,8 @@
 
 namespace App\Support;
 
+use App\Enums\UserRole;
 use App\Models\User;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * The areas of the signed-in app and the pages in each. The top navigation's
@@ -12,42 +12,65 @@ use Illuminate\Support\Facades\Gate;
 class AppNavigation
 {
     /**
-     * The areas the user can reach, in display order. Administrators run the
-     * platform rather than use it, so they only get administration and their account.
+     * The areas the user can reach, in display order. Each kind of account has
+     * exactly one working area — renting, hosting, or administration — plus
+     * their account settings.
      *
      * @return array<string, array{label: string, links: array<int, array{label: string, route: string, active: string}>}>
      */
     public static function sections(User $user): array
     {
-        if ($user->is_admin) {
+        $area = match ($user->role) {
+            UserRole::Admin => ['admin' => self::adminSection()],
+            UserRole::Owner => ['hosting' => self::hostingSection($user)],
+            UserRole::Renter => ['renting' => self::rentingSection()],
+        };
+
+        return [...$area, 'account' => self::accountSection()];
+    }
+
+    /**
+     * The renting area, for renter accounts.
+     *
+     * @return array{label: string, links: array<int, array{label: string, route: string, active: string}>}
+     */
+    protected static function rentingSection(): array
+    {
+        return [
+            'label' => __('Renting'),
+            'links' => [
+                ['label' => __('Overview'), 'route' => 'renter.dashboard', 'active' => 'renter.dashboard'],
+                ['label' => __('My trips'), 'route' => 'trips.index', 'active' => 'trips.*'],
+                ['label' => __('ID verification'), 'route' => 'identity.edit', 'active' => 'identity.edit'],
+            ],
+        ];
+    }
+
+    /**
+     * The hosting area, for owner accounts. Until an owner is verified it only
+     * holds their verification application.
+     *
+     * @return array{label: string, links: array<int, array{label: string, route: string, active: string}>}
+     */
+    protected static function hostingSection(User $user): array
+    {
+        if (! $user->isVerifiedOwner()) {
             return [
-                'admin' => self::adminSection(),
-                'account' => self::accountSection(),
+                'label' => __('Hosting'),
+                'links' => [
+                    ['label' => __('Owner verification'), 'route' => 'owner.apply', 'active' => 'owner.apply'],
+                ],
             ];
         }
 
         return [
-            'renting' => [
-                'label' => __('Renting'),
-                'links' => [
-                    ['label' => __('Overview'), 'route' => 'renter.dashboard', 'active' => 'renter.dashboard'],
-                    ['label' => __('My trips'), 'route' => 'trips.index', 'active' => 'trips.*'],
-                    ['label' => __('ID verification'), 'route' => 'identity.edit', 'active' => 'identity.edit'],
-                ],
+            'label' => __('Hosting'),
+            'links' => [
+                ['label' => __('Overview'), 'route' => 'owner.dashboard', 'active' => 'owner.dashboard'],
+                ['label' => __('My vehicles'), 'route' => 'owner.vehicles.index', 'active' => 'owner.vehicles.*'],
+                ['label' => __('Booking requests'), 'route' => 'owner.bookings.index', 'active' => 'owner.bookings.*'],
+                ['label' => __('Verification'), 'route' => 'owner.apply', 'active' => 'owner.apply'],
             ],
-            'hosting' => [
-                'label' => __('Hosting'),
-                'links' => Gate::forUser($user)->allows('list-vehicles')
-                    ? [
-                        ['label' => __('Overview'), 'route' => 'owner.dashboard', 'active' => 'owner.dashboard'],
-                        ['label' => __('My vehicles'), 'route' => 'owner.vehicles.index', 'active' => 'owner.vehicles.*'],
-                        ['label' => __('Booking requests'), 'route' => 'owner.bookings.index', 'active' => 'owner.bookings.*'],
-                    ]
-                    : [
-                        ['label' => __('Become an owner'), 'route' => 'owner.apply', 'active' => 'owner.apply'],
-                    ],
-            ],
-            'account' => self::accountSection(),
         ];
     }
 
@@ -64,6 +87,7 @@ class AppNavigation
                 ['label' => __('Overview'), 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
                 ['label' => __('Owner applications'), 'route' => 'admin.owner-applications', 'active' => 'admin.owner-applications'],
                 ['label' => __('ID reviews'), 'route' => 'admin.id-reviews', 'active' => 'admin.id-reviews'],
+                ['label' => __('Users'), 'route' => 'admin.users', 'active' => 'admin.users'],
             ],
         ];
     }
@@ -101,7 +125,7 @@ class AppNavigation
             }
 
             $areas[] = [
-                'label' => $section['links'][0]['route'] === 'owner.apply' ? $section['links'][0]['label'] : $section['label'],
+                'label' => $section['label'],
                 'route' => $section['links'][0]['route'],
                 'active' => array_column($section['links'], 'active'),
             ];

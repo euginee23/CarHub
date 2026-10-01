@@ -41,7 +41,7 @@ test('the renter overview shows trips, next steps, and identity status', functio
         ->assertSee('Finish checkout for your '.$booking->vehicle->name)
         ->assertSee('Verify your identity')
         ->assertSee($booking->vehicle->name)
-        ->assertSee('Become an owner');
+        ->assertDontSee('Become an owner');
 });
 
 test('the renter overview totals only confirmed spending', function () {
@@ -75,9 +75,19 @@ test('the owner overview shows requests, schedule, fleet, and earnings', functio
 });
 
 test('only verified owners can open the owner overview', function () {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->owner()->create())
         ->get(route('owner.dashboard'))
         ->assertForbidden();
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('owner.dashboard'))
+        ->assertRedirect(route('dashboard'));
+});
+
+test('owners who are not verified yet land on their verification', function () {
+    $this->actingAs(User::factory()->owner()->create())
+        ->get(route('dashboard'))
+        ->assertRedirect(route('owner.apply'));
 });
 
 test('the admin overview shows platform numbers and review queues', function () {
@@ -117,17 +127,21 @@ test('signed-in pages use the same shell as the public site', function () {
         ->assertSee('<meta name="robots" content="noindex" />', escape: false);
 });
 
-test('the account menu only lists the areas a user can use', function () {
+test('renters and owners each get only their own area', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('renter.dashboard'))
-        ->assertSee('Become an owner')
+        ->assertSee('Renting')
+        ->assertSee('My trips')
+        ->assertDontSee('Hosting')
         ->assertDontSee('Booking requests')
         ->assertDontSee('Administration');
 
     $this->actingAs(User::factory()->verifiedOwner()->create())
-        ->get(route('renter.dashboard'))
+        ->get(route('owner.dashboard'))
+        ->assertSee('Hosting')
         ->assertSee('Booking requests')
-        ->assertDontSee('Become an owner')
+        ->assertDontSee('My trips')
+        ->assertDontSee('ID verification')
         ->assertDontSee('Administration');
 });
 
@@ -145,17 +159,21 @@ test('administrators only get the administration and account areas', function ()
         ->assertDontSee('Booking requests');
 });
 
-test('administrators are sent back to the admin overview from renting and hosting pages', function (string $route) {
+test('administrators are sent back to their own dashboard from renting and hosting pages', function (string $route) {
     $this->actingAs(User::factory()->admin()->create())
         ->get(route($route))
-        ->assertRedirect(route('admin.dashboard'));
-})->with(['renter.dashboard', 'trips.index', 'identity.edit', 'owner.apply']);
+        ->assertRedirect(route('dashboard'));
+})->with(['renter.dashboard', 'trips.index', 'identity.edit', 'owner.apply', 'owner.vehicles.index']);
 
-test('administrators cannot use the owner area even with an owner flag', function () {
-    $this->actingAs(User::factory()->admin()->verifiedOwner()->create())
-        ->get(route('owner.vehicles.index'))
-        ->assertRedirect(route('admin.dashboard'));
-});
+test('each kind of account is kept out of the others\' areas', function (string $state, string $route) {
+    $this->actingAs(User::factory()->{$state}()->create())
+        ->get(route($route))
+        ->assertRedirect(route('dashboard'));
+})->with([
+    'owner on renting' => ['verifiedOwner', 'trips.index'],
+    'owner on identity' => ['verifiedOwner', 'identity.edit'],
+    'renter on hosting' => ['renter', 'owner.apply'],
+]);
 
 test('each page shows the tabs for its area', function (string $state, string $route, string $tab) {
     $this->actingAs(User::factory()->{$state}()->create())
@@ -163,7 +181,7 @@ test('each page shows the tabs for its area', function (string $state, string $r
         ->assertOk()
         ->assertSeeInOrder(['aria-current="page"', $tab], escape: false);
 })->with([
-    'renting' => ['verifiedOwner', 'trips.index', 'My trips'],
+    'renting' => ['renter', 'trips.index', 'My trips'],
     'hosting' => ['verifiedOwner', 'owner.vehicles.index', 'My vehicles'],
     'admin' => ['admin', 'admin.id-reviews', 'ID reviews'],
     'account' => ['admin', 'profile.edit', 'Profile'],
@@ -184,13 +202,14 @@ test('from public pages a member can always get back to their areas', function (
         ->assertOk()
         ->assertSee('href="'.route('renter.dashboard').'"', escape: false)
         ->assertSee('Renting')
-        ->assertSee('Become an owner')
+        ->assertDontSee('Hosting')
         ->assertDontSee('Administration');
 
     $this->actingAs(User::factory()->verifiedOwner()->create())
         ->get(route('home'))
         ->assertSee('href="'.route('owner.dashboard').'"', escape: false)
-        ->assertSee('Hosting');
+        ->assertSee('Hosting')
+        ->assertDontSee('href="'.route('renter.dashboard').'"', escape: false);
 });
 
 test('the header highlights the area the current page belongs to', function () {

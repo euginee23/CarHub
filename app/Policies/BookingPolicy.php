@@ -12,7 +12,7 @@ class BookingPolicy
      */
     public function view(User $user, Booking $booking): bool
     {
-        return $user->is_admin || $user->id === $booking->renter_id || $user->id === $booking->owner_id;
+        return $user->isAdmin() || $user->id === $booking->renter_id || $user->id === $booking->owner_id;
     }
 
     /**

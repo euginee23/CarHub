@@ -41,10 +41,16 @@ function validListing(array $overrides = []): array
     ])->mapWithKeys(fn (mixed $value, string $field) => ['form.'.$field => $value])->all();
 }
 
-test('users who are not verified owners cannot manage vehicles', function (string $routeName) {
-    $this->actingAs(User::factory()->create())
+test('owners who are not verified yet cannot manage vehicles', function (string $routeName) {
+    $this->actingAs(User::factory()->owner()->create())
         ->get(route($routeName))
         ->assertForbidden();
+})->with(['owner.vehicles.index', 'owner.vehicles.create']);
+
+test('renter accounts are sent back to their own dashboard from the owner area', function (string $routeName) {
+    $this->actingAs(User::factory()->create())
+        ->get(route($routeName))
+        ->assertRedirect(route('dashboard'));
 })->with(['owner.vehicles.index', 'owner.vehicles.create']);
 
 test('verified owners see their own vehicles only', function () {

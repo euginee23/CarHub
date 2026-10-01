@@ -275,7 +275,7 @@
 
                     <div class="mt-9 flex flex-wrap gap-3">
                         <a
-                            href="{{ route('register') }}"
+                            href="{{ route('register', ['as' => 'owner']) }}"
                             class="rounded-lg bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
                         >
                             {{ __('List your vehicle') }}
@@ -407,7 +407,7 @@
                     {{ __('Find a vehicle') }}
                 </a>
                 <a
-                    href="{{ route('register') }}"
+                    href="{{ route('register', ['as' => 'owner']) }}"
                     class="rounded-lg border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
                 >
                     {{ __('List your vehicle') }}

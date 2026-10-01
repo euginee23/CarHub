@@ -29,8 +29,8 @@ class CreateBookingRequest
      */
     public function handle(User $renter, Vehicle $vehicle, CarbonInterface $pickup, CarbonInterface $return, ?string $notes = null): Booking
     {
-        if ($renter->is_admin) {
-            throw ValidationException::withMessages(['schedule' => __('Administrator accounts cannot book vehicles.')]);
+        if (! $renter->isRenter()) {
+            throw ValidationException::withMessages(['schedule' => __('Only renter accounts can book vehicles.')]);
         }
 
         if ($vehicle->owner_id === $renter->id) {

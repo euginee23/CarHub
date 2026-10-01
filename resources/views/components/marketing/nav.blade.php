@@ -60,9 +60,12 @@
                         class="flex items-center gap-2 rounded-lg p-1 pe-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
                         data-test="account-menu-button"
                     >
-                        @if ($user->is_admin)
-                            <span class="rounded-full bg-zinc-900 px-2 py-0.5 text-xs font-semibold text-white">{{ __('Admin') }}</span>
-                        @endif
+                        <span @class([
+                            'rounded-full px-2 py-0.5 text-xs font-semibold',
+                            'bg-zinc-900 text-white' => $user->isAdmin(),
+                            'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' => $user->isOwner(),
+                            'bg-brand-50 text-brand-700 ring-1 ring-brand-200' => $user->isRenter(),
+                        ])>{{ $user->role->label() }}</span>
                         <span class="flex size-8 items-center justify-center rounded-full bg-linear-to-br from-brand-600 to-brand-500 text-xs font-semibold text-white">{{ $user->initials() }}</span>
                         <svg class="size-4 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />

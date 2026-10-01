@@ -34,9 +34,9 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureGates(): void
     {
-        Gate::define('access-admin', fn (User $user): bool => $user->is_admin);
+        Gate::define('access-admin', fn (User $user): bool => $user->isAdmin());
 
-        Gate::define('list-vehicles', fn (User $user): bool => ! $user->is_admin && $user->isVerifiedOwner());
+        Gate::define('list-vehicles', fn (User $user): bool => $user->isVerifiedOwner());
     }
 
     /**

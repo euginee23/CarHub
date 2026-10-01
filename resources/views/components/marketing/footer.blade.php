@@ -7,7 +7,7 @@
             ['label' => __('Budget rentals'), 'href' => route('vehicles.index', ['sort' => 'price-asc'])],
         ],
         __('Host') => [
-            ['label' => __('List your vehicle'), 'href' => route('register')],
+            ['label' => __('List your vehicle'), 'href' => route('register', ['as' => 'owner'])],
             ['label' => __('Owner guide'), 'href' => route('how-it-works').'#for-owners'],
             ['label' => __('Pricing & payouts'), 'href' => route('faq').'#for-owners'],
         ],

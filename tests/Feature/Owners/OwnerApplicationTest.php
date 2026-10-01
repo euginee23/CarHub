@@ -33,14 +33,14 @@ function submitOwnerApplication(User $user): void
 }
 
 test('the owner application page is displayed', function () {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->owner()->create())
         ->get(route('owner.apply'))
         ->assertOk()
-        ->assertSee('Become a vehicle owner');
+        ->assertSee('Owner verification');
 });
 
 test('a user can submit an owner application with their documents', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->owner()->create();
 
     submitOwnerApplication($user);
 
@@ -56,7 +56,7 @@ test('a user can submit an owner application with their documents', function () 
 });
 
 test('every document is required', function (string $field) {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(User::factory()->owner()->create())
         ->test('pages::owner.apply')
         ->set('governmentId', UploadedFile::fake()->image('id.jpg'))
         ->set('driversLicense', UploadedFile::fake()->image('license.jpg'))
@@ -69,7 +69,7 @@ test('every document is required', function (string $field) {
 })->with(['governmentId', 'driversLicense', 'vehicleRegistration']);
 
 test('documents must be images or pdfs', function () {
-    Livewire::actingAs(User::factory()->create())
+    Livewire::actingAs(User::factory()->owner()->create())
         ->test('pages::owner.apply')
         ->set('governmentId', UploadedFile::fake()->create('id.exe', 10))
         ->set('driversLicense', UploadedFile::fake()->image('license.jpg'))
@@ -79,7 +79,7 @@ test('documents must be images or pdfs', function () {
 });
 
 test('a user cannot submit a second application while one is pending', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->owner()->create();
     OwnerApplication::factory()->for($user)->create();
 
     Livewire::actingAs($user)
@@ -94,7 +94,7 @@ test('a user cannot submit a second application while one is pending', function 
 });
 
 test('a rejected applicant can apply again', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->owner()->create();
     OwnerApplication::factory()->for($user)->rejected()->create(['rejection_reason' => 'The OR/CR photo is blurry.']);
 
     $this->actingAs($user)->get(route('owner.apply'))->assertSee('The OR/CR photo is blurry.');
@@ -190,4 +190,10 @@ test('guests cannot open documents', function () {
     $document = VerificationDocument::factory()->create();
 
     $this->get(route('documents.show', $document))->assertRedirect(route('login'));
+});
+
+test('only owner accounts can open owner verification', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('owner.apply'))
+        ->assertRedirect(route('dashboard'));
 });

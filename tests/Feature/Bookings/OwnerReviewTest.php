@@ -111,11 +111,14 @@ test('a request that was already answered cannot be answered again', function ()
         ->assertHasErrors('booking');
 });
 
-test('only the vehicle owner can manage a booking', function (string $who) {
-    $user = match ($who) {
-        'renter' => $this->booking->renter,
-        'other owner' => User::factory()->verifiedOwner()->create(),
-    };
+test('another owner cannot manage the booking', function () {
+    $this->actingAs(User::factory()->verifiedOwner()->create())
+        ->get(route('owner.bookings.show', $this->booking))
+        ->assertForbidden();
+});
 
-    $this->actingAs($user)->get(route('owner.bookings.show', $this->booking))->assertForbidden();
-})->with(['renter', 'other owner']);
+test('renters have no access to the owner booking pages', function () {
+    $this->actingAs($this->booking->renter)
+        ->get(route('owner.bookings.show', $this->booking))
+        ->assertRedirect(route('dashboard'));
+});
