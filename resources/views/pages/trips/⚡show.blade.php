@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Bookings\CancelBooking;
+use App\Actions\Reviews\SubmitReview;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use Flux\Flux;
@@ -16,6 +17,10 @@ new #[Title('Trip details')] class extends Component {
 
     public string $cancellationReason = '';
 
+    public int $rating = 0;
+
+    public string $comment = '';
+
     /**
      * Load the renter's booking.
      */
@@ -23,7 +28,7 @@ new #[Title('Trip details')] class extends Component {
     {
         Gate::authorize('checkout', $booking);
 
-        $this->booking = $booking->load(['vehicle.coverPhoto', 'owner', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment']);
+        $this->booking = $booking->load(['vehicle.coverPhoto', 'owner', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment', 'review.reviewer']);
     }
 
     /**
@@ -41,6 +46,26 @@ new #[Title('Trip details')] class extends Component {
 
         Flux::modal('cancel-booking')->close();
         Flux::toast(variant: 'success', text: __('Booking cancelled.'));
+    }
+
+    /**
+     * Rate the completed rental.
+     */
+    public function submitReview(SubmitReview $submitReview): void
+    {
+        Gate::authorize('review', $this->booking);
+
+        $this->validate([
+            'rating' => ['required', 'integer', 'between:1,5'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ], ['rating.between' => __('Choose between 1 and 5 stars.')]);
+
+        $submitReview->handle($this->booking, Auth::user(), $this->rating, filled($this->comment) ? $this->comment : null);
+
+        $this->booking->load('review.reviewer');
+        $this->reset(['rating', 'comment']);
+
+        Flux::toast(variant: 'success', text: __('Thanks for your review!'));
     }
 }; ?>
 
@@ -87,6 +112,19 @@ new #[Title('Trip details')] class extends Component {
                     <flux:callout.text>{{ __('Pick up the :vehicle on :date at the pin below. Bring the two IDs you verified.', ['vehicle' => $booking->vehicle->name, 'date' => $booking->pickup_at->format('D, M j, g:i A')]) }}</flux:callout.text>
                 </flux:callout>
                 @break
+            @case(BookingStatus::Ongoing)
+                <flux:callout icon="map-pin" :heading="__('You are on your trip')">
+                    <flux:callout.text>{{ __('Return the :vehicle by :date with the same fuel level.', ['vehicle' => $booking->vehicle->name, 'date' => $booking->return_at->format('D, M j, g:i A')]) }}</flux:callout.text>
+                    <x-slot name="actions">
+                        <flux:button :href="route('bookings.tracking', $booking)" wire:navigate>{{ __('Full-screen map') }}</flux:button>
+                    </x-slot>
+                </flux:callout>
+                @break
+            @case(BookingStatus::Completed)
+                <flux:callout variant="success" icon="check-circle" :heading="__('Trip complete')">
+                    <flux:callout.text>{{ __('Thanks for renting with CarHub.') }}</flux:callout.text>
+                </flux:callout>
+                @break
             @case(BookingStatus::Expired)
                 <flux:callout variant="danger" icon="clock" :heading="__('This booking expired')">
                     <flux:callout.text>{{ $booking->statusChanges->last()?->note }}</flux:callout.text>
@@ -101,7 +139,50 @@ new #[Title('Trip details')] class extends Component {
 
         <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
             <div class="space-y-6">
+                <x-booking.progress :booking="$booking" />
+
+                @if ($booking->status === BookingStatus::Ongoing)
+                    <flux:card class="space-y-4">
+                        <flux:heading size="lg">{{ __('Live map') }}</flux:heading>
+                        <livewire:tracking.live-map :booking="$booking" :compact="true" />
+                    </flux:card>
+                @endif
+
                 <x-booking.summary :booking="$booking" />
+
+                <x-booking.handover :booking="$booking" />
+
+                @if ($booking->review)
+                    <x-booking.review :review="$booking->review" />
+                @elseif (auth()->user()->can('review', $booking))
+                    <flux:card class="space-y-4">
+                        <div>
+                            <flux:heading size="lg">{{ __('Rate your trip') }}</flux:heading>
+                            <flux:text class="mt-1">{{ __('Your rating helps other renters choose and helps owners improve.') }}</flux:text>
+                        </div>
+                        <form wire:submit="submitReview" class="space-y-4">
+                            <div class="flex items-center gap-1" role="radiogroup" aria-label="{{ __('Rating') }}">
+                                @for ($star = 1; $star <= 5; $star++)
+                                    <button
+                                        type="button"
+                                        wire:click="$set('rating', {{ $star }})"
+                                        role="radio"
+                                        aria-checked="{{ $rating === $star ? 'true' : 'false' }}"
+                                        aria-label="{{ trans_choice('{1} :count star|[2,*] :count stars', $star, ['count' => $star]) }}"
+                                        class="rounded p-0.5 transition hover:scale-110"
+                                    >
+                                        <svg @class(['size-8', 'text-amber-400' => $star <= $rating, 'text-zinc-300' => $star > $rating]) viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <path d="M12 2.5 15 9l7 .8-5.2 4.7 1.5 6.9L12 17.9 5.7 21.4l1.5-6.9L2 9.8 9 9l3-6.5Z" />
+                                        </svg>
+                                    </button>
+                                @endfor
+                            </div>
+                            <flux:error name="rating" />
+                            <flux:textarea wire:model="comment" :label="__('Feedback (optional)')" rows="3" :placeholder="__('How was the vehicle and the handover?')" />
+                            <flux:button type="submit" variant="primary" data-test="submit-review">{{ __('Submit review') }}</flux:button>
+                        </form>
+                    </flux:card>
+                @endif
 
                 @if (in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::Ongoing], true) && $booking->vehicle->latitude !== null)
                     <flux:card class="space-y-3">

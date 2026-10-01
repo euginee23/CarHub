@@ -108,7 +108,7 @@ new #[Title('Admin overview')] class extends Component {
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
-            <x-dashboard.panel :title="__('Recent bookings')">
+            <x-dashboard.panel :title="__('Recent bookings')" :href="route('admin.bookings.index')">
                 @if ($this->recentBookings->isEmpty())
                     <p class="py-4 text-center text-sm text-zinc-500">{{ __('No bookings yet.') }}</p>
                 @else
@@ -127,7 +127,7 @@ new #[Title('Admin overview')] class extends Component {
                                 @foreach ($this->recentBookings as $booking)
                                     <tr wire:key="booking-{{ $booking->id }}">
                                         <td class="px-5 py-3">
-                                            <p class="font-medium text-zinc-900">{{ $booking->vehicle->name }}</p>
+                                            <a href="{{ route('admin.bookings.show', $booking) }}" wire:navigate class="font-medium text-zinc-900 hover:text-brand-700">{{ $booking->vehicle->name }}</a>
                                             <p class="text-xs text-zinc-500">{{ $booking->reference }}</p>
                                         </td>
                                         <td class="px-5 py-3 text-zinc-600">{{ $booking->renter->name }}</td>

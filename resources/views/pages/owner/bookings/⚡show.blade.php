@@ -1,8 +1,12 @@
 <?php
 
 use App\Actions\Bookings\ApproveBooking;
+use App\Actions\Bookings\CompleteRental;
 use App\Actions\Bookings\DeclineBooking;
+use App\Actions\Bookings\StartRental;
 use App\Enums\BookingStatus;
+use App\Enums\FuelLevel;
+use Illuminate\Validation\Rule;
 use App\Models\Booking;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +21,18 @@ new #[Title('Booking')] class extends Component {
     public Booking $booking;
 
     public string $declineReason = '';
+
+    public string $pickupOdometer = '';
+
+    public string $pickupFuel = 'full';
+
+    public string $pickupNotes = '';
+
+    public string $returnOdometer = '';
+
+    public string $returnFuel = 'full';
+
+    public string $returnNotes = '';
 
     /**
      * Load a booking on one of the owner's vehicles.
@@ -80,11 +96,51 @@ new #[Title('Booking')] class extends Component {
     }
 
     /**
+     * Hand the vehicle over to the renter and start the rental.
+     */
+    public function releaseVehicle(StartRental $startRental): void
+    {
+        Gate::authorize('manage', $this->booking);
+
+        $this->validate([
+            'pickupOdometer' => ['required', 'integer', 'min:0', 'max:9999999'],
+            'pickupFuel' => ['required', Rule::enum(FuelLevel::class)],
+            'pickupNotes' => ['nullable', 'string', 'max:1000'],
+        ], attributes: ['pickupOdometer' => __('odometer reading'), 'pickupFuel' => __('fuel level')]);
+
+        $startRental->handle($this->booking, Auth::user(), (int) $this->pickupOdometer, FuelLevel::from($this->pickupFuel), filled($this->pickupNotes) ? $this->pickupNotes : null);
+
+        $this->loadRelations();
+
+        Flux::toast(variant: 'success', text: __('Vehicle released. The rental has started.'));
+    }
+
+    /**
+     * Take the vehicle back and close the rental.
+     */
+    public function recordReturn(CompleteRental $completeRental): void
+    {
+        Gate::authorize('manage', $this->booking);
+
+        $this->validate([
+            'returnOdometer' => ['required', 'integer', 'min:0', 'max:9999999'],
+            'returnFuel' => ['required', Rule::enum(FuelLevel::class)],
+            'returnNotes' => ['nullable', 'string', 'max:1000'],
+        ], attributes: ['returnOdometer' => __('odometer reading'), 'returnFuel' => __('fuel level')]);
+
+        $completeRental->handle($this->booking, Auth::user(), (int) $this->returnOdometer, FuelLevel::from($this->returnFuel), filled($this->returnNotes) ? $this->returnNotes : null);
+
+        $this->loadRelations();
+
+        Flux::toast(variant: 'success', text: __('Return recorded. The rental is complete.'));
+    }
+
+    /**
      * Refresh the booking and everything shown alongside it.
      */
     protected function loadRelations(): void
     {
-        $this->booking->refresh()->load(['vehicle.coverPhoto', 'renter', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment']);
+        $this->booking->refresh()->load(['vehicle.coverPhoto', 'vehicle.gpsDevice', 'renter', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment', 'review']);
     }
 }; ?>
 
@@ -98,6 +154,63 @@ new #[Title('Booking')] class extends Component {
 
     <x-app.content width="5xl" class="space-y-6">
         <flux:error name="booking" />
+
+        <x-booking.progress :booking="$booking" />
+
+        @if ($booking->status === BookingStatus::Confirmed)
+            <flux:card class="space-y-4">
+                <div>
+                    <flux:heading size="lg">{{ __('Hand over the vehicle') }}</flux:heading>
+                    <flux:text class="mt-1">
+                        {{ __('Pickup is :date. Check the renter\'s ID matches :name, then record the odometer and fuel level as you hand over the keys.', ['date' => $booking->pickup_at->format('D, M j, g:i A'), 'name' => $booking->renter->name]) }}
+                    </flux:text>
+                </div>
+                <form wire:submit="releaseVehicle" class="space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <flux:input wire:model="pickupOdometer" type="number" min="0" :label="__('Odometer (km)')" />
+                        <flux:select wire:model="pickupFuel" :label="__('Fuel level')">
+                            @foreach (FuelLevel::cases() as $level)
+                                <flux:select.option :value="$level->value">{{ $level->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+                    <flux:textarea wire:model="pickupNotes" :label="__('Condition notes (optional)')" rows="2" :placeholder="__('Existing scratches, items in the car…')" />
+                    <flux:error name="handover" />
+                    <flux:button type="submit" variant="primary" data-test="release-vehicle">{{ __('Release vehicle') }}</flux:button>
+                </form>
+            </flux:card>
+        @elseif ($booking->status === BookingStatus::Ongoing)
+            <flux:card class="space-y-4">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <flux:heading size="lg">{{ __('Vehicle is out on the trip') }}</flux:heading>
+                        <flux:text class="mt-1">{{ __('Due back :date. Record the return when you get the keys back.', ['date' => $booking->return_at->format('D, M j, g:i A')]) }}</flux:text>
+                    </div>
+                    <flux:button :href="route('bookings.tracking', $booking)" icon="map-pin" wire:navigate>{{ __('Live tracking') }}</flux:button>
+                </div>
+                <form wire:submit="recordReturn" class="space-y-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <flux:input wire:model="returnOdometer" type="number" :min="$booking->pickup_odometer ?? 0" :label="__('Odometer (km)')" />
+                        <flux:select wire:model="returnFuel" :label="__('Fuel level')">
+                            @foreach (FuelLevel::cases() as $level)
+                                <flux:select.option :value="$level->value">{{ $level->label() }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+                    <flux:textarea wire:model="returnNotes" :label="__('Condition notes (optional)')" rows="2" :placeholder="__('New damage, cleanliness, anything to follow up…')" />
+                    <flux:error name="handover" />
+                    <flux:button type="submit" variant="primary" data-test="record-return">{{ __('Record return') }}</flux:button>
+                </form>
+            </flux:card>
+        @elseif ($booking->status === BookingStatus::Completed)
+            <flux:card class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <flux:heading>{{ __('Rental complete') }}</flux:heading>
+                    <flux:text class="mt-1">{{ __('Trip history is kept for 30 days in case anything needs checking.') }}</flux:text>
+                </div>
+                <flux:button :href="route('bookings.tracking', $booking)" icon="map" wire:navigate>{{ __('Trip route') }}</flux:button>
+            </flux:card>
+        @endif
 
         @if ($booking->status === BookingStatus::Requested)
             <flux:card class="space-y-4">
@@ -121,7 +234,20 @@ new #[Title('Booking')] class extends Component {
 
         <div class="grid gap-6 lg:grid-cols-[1fr_20rem]">
             <div class="space-y-6">
+                @if ($booking->status === BookingStatus::Ongoing)
+                    <flux:card class="space-y-4">
+                        <flux:heading size="lg">{{ __('Where the vehicle is now') }}</flux:heading>
+                        <livewire:tracking.live-map :booking="$booking" :compact="true" />
+                    </flux:card>
+                @endif
+
                 <x-booking.summary :booking="$booking" />
+
+                <x-booking.handover :booking="$booking" />
+
+                @if ($booking->review)
+                    <x-booking.review :review="$booking->review" />
+                @endif
 
                 @if ($booking->contract)
                     <flux:card class="flex flex-wrap items-center justify-between gap-4">

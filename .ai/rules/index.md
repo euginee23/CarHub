@@ -11,3 +11,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/views/pages/** | .ai/rules/pages.md |
 | app/Actions/Payments/** | .ai/rules/payments.md |
 | routes/** | .ai/rules/routes.md |
+| app/Actions/Tracking/** | .ai/rules/tracking.md |

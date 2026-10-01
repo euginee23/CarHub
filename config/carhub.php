@@ -64,4 +64,19 @@ return [
         'window_hours' => 24,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Handover
+    |--------------------------------------------------------------------------
+    |
+    | How early before pickup time the owner may release the vehicle, and how
+    | late a return can be before it counts as late, both in minutes.
+    |
+    */
+
+    'handover' => [
+        'early_release_minutes' => 120,
+        'late_grace_minutes' => 60,
+    ],
+
 ];

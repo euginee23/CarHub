@@ -13,3 +13,6 @@ use Illuminate\Support\Facades\Schedule;
 */
 
 Schedule::command('bookings:expire-stale')->everyFifteenMinutes()->withoutOverlapping();
+
+// Trip location history is kept for 30 days (VehicleLocation::RETENTION_DAYS).
+Schedule::command('model:prune')->daily();

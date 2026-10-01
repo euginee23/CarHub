@@ -39,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Shared with administrators, who open these while reviewing.
     Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::get('bookings/{booking}/contract', [RentalContractController::class, 'show'])->name('bookings.contract');
+    Route::livewire('bookings/{booking}/tracking', 'pages::tracking.show')->name('bookings.tracking');
 
     // Renter accounts: finding, booking, and taking trips.
     Route::middleware('role:renter')->group(function () {

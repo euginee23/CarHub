@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BookingStatus;
+use App\Enums\FuelLevel;
 use App\Enums\PaymentStatus;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -38,6 +39,14 @@ use Illuminate\Support\Str;
  * @property Carbon|null $terms_accepted_at
  * @property string|null $terms_accepted_ip
  * @property Carbon|null $payment_due_at
+ * @property Carbon|null $picked_up_at
+ * @property int|null $pickup_odometer
+ * @property FuelLevel|null $pickup_fuel
+ * @property string|null $pickup_notes
+ * @property Carbon|null $returned_at
+ * @property int|null $return_odometer
+ * @property FuelLevel|null $return_fuel
+ * @property string|null $return_notes
  * @property Carbon|null $cancelled_at
  * @property int|null $cancelled_by
  * @property string|null $cancellation_reason
@@ -52,6 +61,8 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, Payment> $payments
  * @property-read Payment|null $latestPayment
  * @property-read Payment|null $successfulPayment
+ * @property-read Collection<int, VehicleLocation> $locations
+ * @property-read Review|null $review
  */
 #[Fillable([
     'pickup_at', 'return_at', 'pickup_location', 'daily_rate', 'days', 'subtotal', 'service_fee', 'total', 'renter_notes',
@@ -90,6 +101,12 @@ class Booking extends Model
             'approved_at' => 'datetime',
             'terms_accepted_at' => 'datetime',
             'payment_due_at' => 'datetime',
+            'picked_up_at' => 'datetime',
+            'pickup_odometer' => 'integer',
+            'pickup_fuel' => FuelLevel::class,
+            'returned_at' => 'datetime',
+            'return_odometer' => 'integer',
+            'return_fuel' => FuelLevel::class,
             'cancelled_at' => 'datetime',
         ];
     }
@@ -180,6 +197,45 @@ class Booking extends Model
     public function successfulPayment(): HasOne
     {
         return $this->hasOne(Payment::class)->ofMany(['paid_at' => 'max'], fn ($query) => $query->where('status', PaymentStatus::Paid));
+    }
+
+    /**
+     * The GPS fixes recorded while the vehicle was out on this rental, oldest first.
+     *
+     * @return HasMany<VehicleLocation, $this>
+     */
+    public function locations(): HasMany
+    {
+        return $this->hasMany(VehicleLocation::class)->orderBy('recorded_at');
+    }
+
+    /**
+     * The renter's review of the rental.
+     *
+     * @return HasOne<Review, $this>
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    /**
+     * Whether the vehicle came back later than agreed, beyond the grace period.
+     */
+    public function wasReturnedLate(): bool
+    {
+        return $this->returned_at !== null
+            && $this->returned_at->gt($this->return_at->addMinutes((int) config('carhub.handover.late_grace_minutes')));
+    }
+
+    /**
+     * The distance driven during the rental, from the handover odometer readings.
+     */
+    public function distanceDriven(): ?int
+    {
+        return $this->pickup_odometer !== null && $this->return_odometer !== null
+            ? $this->return_odometer - $this->pickup_odometer
+            : null;
     }
 
     /**

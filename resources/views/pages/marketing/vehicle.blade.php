@@ -127,6 +127,10 @@
                                     {{ __('Hosting since :year', ['year' => $vehicle->owner->owner_verified_at?->year ?? $vehicle->owner->created_at->year]) }}
                                     &middot;
                                     {{ trans_choice('{1} :count trip|[2,*] :count trips', $ownerTrips, ['count' => $ownerTrips]) }}
+                                    @if ($ownerRating !== null)
+                                        &middot;
+                                        {{ __(':rating average rating', ['rating' => number_format($ownerRating, 1)]) }}
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -156,6 +160,29 @@
                             </div>
                         </div>
                     @endif
+
+                    {{-- Reviews --}}
+                    <div class="rounded-2xl border border-zinc-200 bg-white p-6">
+                        <div class="flex flex-wrap items-baseline justify-between gap-3">
+                            <h2 class="text-lg font-semibold text-zinc-900">{{ __('Reviews') }}</h2>
+                            @if ($vehicle->reviews_count > 0)
+                                <p class="text-sm text-zinc-600">
+                                    <span class="font-semibold text-zinc-900">{{ number_format($vehicle->rating, 1) }}</span>
+                                    {{ trans_choice('{1} from :count review|[2,*] from :count reviews', $vehicle->reviews_count, ['count' => $vehicle->reviews_count]) }}
+                                </p>
+                            @endif
+                        </div>
+
+                        @if ($reviews->isEmpty())
+                            <p class="mt-3 text-sm text-zinc-500">{{ __('No reviews yet. Renters can rate the vehicle after their trip.') }}</p>
+                        @else
+                            <div class="mt-5 space-y-3">
+                                @foreach ($reviews as $review)
+                                    <x-booking.review :review="$review" />
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
 
                     {{-- Requirements --}}
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6">

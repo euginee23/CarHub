@@ -42,6 +42,7 @@ use Illuminate\Support\Str;
  * @property bool $instant_book
  * @property bool $featured
  * @property float $rating
+ * @property int $reviews_count
  * @property int $trips_count
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -53,6 +54,8 @@ use Illuminate\Support\Str;
  * @property-read VehiclePhoto|null $coverPhoto
  * @property-read Collection<int, VehicleBlackout> $blackouts
  * @property-read Collection<int, Booking> $bookings
+ * @property-read GpsDevice|null $gpsDevice
+ * @property-read Collection<int, Review> $reviews
  */
 #[Fillable([
     'brand', 'model', 'year', 'type', 'transmission', 'fuel', 'seats', 'price_per_day',
@@ -115,6 +118,7 @@ class Vehicle extends Model
             'instant_book' => 'boolean',
             'featured' => 'boolean',
             'rating' => 'float',
+            'reviews_count' => 'integer',
             'trips_count' => 'integer',
         ];
     }
@@ -177,6 +181,26 @@ class Vehicle extends Model
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * The GPS tracker fitted to the vehicle.
+     *
+     * @return HasOne<GpsDevice, $this>
+     */
+    public function gpsDevice(): HasOne
+    {
+        return $this->hasOne(GpsDevice::class);
+    }
+
+    /**
+     * Renters' reviews of the vehicle, newest first.
+     *
+     * @return HasMany<Review, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class)->latest();
     }
 
     /**

@@ -11,8 +11,9 @@ beforeEach(function () {
 });
 
 test('administrators can list and filter users', function () {
-    $renter = User::factory()->create(['name' => 'Ana Renter']);
-    $owner = User::factory()->owner()->create(['name' => 'Ben Owner']);
+    // Fixed emails: random ones could also match the search term.
+    $renter = User::factory()->create(['name' => 'Ana Renter', 'email' => 'ana@example.com']);
+    $owner = User::factory()->owner()->create(['name' => 'Ben Owner', 'email' => 'ben@example.com']);
 
     $this->actingAs($this->admin)->get(route('admin.users'))->assertOk()->assertSee('Ana Renter')->assertSee('Ben Owner');
 
@@ -20,7 +21,7 @@ test('administrators can list and filter users', function () {
 
     expect($component->instance()->users->pluck('id')->all())->toBe([$owner->id]);
 
-    $component->set('role', '')->set('search', 'ana');
+    $component->set('role', '')->set('search', 'Ana Renter');
 
     expect($component->instance()->users->pluck('id')->all())->toBe([$renter->id]);
 });

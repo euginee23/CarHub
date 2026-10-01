@@ -106,6 +106,24 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
                         __('The exact pickup point and the owner\'s contact number are now on your trip page.'),
                     ],
                 ],
+            BookingStatus::Ongoing => $isOwner
+                ? [
+                    __('Rental started'),
+                    [__('You handed over the :vehicle. It is due back :return.', ['vehicle' => $vehicle, 'return' => $this->booking->return_at->format('M j, g:i A')])],
+                ]
+                : [
+                    __('Your trip has started'),
+                    [__('Enjoy the :vehicle! Please return it by :return.', ['vehicle' => $vehicle, 'return' => $this->booking->return_at->format('M j, g:i A')])],
+                ],
+            BookingStatus::Completed => $isOwner
+                ? [
+                    __('Rental completed'),
+                    [__('The :vehicle is back and the rental is closed.', ['vehicle' => $vehicle])],
+                ]
+                : [
+                    __('Trip complete — how was it?'),
+                    [__('Thanks for renting the :vehicle. Leave a rating to help other renters.', ['vehicle' => $vehicle])],
+                ],
             BookingStatus::Cancelled => [
                 __('Booking cancelled'),
                 [__('The booking for the :vehicle on :pickup was cancelled.', ['vehicle' => $vehicle, 'pickup' => $pickup])],

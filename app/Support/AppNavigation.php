@@ -85,6 +85,7 @@ class AppNavigation
             'label' => __('Administration'),
             'links' => [
                 ['label' => __('Overview'), 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
+                ['label' => __('Bookings'), 'route' => 'admin.bookings.index', 'active' => 'admin.bookings.*'],
                 ['label' => __('Owner applications'), 'route' => 'admin.owner-applications', 'active' => 'admin.owner-applications'],
                 ['label' => __('ID reviews'), 'route' => 'admin.id-reviews', 'active' => 'admin.id-reviews'],
                 ['label' => __('Users'), 'route' => 'admin.users', 'active' => 'admin.users'],

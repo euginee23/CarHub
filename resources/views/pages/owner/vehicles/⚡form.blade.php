@@ -6,6 +6,7 @@ use App\Enums\VehicleStatus;
 use App\Enums\VehicleType;
 use App\Livewire\Forms\VehicleForm;
 use App\Models\Vehicle;
+use App\Actions\Tracking\ConnectGpsDevice;
 use App\Models\VehicleBlackout;
 use App\Models\VehiclePhoto;
 use Flux\Flux;
@@ -33,6 +34,11 @@ new #[Title('Vehicle listing')] class extends Component {
     public string $blackoutEnd = '';
 
     public string $blackoutReason = '';
+
+    /**
+     * A freshly issued tracker token, shown once and then forgotten.
+     */
+    public ?string $issuedTrackerToken = null;
 
     /**
      * Load the listing being edited, or prepare a blank one.
@@ -110,6 +116,28 @@ new #[Title('Vehicle listing')] class extends Component {
         $this->vehicle->blackouts()->whereKey($blackoutId)->delete();
 
         unset($this->blackouts);
+    }
+
+    /**
+     * Pair a GPS tracker with the vehicle, or issue a new token for it.
+     */
+    public function connectTracker(ConnectGpsDevice $connectGpsDevice): void
+    {
+        Gate::authorize('update', $this->vehicle);
+
+        $this->issuedTrackerToken = $connectGpsDevice->handle($this->vehicle);
+    }
+
+    /**
+     * Unpair the vehicle's GPS tracker; its token stops working immediately.
+     */
+    public function disconnectTracker(): void
+    {
+        Gate::authorize('update', $this->vehicle);
+
+        $this->vehicle->gpsDevice()->delete();
+        $this->vehicle->unsetRelation('gpsDevice');
+        $this->issuedTrackerToken = null;
     }
 
     /**
@@ -377,6 +405,49 @@ new #[Title('Vehicle listing')] class extends Component {
                         <flux:input type="date" wire:model="blackoutEnd" :label="__('Until')" min="{{ now()->toDateString() }}" />
                         <flux:input wire:model="blackoutReason" :label="__('Reason (optional)')" :placeholder="__('e.g. Maintenance')" />
                         <flux:button wire:click="addBlackout">{{ __('Block dates') }}</flux:button>
+                    </div>
+                </flux:card>
+            @endif
+
+            @if ($vehicle)
+                <flux:card class="space-y-5">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <flux:heading size="lg">{{ __('GPS tracker') }}</flux:heading>
+                            <flux:text class="mt-1">{{ __('Pair the ESP tracker fitted to this vehicle. Its position is recorded only while the vehicle is out on a rental.') }}</flux:text>
+                        </div>
+                        @if ($vehicle->gpsDevice)
+                            <flux:badge :color="$vehicle->gpsDevice->isOnline() ? 'green' : 'zinc'">
+                                {{ $vehicle->gpsDevice->isOnline() ? __('Online') : ($vehicle->gpsDevice->last_seen_at ? __('Last seen :time', ['time' => $vehicle->gpsDevice->last_seen_at->diffForHumans()]) : __('Never connected')) }}
+                            </flux:badge>
+                        @endif
+                    </div>
+
+                    @if ($issuedTrackerToken)
+                        <flux:callout variant="warning" icon="key" :heading="__('Copy this token into the tracker now — it will not be shown again.')">
+                            <flux:callout.text>
+                                <code class="block break-all rounded bg-white px-2 py-1 font-mono text-xs text-zinc-900" data-test="tracker-token">{{ $issuedTrackerToken }}</code>
+                            </flux:callout.text>
+                        </flux:callout>
+
+                        <div class="space-y-2 text-sm">
+                            <p class="font-medium text-zinc-900">{{ __('Have the tracker send its position like this:') }}</p>
+                            <pre class="overflow-x-auto rounded-xl bg-zinc-900 p-4 text-xs text-zinc-100">POST {{ route('api.tracking.pings') }}
+Authorization: Bearer {{ $issuedTrackerToken }}
+Content-Type: application/json
+
+{"lat": 10.3157, "lng": 123.8854, "speed": 42.5, "heading": 90}</pre>
+                            <p class="text-xs text-zinc-500">{{ __('Send one fix every 15–30 seconds. Speed is in km/h and heading in degrees; both are optional. After losing signal, send buffered fixes together as {"pings": [...]} with a recorded_at time on each.') }}</p>
+                        </div>
+                    @endif
+
+                    <div class="flex flex-wrap gap-2">
+                        @if ($vehicle->gpsDevice)
+                            <flux:button wire:click="connectTracker" wire:confirm="{{ __('Issue a new token? The tracker will stop reporting until you update it.') }}" icon="arrow-path">{{ __('New token') }}</flux:button>
+                            <flux:button wire:click="disconnectTracker" wire:confirm="{{ __('Disconnect this tracker?') }}" variant="danger">{{ __('Disconnect') }}</flux:button>
+                        @else
+                            <flux:button wire:click="connectTracker" variant="primary" icon="signal" data-test="connect-tracker">{{ __('Connect a tracker') }}</flux:button>
+                        @endif
                     </div>
                 </flux:card>
             @endif

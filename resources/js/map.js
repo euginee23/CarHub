@@ -142,6 +142,65 @@ document.addEventListener('alpine:init', () => {
     }));
 
     /**
+     * Follows a rented vehicle: its route so far and where it is now. The page
+     * polls Livewire, which sends fresh points in a `tracking-updated` event,
+     * so the map is updated in place rather than rebuilt.
+     */
+    window.Alpine.data('trackingMap', ({ points = [], latest = null, origin = null } = {}) => ({
+        map: null,
+        route: null,
+        marker: null,
+        originMarker: null,
+        followed: false,
+
+        init() {
+            const start = latest ?? origin;
+
+            this.map = createMap(this.$refs.map, start ? [start.lat, start.lng] : DEFAULT_CENTER, start ? 15 : 12);
+            this.route = L.polyline([], { color: '#2442f5', weight: 4, opacity: 0.8 }).addTo(this.map);
+
+            // Until the tracker reports, mark where the trip began.
+            if (origin) {
+                this.originMarker = L.marker([origin.lat, origin.lng], { title: origin.label })
+                    .bindTooltip(escapeHtml(origin.label))
+                    .addTo(this.map);
+            }
+
+            this.update({ points, latest });
+        },
+
+        update({ points = [], latest = null }) {
+            this.route.setLatLngs(points);
+
+            if (! latest) {
+                return;
+            }
+
+            if (this.marker) {
+                this.marker.setLatLng([latest.lat, latest.lng]);
+            } else {
+                this.marker = L.circleMarker([latest.lat, latest.lng], {
+                    radius: 9, color: '#fff', weight: 3, fillColor: '#2442f5', fillOpacity: 1,
+                }).addTo(this.map);
+            }
+
+            this.marker.bindTooltip(escapeHtml(latest.label ?? ''));
+
+            // Frame the whole trip once, then keep following the vehicle.
+            if (! this.followed && points.length > 1) {
+                this.map.fitBounds(this.route.getBounds(), { padding: [40, 40], maxZoom: 16 });
+                this.followed = true;
+            } else {
+                this.map.panTo([latest.lat, latest.lng]);
+            }
+        },
+
+        destroy() {
+            this.map?.remove();
+        },
+    }));
+
+    /**
      * Shows roughly where a vehicle is picked up. The exact pin is only shared
      * with the renter once a booking is confirmed, so this draws a circle.
      */

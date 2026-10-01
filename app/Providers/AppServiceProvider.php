@@ -3,13 +3,17 @@
 namespace App\Providers;
 
 use App\Contracts\PaymentGateway;
+use App\Models\GpsDevice;
 use App\Models\User;
 use App\Services\Payments\PayMongoGateway;
 use App\Services\Payments\SimulatedGateway;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use RuntimeException;
@@ -43,6 +47,20 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureGates();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Configure the rate limiters for device traffic.
+     */
+    protected function configureRateLimiting(): void
+    {
+        // A tracker reporting every few seconds stays well inside this.
+        RateLimiter::for('gps', function (Request $request): Limit {
+            $device = $request->attributes->get('gpsDevice');
+
+            return Limit::perMinute(60)->by($device instanceof GpsDevice ? 'device:'.$device->id : 'ip:'.$request->ip());
+        });
     }
 
     /**

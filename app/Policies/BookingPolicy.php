@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
 
@@ -37,5 +38,29 @@ class BookingPolicy
     public function cancel(User $user, Booking $booking): bool
     {
         return $user->id === $booking->renter_id && $booking->isCancellableByRenter();
+    }
+
+    /**
+     * Live and recent tracking: the owner and administrators can follow an ongoing
+     * or recently completed rental; the renter only while they are on the trip.
+     */
+    public function track(User $user, Booking $booking): bool
+    {
+        if ($booking->status === BookingStatus::Ongoing) {
+            return $this->view($user, $booking);
+        }
+
+        return $booking->status === BookingStatus::Completed
+            && ($user->isAdmin() || $user->id === $booking->owner_id);
+    }
+
+    /**
+     * The renter rates a completed rental, once.
+     */
+    public function review(User $user, Booking $booking): bool
+    {
+        return $user->id === $booking->renter_id
+            && $booking->status === BookingStatus::Completed
+            && ! $booking->review()->exists();
     }
 }
