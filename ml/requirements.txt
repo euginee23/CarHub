@@ -1,0 +1,5 @@
+# Python dependencies for the LSTM demand forecaster (ml/forecast.py).
+# Install into ml/.venv:  python3 -m venv ml/.venv && ml/.venv/bin/pip install -r ml/requirements.txt
+tensorflow>=2.16,<3
+numpy>=1.26
+pandas>=2.2

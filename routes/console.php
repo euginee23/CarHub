@@ -16,3 +16,6 @@ Schedule::command('bookings:expire-stale')->everyFifteenMinutes()->withoutOverla
 
 // Prunes trip location history after 30 days and the activity log after a year.
 Schedule::command('model:prune')->daily();
+
+// Retrain the LSTM demand forecaster weekly on the latest booking history.
+Schedule::command('demand:forecast')->weeklyOn(0, '02:00')->withoutOverlapping();

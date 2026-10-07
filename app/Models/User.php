@@ -43,6 +43,7 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, Booking> $bookings
  * @property-read Collection<int, Booking> $ownerBookings
  * @property-read Collection<int, VerificationDocument> $identityDocuments
+ * @property-read RenterPreference|null $renterPreference
  */
 #[Fillable(['name', 'email', 'phone', 'address', 'birthdate', 'password'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -130,6 +131,16 @@ class User extends Authenticatable
     public function ownerBookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'owner_id');
+    }
+
+    /**
+     * What this renter has said they look for in a vehicle.
+     *
+     * @return HasOne<RenterPreference, $this>
+     */
+    public function renterPreference(): HasOne
+    {
+        return $this->hasOne(RenterPreference::class);
     }
 
     /**

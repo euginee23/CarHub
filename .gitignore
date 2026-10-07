@@ -22,3 +22,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Python virtualenv for the demand forecaster
+/ml/.venv
+/ml/__pycache__

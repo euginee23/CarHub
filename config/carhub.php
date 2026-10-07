@@ -94,4 +94,26 @@ return [
         'test_page' => (bool) env('TRACKING_TEST_PAGE', env('APP_ENV') !== 'production'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Demand forecasting
+    |--------------------------------------------------------------------------
+    |
+    | `php artisan demand:forecast` (weekly) trains an LSTM per body type in
+    | ml/forecast.py on `history_days` of booking requests and predicts the next
+    | `horizon` days. Body types with less than `min_history_days` of history,
+    | or any run where Python is unavailable, use the seasonal fallback.
+    |
+    */
+
+    'forecasting' => [
+        'python' => env('FORECAST_PYTHON', base_path('ml/.venv/bin/python')),
+        'script' => base_path('ml/forecast.py'),
+        'history_days' => 365,
+        'min_history_days' => 90,
+        'lookback' => 28,
+        'horizon' => 30,
+        'timeout' => 600,
+    ],
+
 ];
