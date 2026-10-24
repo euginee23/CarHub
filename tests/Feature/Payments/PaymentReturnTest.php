@@ -65,7 +65,7 @@ test('returning before the payment clears shows a waiting message', function () 
 });
 
 test('nobody else can use the renter\'s payment pages', function () {
-    $stranger = User::factory()->create();
+    $stranger = User::factory()->withVerifiedIdentity()->create();
 
     $this->actingAs($stranger)->get(route('payments.return', $this->payment))->assertForbidden();
     $this->actingAs($stranger)->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'paid'])->assertForbidden();

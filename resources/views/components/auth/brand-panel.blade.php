@@ -22,7 +22,7 @@
         </h2>
 
         <p class="mt-4 max-w-md text-base/7 text-pretty text-brand-100">
-            {{ $description ?? __('CarHub connects renters with verified local vehicle owners across Metro Cebu — booked in minutes, covered end to end.') }}
+            {{ $description ?? __('CarHub connects renters with verified local rental companies across Metro Cebu — booked in minutes, covered end to end.') }}
         </p>
 
         <ul class="mt-10 space-y-4">

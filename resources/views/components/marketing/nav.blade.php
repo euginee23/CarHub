@@ -1,5 +1,5 @@
 {{-- The header on every page, public and signed-in. Guests get the marketing links;
-     signed-in users get their own areas (Renting, Hosting, or Administration) plus
+     signed-in users get their own areas (Renting, Company, or Administration) plus
      Browse vehicles, so the way back into the app is always one click away.
      Plain links only, no wire:navigate, so public pages always get a full load. --}}
 @php
@@ -65,7 +65,7 @@
                         <span @class([
                             'rounded-full px-2 py-0.5 text-xs font-semibold',
                             'bg-zinc-900 text-white' => $user->isAdmin(),
-                            'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' => $user->isOwner(),
+                            'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' => $user->isCompany(),
                             'bg-brand-50 text-brand-700 ring-1 ring-brand-200' => $user->isRenter(),
                         ])>{{ $user->role->label() }}</span>
                         <span class="flex size-8 items-center justify-center rounded-full bg-linear-to-br from-brand-600 to-brand-500 text-xs font-semibold text-white">{{ $user->initials() }}</span>

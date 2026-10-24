@@ -54,7 +54,7 @@ class AvailabilityChecker
 
     /**
      * Every calendar day between the two dates on which the vehicle is blocked by
-     * the owner or held, even partly, by a booking.
+     * the rental company or held, even partly, by a booking.
      *
      * @return array<string, true> Keyed by Y-m-d date.
      */

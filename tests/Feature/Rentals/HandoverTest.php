@@ -17,24 +17,24 @@ beforeEach(function () {
 
     $this->booking = Booking::factory()->confirmed()->between('2026-10-05 09:00', '2026-10-07 09:00')->create();
     $this->booking->vehicle->forceFill(['trips_count' => 10])->save();
-    $this->owner = $this->booking->owner;
+    $this->company = $this->booking->company;
 });
 
 /**
- * Release the vehicle from the owner's booking page.
+ * Release the vehicle from the rental company's booking page.
  */
-function releaseVehicle(Booking $booking, User $owner, string $odometer = '42000'): Testable
+function releaseVehicle(Booking $booking, User $company, string $odometer = '42000'): Testable
 {
-    return Livewire::actingAs($owner)
-        ->test('pages::owner.bookings.show', ['booking' => $booking])
+    return Livewire::actingAs($company)
+        ->test('pages::company.bookings.show', ['booking' => $booking])
         ->set('pickupOdometer', $odometer)
         ->set('pickupFuel', 'full')
         ->set('pickupNotes', 'Small scratch on the rear bumper.')
         ->call('releaseVehicle');
 }
 
-test('the owner hands the vehicle over and the rental starts', function () {
-    releaseVehicle($this->booking, $this->owner)->assertHasNoErrors();
+test('the rental company hands the vehicle over and the rental starts', function () {
+    releaseVehicle($this->booking, $this->company)->assertHasNoErrors();
 
     $booking = $this->booking->fresh();
 
@@ -52,7 +52,7 @@ test('the owner hands the vehicle over and the rental starts', function () {
 test('the vehicle cannot be released long before pickup', function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-05 06:00'));
 
-    releaseVehicle($this->booking, $this->owner)->assertHasErrors('handover');
+    releaseVehicle($this->booking, $this->company)->assertHasErrors('handover');
 
     expect($this->booking->fresh()->status)->toBe(BookingStatus::Confirmed);
 });
@@ -61,19 +61,19 @@ test('only paid bookings can be handed over', function () {
     $booking = Booking::factory()->status(BookingStatus::AwaitingPayment)->forVehicle($this->booking->vehicle)
         ->between('2026-10-05 09:00', '2026-10-06 09:00')->create();
 
-    releaseVehicle($booking, $this->owner)->assertHasErrors('handover');
+    releaseVehicle($booking, $this->company)->assertHasErrors('handover');
 });
 
 test('the odometer reading is required', function () {
-    releaseVehicle($this->booking, $this->owner, '')->assertHasErrors(['pickupOdometer' => 'required']);
+    releaseVehicle($this->booking, $this->company, '')->assertHasErrors(['pickupOdometer' => 'required']);
 });
 
-test('the owner records the return and the rental completes', function () {
-    releaseVehicle($this->booking, $this->owner);
+test('the rental company records the return and the rental completes', function () {
+    releaseVehicle($this->booking, $this->company);
     $this->travelTo(CarbonImmutable::parse('2026-10-07 08:45'));
 
-    Livewire::actingAs($this->owner)
-        ->test('pages::owner.bookings.show', ['booking' => $this->booking->fresh()])
+    Livewire::actingAs($this->company)
+        ->test('pages::company.bookings.show', ['booking' => $this->booking->fresh()])
         ->set('returnOdometer', '42350')
         ->set('returnFuel', 'three_quarters')
         ->call('recordReturn')
@@ -94,11 +94,11 @@ test('the owner records the return and the rental completes', function () {
 });
 
 test('a return more than an hour past the deadline is flagged late', function () {
-    releaseVehicle($this->booking, $this->owner);
+    releaseVehicle($this->booking, $this->company);
     $this->travelTo(CarbonImmutable::parse('2026-10-07 11:00'));
 
-    Livewire::actingAs($this->owner)
-        ->test('pages::owner.bookings.show', ['booking' => $this->booking->fresh()])
+    Livewire::actingAs($this->company)
+        ->test('pages::company.bookings.show', ['booking' => $this->booking->fresh()])
         ->set('returnOdometer', '42100')
         ->call('recordReturn')
         ->assertSee('Late');
@@ -107,10 +107,10 @@ test('a return more than an hour past the deadline is flagged late', function ()
 });
 
 test('the return odometer cannot go backwards', function () {
-    releaseVehicle($this->booking, $this->owner);
+    releaseVehicle($this->booking, $this->company);
 
-    Livewire::actingAs($this->owner)
-        ->test('pages::owner.bookings.show', ['booking' => $this->booking->fresh()])
+    Livewire::actingAs($this->company)
+        ->test('pages::company.bookings.show', ['booking' => $this->booking->fresh()])
         ->set('returnOdometer', '41000')
         ->call('recordReturn')
         ->assertHasErrors('returnOdometer');
@@ -124,9 +124,9 @@ test('a completed rental frees the vehicle for new bookings', function () {
 
     expect($checker->isAvailable($this->booking->vehicle, ...$window))->toBeFalse();
 
-    releaseVehicle($this->booking, $this->owner);
-    Livewire::actingAs($this->owner)
-        ->test('pages::owner.bookings.show', ['booking' => $this->booking->fresh()])
+    releaseVehicle($this->booking, $this->company);
+    Livewire::actingAs($this->company)
+        ->test('pages::company.bookings.show', ['booking' => $this->booking->fresh()])
         ->set('returnOdometer', '42100')
         ->call('recordReturn');
 
@@ -134,7 +134,7 @@ test('a completed rental frees the vehicle for new bookings', function () {
 });
 
 test('the renter sees the trip in progress with a link to the live map', function () {
-    releaseVehicle($this->booking, $this->owner);
+    releaseVehicle($this->booking, $this->company);
 
     $this->actingAs($this->booking->renter)
         ->get(route('trips.show', $this->booking))

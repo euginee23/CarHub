@@ -20,7 +20,7 @@ class ReportExportController extends Controller
      */
     public const array REPORTS = [
         'daily' => ['Date', 'Bookings requested', 'Collected (PHP)'],
-        'bookings' => ['Reference', 'Requested', 'Status', 'Vehicle', 'Body type', 'Renter', 'Owner', 'Pickup', 'Return', 'Days', 'Rental (PHP)', 'Service fee (PHP)', 'Total (PHP)'],
+        'bookings' => ['Reference', 'Requested', 'Status', 'Vehicle', 'Body type', 'Renter', 'Rental company', 'Pickup', 'Return', 'Days', 'Rental (PHP)', 'Service fee (PHP)', 'Total (PHP)'],
         'payments' => ['Reference', 'Booking', 'Method', 'Provider', 'Amount (PHP)', 'Paid at'],
         'demand' => ['Date', 'Body type', 'Requests by pickup date'],
     ];
@@ -79,7 +79,7 @@ class ReportExportController extends Controller
                 $booking->vehicle->year.' '.$booking->vehicle->name,
                 $booking->vehicle->type->label(),
                 $booking->renter->name,
-                $booking->owner->name,
+                $booking->company->displayName(),
                 $booking->pickup_at->toDateTimeString(),
                 $booking->return_at->toDateTimeString(),
                 $booking->days,

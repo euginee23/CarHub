@@ -34,7 +34,7 @@ class VehicleFactory extends Factory
         ]);
 
         return [
-            'owner_id' => User::factory()->verifiedOwner(),
+            'company_id' => User::factory()->verifiedCompany(),
             'brand' => $brand,
             'model' => $model,
             'year' => fake()->numberBetween(2018, 2025),
@@ -71,7 +71,7 @@ class VehicleFactory extends Factory
     }
 
     /**
-     * Indicate that the owner has taken the vehicle off the marketplace.
+     * Indicate that the rental company has taken the vehicle off the marketplace.
      */
     public function unlisted(): static
     {

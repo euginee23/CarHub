@@ -31,7 +31,7 @@ new #[Title('Trip tracking')] class extends Component {
     {
         return match (true) {
             Auth::user()->isAdmin() => route('admin.bookings.show', $this->booking),
-            Auth::id() === $this->booking->owner_id => route('owner.bookings.show', $this->booking),
+            Auth::id() === $this->booking->company_id => route('company.bookings.show', $this->booking),
             default => route('trips.show', $this->booking),
         };
     }

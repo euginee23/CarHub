@@ -24,7 +24,9 @@ export default defineConfig({
     server: {
         cors: true,
         watch: {
-            ignored: ['**/storage/framework/views/**'],
+            // Only front-end sources need watching. The Python virtualenv (TensorFlow)
+            // and vendor/ alone exceed Linux's file-watcher limit and crash the dev server.
+            ignored: ['**/storage/**', '**/vendor/**', '**/ml/**', '**/public/build/**', '**/bootstrap/cache/**'],
         },
     },
 });

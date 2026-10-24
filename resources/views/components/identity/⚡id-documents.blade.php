@@ -3,6 +3,7 @@
 use App\Actions\Identity\SubmitIdentityDocument;
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Enums\IdentityStatus;
 use App\Models\User;
 use App\Models\VerificationDocument;
 use Illuminate\Database\Eloquent\Collection;
@@ -99,18 +100,25 @@ new class extends Component {
 <div class="space-y-6">
     @php($approvedCount = $this->documents->where('status', DocumentStatus::Approved)->count())
 
-    @if (auth()->user()->hasVerifiedIdentity())
-        <flux:callout variant="success" icon="check-badge" :heading="__('Your identity is verified')">
-            <flux:callout.text>{{ __('Two government IDs have been approved. You can complete bookings.') }}</flux:callout.text>
-        </flux:callout>
-    @else
-        <flux:callout icon="identification" :heading="__('Two valid government IDs are required to rent')">
-            <flux:callout.text>
-                {{ __('Upload two different IDs — for example your driver\'s license plus a passport, UMID, or PhilSys ID. An administrator checks each one; owners only see that you are verified.') }}
-            </flux:callout.text>
-            <flux:callout.text>{{ __(':approved of :required approved.', ['approved' => $approvedCount, 'required' => User::REQUIRED_IDENTITY_DOCUMENTS]) }}</flux:callout.text>
-        </flux:callout>
-    @endif
+    @switch(auth()->user()->identityStatus())
+        @case(IdentityStatus::Approved)
+            <flux:callout variant="success" icon="check-badge" :heading="__('Your identity is verified')">
+                <flux:callout.text>{{ __('Two government IDs have been approved. You can now book vehicles.') }}</flux:callout.text>
+            </flux:callout>
+            @break
+        @case(IdentityStatus::Pending)
+            <flux:callout variant="warning" icon="clock" :heading="__('Waiting for an administrator to review your IDs')">
+                <flux:callout.text>{{ __('Both IDs are uploaded. You can use CarHub as soon as an administrator approves them — we will notify you.') }}</flux:callout.text>
+                <flux:callout.text>{{ __(':approved of :required approved.', ['approved' => $approvedCount, 'required' => User::REQUIRED_IDENTITY_DOCUMENTS]) }}</flux:callout.text>
+            </flux:callout>
+            @break
+        @default
+            <flux:callout icon="identification" :heading="__('Upload two valid government IDs to start renting')">
+                <flux:callout.text>
+                    {{ __('Upload two different IDs — for example your driver\'s license plus a passport, UMID, or PhilSys ID. An administrator checks each one before you can book; rental companies only see that you are verified.') }}
+                </flux:callout.text>
+            </flux:callout>
+    @endswitch
 
     @if ($this->documents->isNotEmpty())
         <ul class="divide-y divide-zinc-100 rounded-lg border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-700">
@@ -138,6 +146,7 @@ new class extends Component {
 
     @if ($this->activeDocuments->count() < User::REQUIRED_IDENTITY_DOCUMENTS)
         <form wire:submit="upload" class="space-y-4">
+            <flux:heading size="sm">{{ __('ID :number of :required', ['number' => $this->activeDocuments->count() + 1, 'required' => User::REQUIRED_IDENTITY_DOCUMENTS]) }}</flux:heading>
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:select wire:model="type" :label="__('ID type')" :placeholder="__('Choose an ID…')">
                     @foreach ($this->availableTypes as $option)

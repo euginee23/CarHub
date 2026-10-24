@@ -37,20 +37,20 @@ test('an invalid transition is refused and nothing is recorded', function () {
 
 test('every transition is written to the booking history', function () {
     $booking = Booking::factory()->create();
-    $owner = $booking->owner;
+    $company = $booking->company;
 
-    app(TransitionBooking::class)->handle($booking, BookingStatus::Approved, $owner, 'Looks good.');
+    app(TransitionBooking::class)->handle($booking, BookingStatus::Approved, $company, 'Looks good.');
 
     $change = $booking->statusChanges()->sole();
 
     expect($change)
         ->from_status->toBe(BookingStatus::Requested)
         ->to_status->toBe(BookingStatus::Approved)
-        ->changed_by->toBe($owner->id)
+        ->changed_by->toBe($company->id)
         ->note->toBe('Looks good.');
 });
 
-test('the renter can cancel before paying and the owner is told', function () {
+test('the renter can cancel before paying and the rental company is told', function () {
     $booking = Booking::factory()->approved()->create();
 
     Livewire::actingAs($booking->renter)
@@ -64,7 +64,7 @@ test('the renter can cancel before paying and the owner is told', function () {
         ->cancelled_by->toBe($booking->renter_id)
         ->cancellation_reason->toBe('Plans changed.');
 
-    Notification::assertSentTo($booking->owner, BookingStatusUpdated::class);
+    Notification::assertSentTo($booking->company, BookingStatusUpdated::class);
     Notification::assertNotSentTo($booking->renter, BookingStatusUpdated::class);
 });
 
@@ -98,7 +98,7 @@ test('only the renter can open their trip page', function () {
     $booking = Booking::factory()->create();
 
     $this->actingAs($booking->renter)->get(route('trips.show', $booking))->assertOk()->assertSee($booking->reference);
-    $this->actingAs(User::factory()->create())->get(route('trips.show', $booking))->assertForbidden();
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())->get(route('trips.show', $booking))->assertForbidden();
 });
 
 test('bookings are addressed by their reference, not their ID', function () {

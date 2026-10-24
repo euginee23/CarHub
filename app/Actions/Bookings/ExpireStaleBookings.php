@@ -19,7 +19,7 @@ class ExpireStaleBookings
 
     /**
      * Release vehicles held by bookings that will never go ahead: unpaid past
-     * their payment deadline, or still waiting on the owner or the renter's
+     * their payment deadline, or still waiting on the rental company or the renter's
      * checkout when pickup time arrives. Returns how many bookings expired.
      */
     public function handle(): int
@@ -42,7 +42,7 @@ class ExpireStaleBookings
 
         foreach ($neverReady as $booking) {
             $this->expire($booking, $booking->status === BookingStatus::Requested
-                ? __('The owner did not answer before pickup time.')
+                ? __('The rental company did not answer before pickup time.')
                 : __('Checkout was not completed before pickup time.'));
             $expired++;
         }

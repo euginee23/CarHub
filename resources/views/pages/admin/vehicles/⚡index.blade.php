@@ -39,7 +39,7 @@ new #[Title('Vehicles')] class extends Component {
     public function vehicles(): LengthAwarePaginator
     {
         return Vehicle::query()
-            ->with(['owner', 'coverPhoto'])
+            ->with(['company', 'coverPhoto'])
             ->withCount([
                 'bookings as active_bookings_count' => fn (Builder $query) => $query->whereIn('status', BookingStatus::holding()),
             ])
@@ -47,7 +47,7 @@ new #[Title('Vehicles')] class extends Component {
                 ->where('brand', 'like', '%'.trim($this->search).'%')
                 ->orWhere('model', 'like', '%'.trim($this->search).'%')
                 ->orWhere('location', 'like', '%'.trim($this->search).'%')
-                ->orWhereHas('owner', fn (Builder $query) => $query->where('name', 'like', '%'.trim($this->search).'%'))))
+                ->orWhereHas('company', fn (Builder $query) => $query->where('name', 'like', '%'.trim($this->search).'%'))))
             ->when($this->status === 'taken_down', fn (Builder $query) => $query->whereNotNull('moderated_at'))
             ->when(VehicleStatus::tryFrom($this->status), fn (Builder $query, VehicleStatus $status) => $query->where('status', $status))
             ->latest()
@@ -89,11 +89,11 @@ new #[Title('Vehicles')] class extends Component {
         unset($this->vehicles);
 
         Flux::modal('take-down-vehicle')->close();
-        Flux::toast(variant: 'success', text: __('Listing taken down. The owner has been told why.'));
+        Flux::toast(variant: 'success', text: __('Listing taken down. The rental company has been told why.'));
     }
 
     /**
-     * Let the owner list the vehicle again.
+     * Let the rental company list the vehicle again.
      */
     public function allowRelisting(int $vehicleId, ModerateVehicle $moderateVehicle): void
     {
@@ -101,7 +101,7 @@ new #[Title('Vehicles')] class extends Component {
 
         unset($this->vehicles);
 
-        Flux::toast(variant: 'success', text: __('The owner can list this vehicle again.'));
+        Flux::toast(variant: 'success', text: __('The rental company can list this vehicle again.'));
     }
 }; ?>
 
@@ -110,7 +110,7 @@ new #[Title('Vehicles')] class extends Component {
 
     <x-app.content class="space-y-6">
         <div class="grid gap-4 sm:grid-cols-[1fr_14rem]">
-            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by vehicle, area, or owner')" clearable />
+            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by vehicle, area, or rental company')" clearable />
             <flux:select wire:model.live="status">
                 <flux:select.option value="">{{ __('All listings') }}</flux:select.option>
                 @foreach (VehicleStatus::cases() as $option)
@@ -124,7 +124,7 @@ new #[Title('Vehicles')] class extends Component {
             <flux:table :paginate="$this->vehicles">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Vehicle') }}</flux:table.column>
-                    <flux:table.column>{{ __('Owner') }}</flux:table.column>
+                    <flux:table.column>{{ __('Rental company') }}</flux:table.column>
                     <flux:table.column>{{ __('Rate') }}</flux:table.column>
                     <flux:table.column>{{ __('Activity') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
@@ -143,9 +143,9 @@ new #[Title('Vehicles')] class extends Component {
                                 </div>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <div class="text-zinc-900">{{ $vehicle->owner->name }}</div>
-                                @if ($vehicle->owner->isSuspended())
-                                    <flux:badge size="sm" color="red">{{ __('Owner suspended') }}</flux:badge>
+                                <div class="text-zinc-900">{{ $vehicle->company->displayName() }}</div>
+                                @if ($vehicle->company->isSuspended())
+                                    <flux:badge size="sm" color="red">{{ __('Rental company suspended') }}</flux:badge>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>&#8369;{{ number_format($vehicle->price_per_day) }}</flux:table.cell>
@@ -181,7 +181,7 @@ new #[Title('Vehicles')] class extends Component {
         <form wire:submit="takeDown" class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ __('Take this listing down?') }}</flux:heading>
-                <flux:text class="mt-2">{{ __('It leaves the marketplace and the owner cannot relist it until you allow it. The owner sees your reason. Existing bookings are not affected.') }}</flux:text>
+                <flux:text class="mt-2">{{ __('It leaves the marketplace and the rental company cannot relist it until you allow it. The rental company sees your reason. Existing bookings are not affected.') }}</flux:text>
             </div>
             <flux:textarea wire:model="moderationReason" :label="__('Reason')" rows="3" :placeholder="__('e.g. Photos do not match the vehicle.')" />
             <div class="flex justify-end gap-2">

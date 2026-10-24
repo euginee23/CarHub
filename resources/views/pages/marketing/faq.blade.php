@@ -4,7 +4,7 @@
 
 <x-layouts::marketing
     :title="__('FAQ')"
-    :description="__('Answers to common questions about booking, ID verification, payments, deposits, GPS tracking, and hosting a vehicle on CarHub.')"
+    :description="__('Answers to common questions about booking, ID verification, payments, deposits, GPS tracking, and listing vehicles as a rental company on CarHub.')"
 >
     {{-- Header --}}
     <section class="relative isolate overflow-hidden border-b border-zinc-200 bg-white">
@@ -15,7 +15,7 @@
                 {{ __('Frequently asked questions') }}
             </h1>
             <p class="mx-auto mt-6 max-w-2xl text-lg/8 text-pretty text-zinc-600">
-                {{ __('Everything renters and owners ask most often. If yours is not here, the assistant in the corner or our contact form will get you an answer.') }}
+                {{ __('Everything renters and rental companies ask most often. If yours is not here, the assistant in the corner or our contact form will get you an answer.') }}
             </p>
         </div>
     </section>

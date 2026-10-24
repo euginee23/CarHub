@@ -1,7 +1,7 @@
 <x-layouts::error
     code="404"
     :title="__('We took a wrong turn')"
-    :message="__('That page does not exist, or the vehicle you were looking at is no longer listed. It may have been booked or removed by its owner.')"
+    :message="__('That page does not exist, or the vehicle you were looking at is no longer listed. It may have been booked or removed by its rental company.')"
 >
     <x-slot:actions>
         <x-error-action :href="route('vehicles.index')">{{ __('Browse vehicles') }}</x-error-action>

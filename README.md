@@ -23,7 +23,7 @@ This repository currently contains the **public-facing site** and the **authenti
 **Not yet implemented**
 
 - Domain models. `app/Models/` contains only `User` — there is no `Vehicle`, `Booking`, `Owner`, or `Payment` model, and no corresponding migrations.
-- The ML features from the panel review — content-based recommendations, LSTM demand forecasting, GPS map search, and the chatbot. **The marketing site deliberately does not advertise these**, since nothing backs them yet; a test in `tests/Feature/Marketing/PublicPagesTest.php` asserts no public page claims them. The chat bubble is presentational and its input is disabled.
+- The ML features from the panel review — content-based recommendations, LSTM demand forecasting, and GPS map search. **The marketing site deliberately does not advertise these**, since nothing backs them yet; a test in `tests/Feature/Marketing/PublicPagesTest.php` asserts no public page claims them.
 - Payment processing, ID verification uploads, and contract generation.
 - The authenticated dashboard is still the starter-kit placeholder.
 
@@ -377,7 +377,7 @@ The ML-backed items (2, 3, 4) are **not advertised anywhere on the site** — th
 
 | # | Feature | Where it's surfaced today | Built? |
 |---|---|---|---|
-| 1 | Chatbot | Floating assistant on every public page | UI only, input disabled |
+| 1 | Chatbot | Floating assistant on every page — answers with Claude, looking up live listings, availability, and prices (`app/Services/Assistant`; needs `ANTHROPIC_API_KEY`) | Yes |
 | 2 | Personalised recommendations & price optimisation | Owner earnings panel (suggested rate + forecast chart) | No |
 | 3 | Content-based filtering | Browse filters — attribute matching only, no learning | Filters work |
 | 4 | LSTM demand forecasting | Owner earnings panel chart is illustrative | No |

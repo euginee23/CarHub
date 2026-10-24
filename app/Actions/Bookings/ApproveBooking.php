@@ -23,9 +23,9 @@ class ApproveBooking
      *
      * @throws ValidationException
      */
-    public function handle(Booking $booking, ?User $owner = null, ?string $note = null): Booking
+    public function handle(Booking $booking, ?User $company = null, ?string $note = null): Booking
     {
-        $declined = DB::transaction(function () use ($booking, $owner, $note) {
+        $declined = DB::transaction(function () use ($booking, $company, $note) {
             $vehicle = Vehicle::whereKey($booking->vehicle_id)->lockForUpdate()->firstOrFail();
             $booking->refresh();
 
@@ -41,7 +41,7 @@ class ApproveBooking
                 throw ValidationException::withMessages(['booking' => __('The vehicle is no longer free for these dates.')]);
             }
 
-            $this->transitions->handle($booking, BookingStatus::Approved, $owner, $note, ['approved_at' => now()]);
+            $this->transitions->handle($booking, BookingStatus::Approved, $company, $note, ['approved_at' => now()]);
 
             return Booking::whereBelongsTo($vehicle)
                 ->whereKeyNot($booking->id)

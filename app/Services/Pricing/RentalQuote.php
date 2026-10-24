@@ -6,7 +6,7 @@ use App\Models\Vehicle;
 use Carbon\CarbonInterface;
 
 /**
- * The price of renting a vehicle for a given window: the owner's daily rate for
+ * The price of renting a vehicle for a given window: the rental company's daily rate for
  * every started 24-hour period, plus the platform service fee.
  */
 final readonly class RentalQuote

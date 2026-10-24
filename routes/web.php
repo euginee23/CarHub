@@ -29,6 +29,18 @@ Route::view('terms', 'pages::marketing.terms')->name('terms');
 
 /*
 |--------------------------------------------------------------------------
+| Links from before rental companies replaced vehicle owners
+|--------------------------------------------------------------------------
+|
+| Emails and bookmarks still point at the old owner URLs.
+|
+*/
+
+Route::permanentRedirect('owner/{path?}', '/company/{path?}')->where('path', '.*');
+Route::permanentRedirect('admin/owner-applications', '/admin/company-applications');
+
+/*
+|--------------------------------------------------------------------------
 | Authenticated application
 |--------------------------------------------------------------------------
 */
@@ -41,8 +53,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('bookings/{booking}/contract', [RentalContractController::class, 'show'])->name('bookings.contract');
     Route::livewire('bookings/{booking}/tracking', 'pages::tracking.show')->name('bookings.tracking');
 
-    // Renter accounts: finding, booking, and taking trips.
-    Route::middleware('role:renter')->group(function () {
+    // Renter accounts: finding, booking, and taking trips, once two IDs are approved.
+    Route::middleware(['role:renter', 'identity.verified'])->group(function () {
         Route::livewire('renter', 'pages::renter.dashboard')->name('renter.dashboard');
 
         Route::livewire('trips', 'pages::trips.index')->name('trips.index');
@@ -54,22 +66,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('payments/{payment}/simulated', [SimulatedCheckoutController::class, 'complete'])->name('payments.simulated.complete');
     });
 
-    // Owner accounts: verification, then listing vehicles and handling bookings.
-    Route::middleware('role:owner')->group(function () {
-        Route::livewire('owner/apply', 'pages::owner.apply')->name('owner.apply');
+    // Rental company accounts: verification, then listing vehicles and handling bookings.
+    Route::middleware('role:company')->group(function () {
+        Route::livewire('company/apply', 'pages::company.apply')->name('company.apply');
 
         Route::middleware('can:list-vehicles')->group(function () {
-            Route::livewire('owner', 'pages::owner.dashboard')->name('owner.dashboard');
+            Route::livewire('company', 'pages::company.dashboard')->name('company.dashboard');
 
-            Route::prefix('owner/vehicles')->name('owner.vehicles.')->group(function () {
-                Route::livewire('/', 'pages::owner.vehicles.index')->name('index');
-                Route::livewire('create', 'pages::owner.vehicles.form')->name('create');
-                Route::livewire('{vehicle}/edit', 'pages::owner.vehicles.form')->name('edit');
+            Route::prefix('company/vehicles')->name('company.vehicles.')->group(function () {
+                Route::livewire('/', 'pages::company.vehicles.index')->name('index');
+                Route::livewire('create', 'pages::company.vehicles.form')->name('create');
+                Route::livewire('{vehicle}/edit', 'pages::company.vehicles.form')->name('edit');
             });
 
-            Route::prefix('owner/bookings')->name('owner.bookings.')->group(function () {
-                Route::livewire('/', 'pages::owner.bookings.index')->name('index');
-                Route::livewire('{booking}', 'pages::owner.bookings.show')->name('show');
+            Route::prefix('company/bookings')->name('company.bookings.')->group(function () {
+                Route::livewire('/', 'pages::company.bookings.index')->name('index');
+                Route::livewire('{booking}', 'pages::company.bookings.show')->name('show');
             });
         });
     });

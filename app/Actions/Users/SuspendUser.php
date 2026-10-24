@@ -10,7 +10,7 @@ class SuspendUser
 {
     /**
      * Suspend an account: the user is signed out on their next request and cannot
-     * sign back in, and an owner's listings disappear from the marketplace.
+     * sign back in, and a rental company's listings disappear from the marketplace.
      *
      * @throws ValidationException
      */

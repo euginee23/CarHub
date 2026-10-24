@@ -46,15 +46,15 @@ test('the booking detail shows the whole transaction', function () {
         ->assertSee('Payment attempts')
         ->assertSee('Handover record')
         ->assertSee($booking->renter->email)
-        ->assertSee($booking->owner->email)
+        ->assertSee($booking->company->email)
         ->assertSee(route('bookings.tracking', $booking));
 });
 
 test('only administrators can monitor all bookings', function () {
     $booking = Booking::factory()->create();
 
-    $this->actingAs($booking->owner)->get(route('admin.bookings.index'))->assertForbidden();
-    $this->actingAs($booking->owner)->get(route('admin.bookings.show', $booking))->assertForbidden();
+    $this->actingAs($booking->company)->get(route('admin.bookings.index'))->assertForbidden();
+    $this->actingAs($booking->company)->get(route('admin.bookings.show', $booking))->assertForbidden();
 });
 
 test('booking pages show how far the rental has come', function () {

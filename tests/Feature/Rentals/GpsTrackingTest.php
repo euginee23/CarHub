@@ -92,12 +92,12 @@ test('each device is rate limited', function () {
     sendPings(['lat' => 10.3157, 'lng' => 123.8854])->assertTooManyRequests();
 });
 
-test('an owner can connect a tracker and gets its token once', function () {
+test('a rental company can connect a tracker and gets its token once', function () {
     $this->device->delete();
     $vehicle = $this->booking->vehicle;
 
-    $component = Livewire::actingAs($vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $vehicle])
+    $component = Livewire::actingAs($vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $vehicle])
         ->call('connectTracker');
 
     $token = $component->get('issuedTrackerToken');
@@ -112,8 +112,8 @@ test('an owner can connect a tracker and gets its token once', function () {
 });
 
 test('issuing a new token stops the old one working, and disconnecting stops both', function () {
-    $component = Livewire::actingAs($this->booking->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $this->booking->vehicle])
+    $component = Livewire::actingAs($this->booking->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $this->booking->vehicle])
         ->call('connectTracker');
 
     sendPings(['lat' => 10.3157, 'lng' => 123.8854])->assertUnauthorized();
@@ -124,10 +124,10 @@ test('issuing a new token stops the old one working, and disconnecting stops bot
     expect(GpsDevice::count())->toBe(0);
 });
 
-test('the tracking page is open to the renter, owner, and admins during the trip', function (string $who, bool $allowed) {
+test('the tracking page is open to the renter, rental company, and admins during the trip', function (string $who, bool $allowed) {
     $user = match ($who) {
         'renter' => $this->booking->renter,
-        'owner' => $this->booking->owner,
+        'company' => $this->booking->company,
         'admin' => User::factory()->admin()->create(),
         'stranger' => User::factory()->create(),
     };
@@ -137,29 +137,29 @@ test('the tracking page is open to the renter, owner, and admins during the trip
     $allowed ? $response->assertOk()->assertSee('trackingMap(', escape: false) : $response->assertForbidden();
 })->with([
     'renter' => ['renter', true],
-    'owner' => ['owner', true],
+    'company' => ['company', true],
     'admin' => ['admin', true],
     'stranger' => ['stranger', false],
 ]);
 
-test('after the trip only the owner and admins can see the route', function () {
+test('after the trip only the rental company and admins can see the route', function () {
     $this->booking->forceFill(['status' => BookingStatus::Completed])->save();
 
     $this->actingAs($this->booking->renter)->get(route('bookings.tracking', $this->booking))->assertForbidden();
-    $this->actingAs($this->booking->owner)->get(route('bookings.tracking', $this->booking))->assertOk()->assertSee('Route recorded during the rental');
+    $this->actingAs($this->booking->company)->get(route('bookings.tracking', $this->booking))->assertOk()->assertSee('Route recorded during the rental');
 });
 
 test('trips that have not started cannot be tracked', function () {
     $this->booking->forceFill(['status' => BookingStatus::Confirmed])->save();
 
-    $this->actingAs($this->booking->owner)->get(route('bookings.tracking', $this->booking))->assertForbidden();
+    $this->actingAs($this->booking->company)->get(route('bookings.tracking', $this->booking))->assertForbidden();
 });
 
 test('the live map is refreshed with the latest route', function () {
     VehicleLocation::factory()->for($this->booking)->create(['latitude' => 10.30, 'longitude' => 123.88, 'recorded_at' => now()->subMinutes(2)]);
     VehicleLocation::factory()->for($this->booking)->create(['latitude' => 10.31, 'longitude' => 123.89, 'recorded_at' => now()->subMinute(), 'speed_kph' => 35]);
 
-    Livewire::actingAs($this->booking->owner)
+    Livewire::actingAs($this->booking->company)
         ->test('tracking.live-map', ['booking' => $this->booking])
         ->assertSee('35 km/h')
         ->call('refreshTracking')
@@ -169,22 +169,22 @@ test('the live map is refreshed with the latest route', function () {
 });
 
 test('before the first position the map waits at the pickup point', function () {
-    Livewire::actingAs($this->booking->owner)
+    Livewire::actingAs($this->booking->company)
         ->test('tracking.live-map', ['booking' => $this->booking])
         ->assertSee('Waiting for the tracker')
         ->assertSee('The map is centred on the pickup point.')
         ->assertSee('Pickup point');
 });
 
-test('the live map is shown right on the renter and owner booking pages during the trip', function () {
+test('the live map is shown right on the renter and rental company booking pages during the trip', function () {
     $this->actingAs($this->booking->renter)
         ->get(route('trips.show', $this->booking))
         ->assertSee('Live map')
         ->assertSee('trackingMap(', escape: false)
         ->assertSee('Open full map');
 
-    $this->actingAs($this->booking->owner)
-        ->get(route('owner.bookings.show', $this->booking))
+    $this->actingAs($this->booking->company)
+        ->get(route('company.bookings.show', $this->booking))
         ->assertSee('Where the vehicle is now')
         ->assertSee('trackingMap(', escape: false);
 });
@@ -192,8 +192,8 @@ test('the live map is shown right on the renter and owner booking pages during t
 test('the booking pages have no live map once the trip is over', function () {
     $this->booking->forceFill(['status' => BookingStatus::Completed])->save();
 
-    $this->actingAs($this->booking->owner)
-        ->get(route('owner.bookings.show', $this->booking))
+    $this->actingAs($this->booking->company)
+        ->get(route('company.bookings.show', $this->booking))
         ->assertDontSee('Where the vehicle is now');
 });
 

@@ -1,4 +1,4 @@
-{{-- Renders the vehicle's cover photo when the owner has uploaded one, otherwise
+{{-- Renders the vehicle's cover photo when the rental company has uploaded one, otherwise
      falls back to a branded illustration so the grid never shows a broken image. --}}
 @props([
     'vehicle',

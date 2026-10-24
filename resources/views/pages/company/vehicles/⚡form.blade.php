@@ -69,7 +69,7 @@ new #[Title('Vehicle listing')] class extends Component {
     }
 
     /**
-     * The upcoming and current date ranges the owner has blocked.
+     * The upcoming and current date ranges the rental company has blocked.
      *
      * @return \Illuminate\Database\Eloquent\Collection<int, VehicleBlackout>
      */
@@ -180,7 +180,7 @@ new #[Title('Vehicle listing')] class extends Component {
             $vehicle->fill($validated);
 
             if (! $vehicle->exists) {
-                $vehicle->owner()->associate(Auth::user());
+                $vehicle->company()->associate(Auth::user());
             }
 
             $vehicle->save();
@@ -202,7 +202,7 @@ new #[Title('Vehicle listing')] class extends Component {
         if ($isNew) {
             session()->flash('status', __('Vehicle saved.'));
 
-            $this->redirectRoute('owner.vehicles.edit', ['vehicle' => $vehicle], navigate: true);
+            $this->redirectRoute('company.vehicles.edit', ['vehicle' => $vehicle], navigate: true);
 
             return;
         }
@@ -257,7 +257,7 @@ new #[Title('Vehicle listing')] class extends Component {
     <x-app.page-header
         :title="$vehicle ? __('Edit :name', ['name' => $vehicle->name]) : __('List a vehicle')"
         :description="__('Describe the vehicle, set its rate, and pin where renters pick it up.')"
-        :back="route('owner.vehicles.index')"
+        :back="route('company.vehicles.index')"
         :back-label="__('My vehicles')"
     >
         @if ($vehicle?->isListed())
@@ -385,7 +385,7 @@ new #[Title('Vehicle listing')] class extends Component {
             </flux:card>
 
             <div class="flex justify-end gap-2">
-                <flux:button :href="route('owner.vehicles.index')" variant="ghost" wire:navigate>{{ __('Cancel') }}</flux:button>
+                <flux:button :href="route('company.vehicles.index')" variant="ghost" wire:navigate>{{ __('Cancel') }}</flux:button>
                 <flux:button type="submit" variant="primary" data-test="save-vehicle">{{ __('Save vehicle') }}</flux:button>
             </div>
         </form>

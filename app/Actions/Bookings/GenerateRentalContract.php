@@ -27,7 +27,7 @@ class GenerateRentalContract
         }
 
         if ($booking->status !== BookingStatus::Approved) {
-            throw ValidationException::withMessages(['contract' => __('A contract is prepared once the owner approves the booking.')]);
+            throw ValidationException::withMessages(['contract' => __('A contract is prepared once the rental company approves the booking.')]);
         }
 
         if (! $booking->hasAcceptedTerms()) {
@@ -55,7 +55,7 @@ class GenerateRentalContract
      */
     public function snapshot(Booking $booking): array
     {
-        $booking->loadMissing(['renter', 'owner', 'vehicle', 'termsVersion']);
+        $booking->loadMissing(['renter', 'company', 'vehicle', 'termsVersion']);
 
         return [
             'generated_at' => now()->toIso8601String(),
@@ -71,10 +71,11 @@ class GenerateRentalContract
                 'phone' => $booking->renter->phone,
                 'identity_verified' => $booking->renter->hasVerifiedIdentity(),
             ],
-            'owner' => [
-                'name' => $booking->owner->name,
-                'email' => $booking->owner->email,
-                'phone' => $booking->owner->phone,
+            'company' => [
+                'name' => $booking->company->displayName(),
+                'address' => $booking->company->company_address,
+                'email' => $booking->company->email,
+                'phone' => $booking->company->phone,
                 'approved_at' => $booking->approved_at?->toIso8601String(),
             ],
             'vehicle' => [

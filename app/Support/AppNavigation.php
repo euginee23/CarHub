@@ -13,7 +13,7 @@ class AppNavigation
 {
     /**
      * The areas the user can reach, in display order. Each kind of account has
-     * exactly one working area — renting, hosting, or administration — plus
+     * exactly one working area — renting, company, or administration — plus
      * their account settings.
      *
      * @return array<string, array{label: string, links: array<int, array{label: string, route: string, active: string}>}>
@@ -22,20 +22,30 @@ class AppNavigation
     {
         $area = match ($user->role) {
             UserRole::Admin => ['admin' => self::adminSection()],
-            UserRole::Owner => ['hosting' => self::hostingSection($user)],
-            UserRole::Renter => ['renting' => self::rentingSection()],
+            UserRole::Company => ['company' => self::companySection($user)],
+            UserRole::Renter => ['renting' => self::rentingSection($user)],
         };
 
         return [...$area, 'account' => self::accountSection()];
     }
 
     /**
-     * The renting area, for renter accounts.
+     * The renting area, for renter accounts. Until two IDs are approved it only
+     * holds their ID verification.
      *
      * @return array{label: string, links: array<int, array{label: string, route: string, active: string}>}
      */
-    protected static function rentingSection(): array
+    protected static function rentingSection(User $user): array
     {
+        if (! $user->hasVerifiedIdentity()) {
+            return [
+                'label' => __('Renting'),
+                'links' => [
+                    ['label' => __('ID verification'), 'route' => 'identity.edit', 'active' => 'identity.edit'],
+                ],
+            ];
+        }
+
         return [
             'label' => __('Renting'),
             'links' => [
@@ -47,29 +57,29 @@ class AppNavigation
     }
 
     /**
-     * The hosting area, for owner accounts. Until an owner is verified it only
-     * holds their verification application.
+     * The company area, for rental company accounts. Until the company is
+     * verified it only holds its verification application.
      *
      * @return array{label: string, links: array<int, array{label: string, route: string, active: string}>}
      */
-    protected static function hostingSection(User $user): array
+    protected static function companySection(User $user): array
     {
-        if (! $user->isVerifiedOwner()) {
+        if (! $user->isVerifiedCompany()) {
             return [
-                'label' => __('Hosting'),
+                'label' => __('Company'),
                 'links' => [
-                    ['label' => __('Owner verification'), 'route' => 'owner.apply', 'active' => 'owner.apply'],
+                    ['label' => __('Company verification'), 'route' => 'company.apply', 'active' => 'company.apply'],
                 ],
             ];
         }
 
         return [
-            'label' => __('Hosting'),
+            'label' => __('Company'),
             'links' => [
-                ['label' => __('Overview'), 'route' => 'owner.dashboard', 'active' => 'owner.dashboard'],
-                ['label' => __('My vehicles'), 'route' => 'owner.vehicles.index', 'active' => 'owner.vehicles.*'],
-                ['label' => __('Booking requests'), 'route' => 'owner.bookings.index', 'active' => 'owner.bookings.*'],
-                ['label' => __('Verification'), 'route' => 'owner.apply', 'active' => 'owner.apply'],
+                ['label' => __('Overview'), 'route' => 'company.dashboard', 'active' => 'company.dashboard'],
+                ['label' => __('My vehicles'), 'route' => 'company.vehicles.index', 'active' => 'company.vehicles.*'],
+                ['label' => __('Booking requests'), 'route' => 'company.bookings.index', 'active' => 'company.bookings.*'],
+                ['label' => __('Verification'), 'route' => 'company.apply', 'active' => 'company.apply'],
             ],
         ];
     }
@@ -90,7 +100,7 @@ class AppNavigation
                 ['label' => __('Payments'), 'route' => 'admin.payments.index', 'active' => 'admin.payments.*'],
                 ['label' => __('Vehicles'), 'route' => 'admin.vehicles.index', 'active' => 'admin.vehicles.*'],
                 ['label' => __('Users'), 'route' => 'admin.users', 'active' => 'admin.users'],
-                ['label' => __('Owner applications'), 'route' => 'admin.owner-applications', 'active' => 'admin.owner-applications'],
+                ['label' => __('Company applications'), 'route' => 'admin.company-applications', 'active' => 'admin.company-applications'],
                 ['label' => __('ID reviews'), 'route' => 'admin.id-reviews', 'active' => 'admin.id-reviews'],
                 ['label' => __('Activity'), 'route' => 'admin.activity', 'active' => 'admin.activity'],
             ],

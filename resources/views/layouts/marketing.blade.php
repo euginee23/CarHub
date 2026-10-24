@@ -32,7 +32,9 @@
 
         <x-marketing.footer />
 
-        <x-marketing.chat-bubble />
+        @persist('assistant')
+            <livewire:marketing.chat-bubble />
+        @endpersist
 
         @persist('toast')
             <flux:toast.group>

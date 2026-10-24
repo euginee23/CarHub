@@ -1,6 +1,6 @@
 <x-layouts::marketing
     :title="__('How it works')"
-    :description="__('How renting and hosting on CarHub works — from search and ID verification through validated payments, scheduling rules, and the digital rental contract.')"
+    :description="__('How renting from verified rental companies on CarHub works — from search and ID verification through validated payments, scheduling rules, and the digital rental contract.')"
 >
     {{-- Header --}}
     <section class="relative isolate overflow-hidden border-b border-zinc-200 bg-white">
@@ -21,8 +21,8 @@
                 <a href="#for-renters" class="rounded-lg bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700">
                     {{ __('I want to rent') }}
                 </a>
-                <a href="#for-owners" class="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400">
-                    {{ __('I want to host') }}
+                <a href="#for-companies" class="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400">
+                    {{ __('I run a rental company') }}
                 </a>
             </div>
         </div>
@@ -56,38 +56,38 @@
                     </x-marketing.step>
 
                     <x-marketing.step number="4" :title="__('Pay and get confirmed')">
-                        {{ __('Pay with GCash, Maya, card, or bank transfer. The amount is authorised, validated, and only captured once the owner accepts. If they decline or let the window lapse, the authorisation is released in full.') }}
+                        {{ __('Pay with GCash, Maya, card, or bank transfer. The amount is authorised, validated, and only captured once the rental company accepts. If they decline or let the window lapse, the authorisation is released in full.') }}
                     </x-marketing.step>
 
                     <x-marketing.step number="5" :title="__('Sign, drive, return')" :last="true">
-                        {{ __('At pickup you and the owner sign a digital contract recording condition, fuel, mileage, and deposit. The trip is GPS-tracked and insured until you return the vehicle, then it closes out and tracking stops.') }}
+                        {{ __('At pickup you and the rental company sign a digital contract recording condition, fuel, mileage, and deposit. The trip is GPS-tracked and insured until you return the vehicle, then it closes out and tracking stops.') }}
                     </x-marketing.step>
                 </div>
             </div>
         </div>
     </section>
 
-    {{-- For owners --}}
-    <section id="for-owners" class="scroll-mt-24 border-y border-zinc-200 bg-zinc-50 py-20 lg:py-28">
+    {{-- For rental companies --}}
+    <section id="for-companies" class="scroll-mt-24 border-y border-zinc-200 bg-zinc-50 py-20 lg:py-28">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="grid gap-14 lg:grid-cols-[24rem_1fr] lg:gap-20">
                 <div class="lg:sticky lg:top-24 lg:h-fit">
                     <x-marketing.section-heading
                         align="left"
-                        :eyebrow="__('For owners')"
-                        :title="__('From listing to payout')"
-                        :description="__('You keep control over who drives your vehicle, when, and for how much.')"
+                        :eyebrow="__('For rental companies')"
+                        :title="__('From verification to payout')"
+                        :description="__('Get your company verified once, then post your fleet and keep control over who drives, when, and for how much.')"
                     />
 
                 </div>
 
                 <div>
-                    <x-marketing.step number="1" :title="__('List your vehicle')">
-                        {{ __('Add photos, specs, and features, then prove ownership with your OR/CR and a valid ID. Listings go live once verification clears.') }}
+                    <x-marketing.step number="1" :title="__('Get your company verified')">
+                        {{ __('Register your rental company, then upload your Mayor\'s / Business permit and a valid ID of the person registering it. An administrator checks that the company is legitimate and approves it once.') }}
                     </x-marketing.step>
 
-                    <x-marketing.step number="2" :title="__('Set availability and pricing')">
-                        {{ __('Block out the days you need the vehicle yourself. Start from the suggested daily rate or set your own — you can change it any time without affecting confirmed bookings.') }}
+                    <x-marketing.step number="2" :title="__('Post your vehicles')">
+                        {{ __('Add each vehicle with photos, specs, and a daily rate. Verified companies are trusted, so listings go live as soon as you publish them — no approval per vehicle. Block out days a vehicle is unavailable at any time.') }}
                     </x-marketing.step>
 
                     <x-marketing.step number="3" :title="__('Review and accept requests')">
@@ -133,7 +133,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="m9.25 12 1.9 1.9 3.6-3.8" />
                         </svg>
                     </x-slot:icon>
-                    {{ __('A booking is never held on an unconfirmed payment. The amount is authorised at request, verified against the booking total, and captured only after the owner accepts.') }}
+                    {{ __('A booking is never held on an unconfirmed payment. The amount is authorised at request, verified against the booking total, and captured only after the rental company accepts.') }}
                 </x-marketing.feature-card>
 
                 <x-marketing.feature-card :title="__('Deposits & refunds')">
@@ -169,7 +169,7 @@
                             __('Bookings can be made up to 90 days in advance.'),
                             __('The return date must fall after the pickup date.'),
                             __('A requested window cannot overlap an existing confirmed booking on the same vehicle.'),
-                            __('Owner-blocked dates are removed from the calendar entirely.'),
+                            __('Rental company-blocked dates are removed from the calendar entirely.'),
                             __('Extensions are allowed only when no booking follows immediately after yours.'),
                         ] as $rule)
                             <li class="flex gap-3">

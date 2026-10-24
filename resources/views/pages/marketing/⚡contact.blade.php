@@ -73,7 +73,7 @@ class extends Component {
         <div class="relative mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8 lg:py-20">
             <h1 class="text-4xl font-bold tracking-tight text-balance text-zinc-900 sm:text-5xl">{{ __('Get in touch') }}</h1>
             <p class="mx-auto mt-6 max-w-2xl text-lg/8 text-pretty text-zinc-600">
-                {{ __('Questions about a booking, hosting a vehicle, or the research behind CarHub — send them here and a human will answer.') }}
+                {{ __('Questions about a booking, listing your rental company, or the research behind CarHub — send them here and a human will answer.') }}
             </p>
         </div>
     </section>
@@ -107,7 +107,7 @@ class extends Component {
 
                         <flux:select wire:model="subject" :label="__('What is this about?')" :placeholder="__('Choose a topic')">
                             <flux:select.option value="booking">{{ __('A booking or trip') }}</flux:select.option>
-                            <flux:select.option value="hosting">{{ __('Listing my vehicle') }}</flux:select.option>
+                            <flux:select.option value="hosting">{{ __('Listing my rental company') }}</flux:select.option>
                             <flux:select.option value="payment">{{ __('Payments, refunds, or deposits') }}</flux:select.option>
                             <flux:select.option value="verification">{{ __('ID verification') }}</flux:select.option>
                             <flux:select.option value="research">{{ __('The research project') }}</flux:select.option>

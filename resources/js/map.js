@@ -32,7 +32,7 @@ function createMap(element, center, zoom) {
 
 document.addEventListener('alpine:init', () => {
     /**
-     * Lets an owner drop a pin for a vehicle's pickup location. The chosen
+     * Lets a rental company drop a pin for a vehicle's pickup location. The chosen
      * coordinates are written back to the Livewire component's properties.
      */
     window.Alpine.data('locationPicker', ({ latitude = null, longitude = null, latProperty = 'latitude', lngProperty = 'longitude' } = {}) => ({

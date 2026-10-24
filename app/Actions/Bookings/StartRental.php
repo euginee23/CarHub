@@ -13,12 +13,12 @@ class StartRental
     public function __construct(protected TransitionBooking $transitions) {}
 
     /**
-     * The owner hands the vehicle over: record the actual pickup time and the
+     * The rental company hands the vehicle over: record the actual pickup time and the
      * vehicle's condition, and start the rental.
      *
      * @throws ValidationException
      */
-    public function handle(Booking $booking, User $owner, int $odometer, FuelLevel $fuel, ?string $notes = null): Booking
+    public function handle(Booking $booking, User $company, int $odometer, FuelLevel $fuel, ?string $notes = null): Booking
     {
         if ($booking->status !== BookingStatus::Confirmed) {
             throw ValidationException::withMessages(['handover' => __('Only confirmed, paid bookings can be handed over.')]);
@@ -33,7 +33,7 @@ class StartRental
         return $this->transitions->handle(
             $booking,
             BookingStatus::Ongoing,
-            $owner,
+            $company,
             __('Vehicle released at :odometer km with a :fuel.', ['odometer' => number_format($odometer), 'fuel' => mb_strtolower($fuel->label())]),
             [
                 'picked_up_at' => now(),

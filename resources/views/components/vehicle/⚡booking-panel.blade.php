@@ -127,6 +127,12 @@ new class extends Component {
             return;
         }
 
+        if ($user->isRenter() && ! $user->hasVerifiedIdentity()) {
+            $this->redirectRoute('identity.edit');
+
+            return;
+        }
+
         $this->validate(['notes' => ['nullable', 'string', 'max:500']]);
 
         if (! $this->schedule) {
@@ -138,8 +144,8 @@ new class extends Component {
         $booking = $createBookingRequest->handle($user, $this->vehicle, $this->schedule['pickup'], $this->schedule['return'], filled($this->notes) ? $this->notes : null);
 
         session()->flash('status', $booking->status === BookingStatus::Approved
-            ? __('Booked! The owner uses instant book, so you can go straight to checkout.')
-            : __('Request sent. The owner has been notified.'));
+            ? __('Booked! The rental company uses instant book, so you can go straight to checkout.')
+            : __('Request sent. The rental company has been notified.'));
 
         $this->redirectRoute('trips.show', $booking);
     }
@@ -249,13 +255,18 @@ new class extends Component {
             @if (auth()->user()->isAdmin())
                 {{ __('You are signed in as an administrator. Admin accounts manage the marketplace and cannot book vehicles.') }}
             @else
-                {{ __('You are signed in with an owner account. Owner accounts list vehicles; renting needs a separate renter account.') }}
+                {{ __('You are signed in with a rental company account. Rental company accounts list vehicles; renting needs a separate renter account.') }}
             @endif
         </p>
+    @elseif (auth()->check() && ! auth()->user()->hasVerifiedIdentity())
+        <div class="mt-6 rounded-xl bg-amber-50 px-4 py-3 text-center text-sm text-amber-800" data-test="verify-ids-to-book">
+            <p>{{ __('Booking opens once an administrator approves your two valid IDs.') }}</p>
+            <a href="{{ route('identity.edit') }}" class="mt-2 inline-block font-semibold underline">{{ __('Verify your IDs to book') }}</a>
+        </div>
     @else
         @auth
             @if ($this->isAvailable)
-                <flux:textarea wire:model="notes" :label="__('Message to the owner (optional)')" rows="2" class="mt-6" :placeholder="__('Where you are headed, who is driving…')" />
+                <flux:textarea wire:model="notes" :label="__('Message to the rental company (optional)')" rows="2" class="mt-6" :placeholder="__('Where you are headed, who is driving…')" />
             @endif
         @endauth
 
@@ -279,7 +290,7 @@ new class extends Component {
     @endif
 
     <p class="mt-3 text-center text-xs text-zinc-500">
-        {{ __('You will not be charged until the owner confirms.') }}
+        {{ __('You will not be charged until the rental company confirms.') }}
     </p>
 
     <ul class="mt-6 space-y-2.5 border-t border-zinc-100 pt-5 text-sm text-zinc-600">

@@ -23,7 +23,7 @@ class CreateBookingRequest
 
     /**
      * Validate the requested schedule and record a booking request. Instant-book
-     * vehicles are approved straight away; the rest wait for the owner.
+     * vehicles are approved straight away; the rest wait for the rental company.
      *
      * @throws ValidationException
      */
@@ -33,7 +33,11 @@ class CreateBookingRequest
             throw ValidationException::withMessages(['schedule' => __('Only renter accounts can book vehicles.')]);
         }
 
-        if ($vehicle->owner_id === $renter->id) {
+        if (! $renter->hasVerifiedIdentity()) {
+            throw ValidationException::withMessages(['schedule' => __('Two approved government IDs are required before you can book.')]);
+        }
+
+        if ($vehicle->company_id === $renter->id) {
             throw ValidationException::withMessages(['schedule' => __('You cannot book your own vehicle.')]);
         }
 
@@ -75,7 +79,7 @@ class CreateBookingRequest
 
             $booking->forceFill([
                 'renter_id' => $renter->id,
-                'owner_id' => $vehicle->owner_id,
+                'company_id' => $vehicle->company_id,
                 'vehicle_id' => $vehicle->id,
                 'status' => BookingStatus::Requested,
             ])->save();
@@ -89,7 +93,7 @@ class CreateBookingRequest
             return $this->approveBooking->handle($booking, note: __('Approved automatically — instant book.'));
         }
 
-        $booking->owner->notify(new BookingRequested($booking));
+        $booking->company->notify(new BookingRequested($booking));
 
         return $booking;
     }

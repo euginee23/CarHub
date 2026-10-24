@@ -27,7 +27,7 @@ test('the renter rates a completed trip', function () {
     expect($review)
         ->rating->toBe(5)
         ->reviewer_id->toBe($this->booking->renter_id)
-        ->owner_id->toBe($this->booking->owner_id)
+        ->company_id->toBe($this->booking->company_id)
         ->and($this->vehicle->fresh())
         ->rating->toBe(5.0)
         ->reviews_count->toBe(1);
@@ -91,8 +91,8 @@ test('reviews help future renters on the vehicle page', function () {
         ->assertSee('5.0 average rating');
 });
 
-test('the owner sees the renter\'s review on the booking', function () {
+test('the rental company sees the renter\'s review on the booking', function () {
     Review::factory()->for($this->booking)->create(['comment' => 'Great host.']);
 
-    $this->actingAs($this->booking->owner)->get(route('owner.bookings.show', $this->booking))->assertOk()->assertSee('Great host.');
+    $this->actingAs($this->booking->company)->get(route('company.bookings.show', $this->booking))->assertOk()->assertSee('Great host.');
 });

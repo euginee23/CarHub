@@ -21,9 +21,9 @@ return [
             'rating' => 5,
         ],
         [
-            'quote' => 'My Innova used to sit idle five days a week. CarHub suggested a price I would never have picked myself and it has been booked almost every weekend since.',
+            'quote' => 'Our Innovas used to sit in the yard on weekdays. Verification took one visit to the admin, and since we started posting our fleet on CarHub it has been booked almost every weekend.',
             'name' => 'Grace Tabotabo',
-            'role' => 'Vehicle owner',
+            'role' => 'Tabotabo Family Rentals',
             'rating' => 5,
         ],
         [
@@ -44,7 +44,7 @@ return [
                 ],
                 [
                     'question' => 'Why do you require two valid IDs?',
-                    'answer' => 'Two independent IDs let us confirm that you are who you say you are before a stranger\'s vehicle is handed over to you. It protects owners from fraud and gives renters confidence that everyone on the platform has been through the same check.',
+                    'answer' => 'Two independent IDs let us confirm that you are who you say you are before a stranger\'s vehicle is handed over to you. It protects rental companies from fraud and gives renters confidence that everyone on the platform has been through the same check.',
                 ],
                 [
                     'question' => 'How far in advance can I book?',
@@ -65,15 +65,15 @@ return [
                 ],
                 [
                     'question' => 'When am I charged?',
-                    'answer' => 'The full rental amount is authorised when you confirm the booking and captured once the owner accepts. If the owner declines or does not respond within the response window, the authorisation is released in full.',
+                    'answer' => 'The full rental amount is authorised when you confirm the booking and captured once the rental company accepts. If the rental company declines or does not respond within the response window, the authorisation is released in full.',
                 ],
                 [
                     'question' => 'Is there a security deposit?',
-                    'answer' => 'Most owners require a refundable deposit, shown on the vehicle page before you book. It is released within three business days of the vehicle being returned in its original condition.',
+                    'answer' => 'Most rental companies require a refundable deposit, shown on the vehicle page before you book. It is released within three business days of the vehicle being returned in its original condition.',
                 ],
                 [
                     'question' => 'What is your cancellation policy?',
-                    'answer' => 'Free cancellation up to 24 hours before pickup. Inside 24 hours, the first day of the rental is non-refundable. Owner cancellations are always refunded in full.',
+                    'answer' => 'Free cancellation up to 24 hours before pickup. Inside 24 hours, the first day of the rental is non-refundable. Rental company cancellations are always refunded in full.',
                 ],
             ],
         ],
@@ -82,7 +82,7 @@ return [
             'items' => [
                 [
                     'question' => 'Are the vehicles tracked?',
-                    'answer' => 'Yes. Every listed vehicle carries a GPS unit. Owners can see the vehicle\'s location for the duration of an active rental only, and tracking is disabled the moment a trip ends. Renters are told about this before booking and again at pickup.',
+                    'answer' => 'Yes. Every listed vehicle carries a GPS unit. Rental companies can see the vehicle\'s location for the duration of an active rental only, and tracking is disabled the moment a trip ends. Renters are told about this before booking and again at pickup.',
                 ],
                 [
                     'question' => 'Are rentals insured?',
@@ -90,13 +90,17 @@ return [
                 ],
                 [
                     'question' => 'What happens if the vehicle breaks down?',
-                    'answer' => 'Roadside assistance is included on every booking. Report the issue from your trip page and we coordinate with the owner — you are not charged for days lost to a mechanical fault.',
+                    'answer' => 'Roadside assistance is included on every booking. Report the issue from your trip page and we coordinate with the rental company — you are not charged for days lost to a mechanical fault.',
                 ],
             ],
         ],
         [
-            'category' => 'For owners',
+            'category' => 'For rental companies',
             'items' => [
+                [
+                    'question' => 'How does my rental company get verified?',
+                    'answer' => 'Register a rental company account, then submit your company name and business address with your current Mayor\'s / Business permit and a valid ID of the person registering. An administrator reviews them once. After approval your company is trusted to post vehicles, and each listing goes live without further review.',
+                ],
                 [
                     'question' => 'How much can I earn?',
                     'answer' => 'It depends on the vehicle and how often you make it available. Our pricing model reads local demand, season, and what comparable vehicles nearby are charging, then suggests a daily rate — you are always free to override it.',

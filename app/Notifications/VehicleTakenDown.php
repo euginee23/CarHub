@@ -40,7 +40,7 @@ class VehicleTakenDown extends Notification implements ShouldQueue
             ->line(__('An administrator removed your :vehicle from the marketplace.', ['vehicle' => $this->vehicle->name]))
             ->line(__('Reason: :reason', ['reason' => $this->vehicle->moderation_reason]))
             ->line(__('Existing bookings are not affected. Reply to CarHub support once the issue is fixed.'))
-            ->action(__('View your vehicle'), route('owner.vehicles.edit', $this->vehicle));
+            ->action(__('View your vehicle'), route('company.vehicles.edit', $this->vehicle));
     }
 
     /**
@@ -53,7 +53,7 @@ class VehicleTakenDown extends Notification implements ShouldQueue
         return [
             'title' => __('Listing taken down'),
             'body' => __('Your :vehicle was removed from the marketplace: :reason', ['vehicle' => $this->vehicle->name, 'reason' => $this->vehicle->moderation_reason]),
-            'url' => route('owner.vehicles.edit', $this->vehicle),
+            'url' => route('company.vehicles.edit', $this->vehicle),
             'vehicle_id' => $this->vehicle->id,
         ];
     }

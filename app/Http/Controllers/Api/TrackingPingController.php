@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * Receives GPS fixes from a vehicle's tracker (e.g. an ESP32 with a GPS module).
  *
- * The device sends JSON with its token from the owner's vehicle page:
+ * The device sends JSON with its token from the rental company's vehicle page:
  *
  *     POST /api/v1/tracking/pings
  *     Authorization: Bearer gps_xxxxxxxx

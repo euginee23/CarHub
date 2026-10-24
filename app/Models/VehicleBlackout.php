@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * A date range, inclusive of both ends, when the owner has blocked a vehicle.
+ * A date range, inclusive of both ends, when the rental company has blocked a vehicle.
  *
  * @property int $id
  * @property int $vehicle_id

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Anthropic\Client as AnthropicClient;
 use App\Contracts\PaymentGateway;
 use App\Models\GpsDevice;
 use App\Models\User;
@@ -30,6 +31,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(AnthropicClient::class, fn (): AnthropicClient => new AnthropicClient(
+            apiKey: (string) config('services.anthropic.key'),
+            requestOptions: ['timeout' => 60, 'maxRetries' => 1],
+        ));
+
         $this->app->bind(PaymentGateway::class, function (): PaymentGateway {
             $driver = config('carhub.payments.driver');
 
@@ -96,7 +102,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::define('access-admin', fn (User $user): bool => $user->isAdmin());
 
-        Gate::define('list-vehicles', fn (User $user): bool => $user->isVerifiedOwner());
+        Gate::define('list-vehicles', fn (User $user): bool => $user->isVerifiedCompany());
     }
 
     /**

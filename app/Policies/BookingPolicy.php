@@ -9,19 +9,19 @@ use App\Models\User;
 class BookingPolicy
 {
     /**
-     * The renter, the vehicle's owner, and administrators can see a booking.
+     * The renter, the vehicle's rental company, and administrators can see a booking.
      */
     public function view(User $user, Booking $booking): bool
     {
-        return $user->isAdmin() || $user->id === $booking->renter_id || $user->id === $booking->owner_id;
+        return $user->isAdmin() || $user->id === $booking->renter_id || $user->id === $booking->company_id;
     }
 
     /**
-     * Only the vehicle's owner answers booking requests and manages the handover.
+     * Only the vehicle's rental company answers booking requests and manages the handover.
      */
     public function manage(User $user, Booking $booking): bool
     {
-        return $user->id === $booking->owner_id;
+        return $user->id === $booking->company_id;
     }
 
     /**
@@ -41,7 +41,7 @@ class BookingPolicy
     }
 
     /**
-     * Live and recent tracking: the owner and administrators can follow an ongoing
+     * Live and recent tracking: the rental company and administrators can follow an ongoing
      * or recently completed rental; the renter only while they are on the trip.
      */
     public function track(User $user, Booking $booking): bool
@@ -51,7 +51,7 @@ class BookingPolicy
         }
 
         return $booking->status === BookingStatus::Completed
-            && ($user->isAdmin() || $user->id === $booking->owner_id);
+            && ($user->isAdmin() || $user->id === $booking->company_id);
     }
 
     /**

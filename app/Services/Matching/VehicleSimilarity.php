@@ -46,6 +46,25 @@ class VehicleSimilarity
     }
 
     /**
+     * Rank an already-filtered set of vehicles by how well they match a renter's
+     * preferences. With no preferences, the best-rated vehicles come first.
+     *
+     * @param  array{type?: string|null, transmission?: string|null, fuel?: string|null, seats?: int|null, maxPrice?: int|null, features?: array<int, string>}  $preferences
+     * @param  Builder<Vehicle>  $candidates
+     * @return Collection<int, Vehicle>
+     */
+    public function bestMatchesAmong(array $preferences, Builder $candidates, int $limit = 3): Collection
+    {
+        $target = VehicleFeatureVector::forPreferences($preferences);
+
+        if ($target->isEmpty()) {
+            return $candidates->orderByDesc('rating')->limit($limit)->get();
+        }
+
+        return $this->rank($target, $candidates, $limit);
+    }
+
+    /**
      * Score every candidate against the target vector and keep the best matches.
      * Each returned vehicle carries its score in the `similarity` attribute.
      *

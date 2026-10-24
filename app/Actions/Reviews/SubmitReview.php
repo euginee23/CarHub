@@ -35,7 +35,7 @@ class SubmitReview
                 'booking_id' => $booking->id,
                 'vehicle_id' => $booking->vehicle_id,
                 'reviewer_id' => $renter->id,
-                'owner_id' => $booking->owner_id,
+                'company_id' => $booking->company_id,
             ])->save();
 
             $this->refreshRating($booking->vehicle);

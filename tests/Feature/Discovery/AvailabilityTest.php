@@ -134,9 +134,9 @@ test('browsing with trip dates hides vehicles blocked during the trip', function
     expect($component->instance()->vehicles)->toHaveCount(2);
 });
 
-test('owners can block and unblock dates on their vehicle', function () {
-    $component = Livewire::actingAs($this->vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $this->vehicle])
+test('rental companies can block and unblock dates on their vehicle', function () {
+    $component = Livewire::actingAs($this->vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $this->vehicle])
         ->set('blackoutStart', '2026-10-20')
         ->set('blackoutEnd', '2026-10-22')
         ->set('blackoutReason', 'Maintenance')
@@ -154,19 +154,19 @@ test('owners can block and unblock dates on their vehicle', function () {
 });
 
 test('blocked date ranges are validated', function () {
-    Livewire::actingAs($this->vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $this->vehicle])
+    Livewire::actingAs($this->vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $this->vehicle])
         ->set('blackoutStart', '2026-10-22')
         ->set('blackoutEnd', '2026-10-20')
         ->call('addBlackout')
         ->assertHasErrors(['blackoutEnd' => 'after_or_equal']);
 });
 
-test('owners cannot remove another vehicle\'s blocked dates', function () {
+test('rental companies cannot remove another vehicle\'s blocked dates', function () {
     $otherBlackout = VehicleBlackout::factory()->create();
 
-    Livewire::actingAs($this->vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $this->vehicle])
+    Livewire::actingAs($this->vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $this->vehicle])
         ->call('deleteBlackout', $otherBlackout->id);
 
     expect($otherBlackout->fresh())->not->toBeNull();

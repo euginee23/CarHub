@@ -35,7 +35,7 @@ new #[Title('Booking')] class extends Component {
     public string $returnNotes = '';
 
     /**
-     * Load a booking on one of the owner's vehicles.
+     * Load a booking on one of the rental company's vehicles.
      */
     public function mount(Booking $booking): void
     {
@@ -148,7 +148,7 @@ new #[Title('Booking')] class extends Component {
     <x-app.page-header
         :title="$booking->vehicle->year.' '.$booking->vehicle->name"
         :description="__('Booking :reference', ['reference' => $booking->reference])"
-        :back="route('owner.bookings.index')"
+        :back="route('company.bookings.index')"
         :back-label="__('Booking requests')"
     />
 

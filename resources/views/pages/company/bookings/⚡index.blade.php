@@ -36,18 +36,18 @@ new #[Title('Booking requests')] class extends Component {
     #[Computed]
     public function pendingCount(): int
     {
-        return Auth::user()->ownerBookings()->where('status', BookingStatus::Requested)->count();
+        return Auth::user()->companyBookings()->where('status', BookingStatus::Requested)->count();
     }
 
     /**
-     * Bookings on the owner's vehicles for the current tab.
+     * Bookings on the rental company's vehicles for the current tab.
      *
      * @return Collection<int, Booking>
      */
     #[Computed]
     public function bookings(): Collection
     {
-        return Auth::user()->ownerBookings()
+        return Auth::user()->companyBookings()
             ->with(['vehicle.coverPhoto', 'renter'])
             ->whereIn('status', ($this->tabs[$this->tab] ?? $this->tabs['requests'])['statuses'])
             ->orderBy('pickup_at', in_array($this->tab, ['past', 'closed'], true) ? 'desc' : 'asc')
@@ -94,7 +94,7 @@ new #[Title('Booking requests')] class extends Component {
                                 <flux:table.cell>&#8369;{{ number_format($booking->subtotal) }}</flux:table.cell>
                                 <flux:table.cell><flux:badge size="sm" :color="$booking->status->color()">{{ $booking->status->label() }}</flux:badge></flux:table.cell>
                                 <flux:table.cell align="end">
-                                    <flux:button size="sm" :href="route('owner.bookings.show', $booking)" wire:navigate>{{ $booking->status === BookingStatus::Requested ? __('Review') : __('View') }}</flux:button>
+                                    <flux:button size="sm" :href="route('company.bookings.show', $booking)" wire:navigate>{{ $booking->status === BookingStatus::Requested ? __('Review') : __('View') }}</flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach

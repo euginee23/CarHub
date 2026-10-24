@@ -73,7 +73,7 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
      */
     protected function content(object $notifiable): array
     {
-        $isOwner = $notifiable instanceof User && $notifiable->id === $this->booking->owner_id;
+        $isCompany = $notifiable instanceof User && $notifiable->id === $this->booking->company_id;
         $vehicle = $this->booking->vehicle->name;
         $pickup = $this->booking->pickup_at->format('M j, g:i A');
 
@@ -81,7 +81,7 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
             BookingStatus::Approved => [
                 __('Your request was approved'),
                 [
-                    __('The owner approved your request for the :vehicle on :pickup.', ['vehicle' => $vehicle, 'pickup' => $pickup]),
+                    __('The rental company approved your request for the :vehicle on :pickup.', ['vehicle' => $vehicle, 'pickup' => $pickup]),
                     __('Accept the rental terms, verify your two IDs, and sign the contract to continue to payment.'),
                 ],
             ],
@@ -92,7 +92,7 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
                     __('Reason: :reason', ['reason' => $this->booking->decline_reason ?? __('None given')]),
                 ],
             ],
-            BookingStatus::Confirmed => $isOwner
+            BookingStatus::Confirmed => $isCompany
                 ? [
                     __('Booking confirmed and paid'),
                     [
@@ -103,10 +103,10 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
                     __('Payment received — booking confirmed'),
                     [
                         __('Your ₱:total payment went through. Your :vehicle is confirmed for :pickup.', ['total' => number_format($this->booking->total), 'vehicle' => $vehicle, 'pickup' => $pickup]),
-                        __('The exact pickup point and the owner\'s contact number are now on your trip page.'),
+                        __('The exact pickup point and the rental company\'s contact number are now on your trip page.'),
                     ],
                 ],
-            BookingStatus::Ongoing => $isOwner
+            BookingStatus::Ongoing => $isCompany
                 ? [
                     __('Rental started'),
                     [__('You handed over the :vehicle. It is due back :return.', ['vehicle' => $vehicle, 'return' => $this->booking->return_at->format('M j, g:i A')])],
@@ -115,7 +115,7 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
                     __('Your trip has started'),
                     [__('Enjoy the :vehicle! Please return it by :return.', ['vehicle' => $vehicle, 'return' => $this->booking->return_at->format('M j, g:i A')])],
                 ],
-            BookingStatus::Completed => $isOwner
+            BookingStatus::Completed => $isCompany
                 ? [
                     __('Rental completed'),
                     [__('The :vehicle is back and the rental is closed.', ['vehicle' => $vehicle])],
@@ -141,7 +141,7 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
         return [
             'title' => $title,
             'lines' => $lines,
-            'url' => $isOwner ? route('owner.bookings.show', $this->booking) : route('trips.show', $this->booking),
+            'url' => $isCompany ? route('company.bookings.show', $this->booking) : route('trips.show', $this->booking),
         ];
     }
 }

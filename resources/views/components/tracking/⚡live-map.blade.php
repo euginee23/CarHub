@@ -151,7 +151,7 @@ new class extends Component {
 
     @if (! $booking->vehicle->gpsDevice)
         <flux:callout variant="warning" icon="exclamation-triangle" :heading="__('No GPS tracker is connected to this vehicle.')">
-            <flux:callout.text>{{ __('The owner can connect one from the vehicle\'s page under My vehicles.') }}</flux:callout.text>
+            <flux:callout.text>{{ __('The rental company can connect one from the vehicle\'s page under My vehicles.') }}</flux:callout.text>
         </flux:callout>
     @elseif ($this->isLive && $this->latest === null)
         <flux:callout icon="signal" :heading="__('Waiting for the tracker\'s first position.')">

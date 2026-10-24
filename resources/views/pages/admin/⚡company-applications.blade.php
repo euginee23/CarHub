@@ -1,8 +1,8 @@
 <?php
 
-use App\Actions\Owners\ReviewOwnerApplication;
+use App\Actions\Companies\ReviewCompanyApplication;
 use App\Enums\ApplicationStatus;
-use App\Models\OwnerApplication;
+use App\Models\CompanyApplication;
 use Flux\Flux;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +12,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Owner applications')] class extends Component {
+new #[Title('Company applications')] class extends Component {
     use WithPagination;
 
     #[Url(except: 'pending')]
@@ -25,12 +25,12 @@ new #[Title('Owner applications')] class extends Component {
     /**
      * The applications in the selected status, oldest first so the queue is fair.
      *
-     * @return LengthAwarePaginator<int, OwnerApplication>
+     * @return LengthAwarePaginator<int, CompanyApplication>
      */
     #[Computed]
     public function applications(): LengthAwarePaginator
     {
-        return OwnerApplication::query()
+        return CompanyApplication::query()
             ->with(['user', 'documents', 'reviewer'])
             ->where('status', ApplicationStatus::tryFrom($this->status) ?? ApplicationStatus::Pending)
             ->oldest()
@@ -46,11 +46,11 @@ new #[Title('Owner applications')] class extends Component {
     }
 
     /**
-     * Approve an application and verify the applicant as an owner.
+     * Approve an application and verify the applicant as a rental company.
      */
-    public function approve(int $applicationId, ReviewOwnerApplication $reviewOwnerApplication): void
+    public function approve(int $applicationId, ReviewCompanyApplication $reviewCompanyApplication): void
     {
-        $reviewOwnerApplication->approve($this->pendingApplication($applicationId), Auth::user());
+        $reviewCompanyApplication->approve($this->pendingApplication($applicationId), Auth::user());
 
         unset($this->applications);
 
@@ -71,11 +71,11 @@ new #[Title('Owner applications')] class extends Component {
     /**
      * Reject the application currently open in the modal.
      */
-    public function reject(ReviewOwnerApplication $reviewOwnerApplication): void
+    public function reject(ReviewCompanyApplication $reviewCompanyApplication): void
     {
         $this->validate(['rejectionReason' => ['required', 'string', 'min:10', 'max:1000']]);
 
-        $reviewOwnerApplication->reject($this->pendingApplication((int) $this->rejectingId), Auth::user(), $this->rejectionReason);
+        $reviewCompanyApplication->reject($this->pendingApplication((int) $this->rejectingId), Auth::user(), $this->rejectionReason);
 
         $this->reset(['rejectingId', 'rejectionReason']);
         unset($this->applications);
@@ -87,14 +87,14 @@ new #[Title('Owner applications')] class extends Component {
     /**
      * Find a pending application, failing if it has already been reviewed.
      */
-    protected function pendingApplication(int $applicationId): OwnerApplication
+    protected function pendingApplication(int $applicationId): CompanyApplication
     {
-        return OwnerApplication::pending()->findOrFail($applicationId);
+        return CompanyApplication::pending()->findOrFail($applicationId);
     }
 }; ?>
 
 <div>
-    <x-app.page-header :title="__('Owner applications')" :description="__('Review submitted documents before owners can list vehicles.')" />
+    <x-app.page-header :title="__('Company applications')" :description="__('Check each rental company\'s business permit and representative ID. Approved companies post vehicles without further review.')" />
 
     <x-app.content class="space-y-6">
         <div class="flex flex-wrap gap-2">
@@ -120,9 +120,12 @@ new #[Title('Owner applications')] class extends Component {
                     <flux:card wire:key="application-{{ $application->id }}" class="space-y-4">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
-                                <flux:heading>{{ $application->user->name }}</flux:heading>
+                                <flux:heading>{{ $application->company_name ?? $application->user->name }}</flux:heading>
+                                @if ($application->business_address)
+                                    <flux:text class="mt-1">{{ $application->business_address }}</flux:text>
+                                @endif
                                 <flux:text class="mt-1">
-                                    {{ $application->user->email }} &middot; {{ $application->user->phone ?? __('No phone') }}
+                                    {{ __('Representative: :name', ['name' => $application->user->name]) }} &middot; {{ $application->user->email }} &middot; {{ $application->user->phone ?? __('No phone') }}
                                 </flux:text>
                                 <flux:text class="mt-1 text-xs">
                                     {{ __('Submitted :date', ['date' => $application->created_at->format('M j, Y g:i A')]) }}
@@ -151,7 +154,7 @@ new #[Title('Owner applications')] class extends Component {
 
                         @if ($application->isPending())
                             <div class="flex gap-2">
-                                <flux:button size="sm" variant="primary" wire:click="approve({{ $application->id }})" wire:confirm="{{ __('Approve this owner?') }}">
+                                <flux:button size="sm" variant="primary" wire:click="approve({{ $application->id }})" wire:confirm="{{ __('Approve this rental company?') }}">
                                     {{ __('Approve') }}
                                 </flux:button>
                                 <flux:button size="sm" variant="danger" wire:click="startRejecting({{ $application->id }})">

@@ -41,42 +41,42 @@ function validListing(array $overrides = []): array
     ])->mapWithKeys(fn (mixed $value, string $field) => ['form.'.$field => $value])->all();
 }
 
-test('owners who are not verified yet cannot manage vehicles', function (string $routeName) {
-    $this->actingAs(User::factory()->owner()->create())
+test('rental companies who are not verified yet cannot manage vehicles', function (string $routeName) {
+    $this->actingAs(User::factory()->company()->create())
         ->get(route($routeName))
         ->assertForbidden();
-})->with(['owner.vehicles.index', 'owner.vehicles.create']);
+})->with(['company.vehicles.index', 'company.vehicles.create']);
 
-test('renter accounts are sent back to their own dashboard from the owner area', function (string $routeName) {
+test('renter accounts are sent back to their own dashboard from the rental company area', function (string $routeName) {
     $this->actingAs(User::factory()->create())
         ->get(route($routeName))
         ->assertRedirect(route('dashboard'));
-})->with(['owner.vehicles.index', 'owner.vehicles.create']);
+})->with(['company.vehicles.index', 'company.vehicles.create']);
 
-test('verified owners see their own vehicles only', function () {
-    $owner = User::factory()->verifiedOwner()->create();
-    Vehicle::factory()->for($owner, 'owner')->create(['brand' => 'Honda', 'model' => 'Civic']);
+test('verified rental companies see their own vehicles only', function () {
+    $company = User::factory()->verifiedCompany()->create();
+    Vehicle::factory()->for($company, 'company')->create(['brand' => 'Honda', 'model' => 'Civic']);
     Vehicle::factory()->create(['brand' => 'Nissan', 'model' => 'Navara']);
 
-    $this->actingAs($owner)
-        ->get(route('owner.vehicles.index'))
+    $this->actingAs($company)
+        ->get(route('company.vehicles.index'))
         ->assertOk()
         ->assertSee('Honda Civic')
         ->assertDontSee('Nissan Navara');
 });
 
-test('a verified owner can list a vehicle with photos', function () {
-    $owner = User::factory()->verifiedOwner()->create();
+test('a verified rental company can list a vehicle with photos', function () {
+    $company = User::factory()->verifiedCompany()->create();
 
-    Livewire::actingAs($owner)
-        ->test('pages::owner.vehicles.form')
+    Livewire::actingAs($company)
+        ->test('pages::company.vehicles.form')
         ->fill(validListing())
         ->set('newPhotos', [UploadedFile::fake()->image('front.jpg'), UploadedFile::fake()->image('side.jpg')])
         ->call('save')
         ->assertHasNoErrors()
         ->assertRedirect();
 
-    $vehicle = $owner->vehicles()->sole();
+    $vehicle = $company->vehicles()->sole();
 
     expect($vehicle->name)->toBe('Toyota Vios')
         ->and($vehicle->slug)->toBe('toyota-vios-2022')
@@ -95,8 +95,8 @@ test('a verified owner can list a vehicle with photos', function () {
 test('slugs stay unique when the same model is listed twice', function () {
     Vehicle::factory()->create(['brand' => 'Toyota', 'model' => 'Vios', 'year' => 2022]);
 
-    Livewire::actingAs(User::factory()->verifiedOwner()->create())
-        ->test('pages::owner.vehicles.form')
+    Livewire::actingAs(User::factory()->verifiedCompany()->create())
+        ->test('pages::company.vehicles.form')
         ->fill(validListing())
         ->call('save')
         ->assertHasNoErrors();
@@ -105,8 +105,8 @@ test('slugs stay unique when the same model is listed twice', function () {
 });
 
 test('listing fields are validated', function (string $field, mixed $value, string $rule) {
-    Livewire::actingAs(User::factory()->verifiedOwner()->create())
-        ->test('pages::owner.vehicles.form')
+    Livewire::actingAs(User::factory()->verifiedCompany()->create())
+        ->test('pages::company.vehicles.form')
         ->fill(validListing([$field => $value]))
         ->call('save')
         ->assertHasErrors(['form.'.$field => $rule]);
@@ -120,11 +120,11 @@ test('listing fields are validated', function (string $field, mixed $value, stri
     'short description' => ['description', 'Nice car.', 'min'],
 ]);
 
-test('an owner can update their vehicle', function () {
+test('a rental company can update their vehicle', function () {
     $vehicle = Vehicle::factory()->create(['price_per_day' => 2000]);
 
-    Livewire::actingAs($vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $vehicle])
+    Livewire::actingAs($vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $vehicle])
         ->assertSet('form.price_per_day', '2000')
         ->set('form.price_per_day', '2400')
         ->set('form.status', 'unlisted')
@@ -136,11 +136,11 @@ test('an owner can update their vehicle', function () {
         ->status->toBe(VehicleStatus::Unlisted);
 });
 
-test('an owner cannot edit another owner\'s vehicle', function () {
+test('a rental company cannot edit another rental company\'s vehicle', function () {
     $vehicle = Vehicle::factory()->create();
 
-    $this->actingAs(User::factory()->verifiedOwner()->create())
-        ->get(route('owner.vehicles.edit', $vehicle))
+    $this->actingAs(User::factory()->verifiedCompany()->create())
+        ->get(route('company.vehicles.edit', $vehicle))
         ->assertForbidden();
 });
 
@@ -150,8 +150,8 @@ test('photos can be reordered and deleted', function () {
     $second = VehiclePhoto::factory()->for($vehicle)->create(['position' => 1]);
     Storage::disk(VehiclePhoto::DISK)->put($first->path, 'image');
 
-    $component = Livewire::actingAs($vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $vehicle])
+    $component = Livewire::actingAs($vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $vehicle])
         ->call('movePhoto', $second->id, 'up');
 
     expect($vehicle->photos()->pluck('id')->all())->toBe([$second->id, $first->id]);

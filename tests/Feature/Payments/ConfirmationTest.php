@@ -14,12 +14,12 @@ test('confirmation is recorded in both parties\' notification feeds', function (
     app(TransitionBooking::class)->handle($booking, BookingStatus::Confirmed);
 
     $renterNotice = $booking->renter->notifications()->sole();
-    $ownerNotice = $booking->owner->notifications()->sole();
+    $companyNotice = $booking->company->notifications()->sole();
 
     expect($renterNotice->data['title'])->toBe('Payment received — booking confirmed')
         ->and($renterNotice->data['url'])->toBe(route('trips.show', $booking))
-        ->and($ownerNotice->data['title'])->toBe('Booking confirmed and paid')
-        ->and($ownerNotice->data['url'])->toBe(route('owner.bookings.show', $booking));
+        ->and($companyNotice->data['title'])->toBe('Booking confirmed and paid')
+        ->and($companyNotice->data['url'])->toBe(route('company.bookings.show', $booking));
 });
 
 test('the bell shows unread notifications and opening one marks it read', function () {
@@ -71,7 +71,7 @@ test('a confirmed trip shows the exact pickup point and the payment', function (
         ->assertSee('Pickup point')
         ->assertSeeHtml('exact: true')
         ->assertSee($payment->reference)
-        ->assertSee($booking->owner->phone);
+        ->assertSee($booking->company->phone);
 });
 
 test('the exact pickup point stays hidden until the booking is paid', function () {
@@ -84,12 +84,12 @@ test('the exact pickup point stays hidden until the booking is paid', function (
         ->assertDontSeeHtml('exact: true');
 });
 
-test('the owner sees the payment on the booking', function () {
+test('the rental company sees the payment on the booking', function () {
     $booking = Booking::factory()->confirmed()->create();
     $payment = Payment::factory()->paid()->for($booking)->create();
 
-    $this->actingAs($booking->owner)
-        ->get(route('owner.bookings.show', $booking))
+    $this->actingAs($booking->company)
+        ->get(route('company.bookings.show', $booking))
         ->assertOk()
         ->assertSee($payment->reference)
         ->assertSee('Paid');

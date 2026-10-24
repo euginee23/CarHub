@@ -16,12 +16,12 @@ class DeclineBooking
      *
      * @throws ValidationException
      */
-    public function handle(Booking $booking, User $owner, string $reason): Booking
+    public function handle(Booking $booking, User $company, string $reason): Booking
     {
         if ($booking->status !== BookingStatus::Requested) {
             throw ValidationException::withMessages(['booking' => __('This request has already been answered.')]);
         }
 
-        return $this->transitions->handle($booking, BookingStatus::Declined, $owner, $reason, ['decline_reason' => $reason]);
+        return $this->transitions->handle($booking, BookingStatus::Declined, $company, $reason, ['decline_reason' => $reason]);
     }
 }

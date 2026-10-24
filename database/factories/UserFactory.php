@@ -69,23 +69,25 @@ class UserFactory extends Factory
     }
 
     /**
-     * Indicate that the account is an owner account that has not been verified yet.
+     * Indicate that the account is a rental company account that has not been verified yet.
      */
-    public function owner(): static
+    public function company(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Owner,
+            'role' => UserRole::Company,
         ]);
     }
 
     /**
-     * Indicate that the account is an owner account verified to list vehicles.
+     * Indicate that the account is a rental company account verified to list vehicles.
      */
-    public function verifiedOwner(): static
+    public function verifiedCompany(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => UserRole::Owner,
-            'owner_verified_at' => now(),
+            'role' => UserRole::Company,
+            'company_verified_at' => now(),
+            'company_name' => fake()->lastName().' Car Rental',
+            'company_address' => fake()->streetAddress().', Pagadian City',
         ]);
     }
 

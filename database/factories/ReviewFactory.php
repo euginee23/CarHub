@@ -23,7 +23,7 @@ class ReviewFactory extends Factory
             'booking_id' => Booking::factory()->status(BookingStatus::Completed),
             'vehicle_id' => fn (array $attributes) => Booking::whereKey($attributes['booking_id'])->value('vehicle_id'),
             'reviewer_id' => fn (array $attributes) => Booking::whereKey($attributes['booking_id'])->value('renter_id'),
-            'owner_id' => fn (array $attributes) => Booking::whereKey($attributes['booking_id'])->value('owner_id'),
+            'company_id' => fn (array $attributes) => Booking::whereKey($attributes['booking_id'])->value('company_id'),
             'rating' => fake()->numberBetween(3, 5),
             'comment' => fake()->sentence(),
         ];
