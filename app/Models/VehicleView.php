@@ -73,7 +73,7 @@ class VehicleView extends Model
             ->exists();
 
         if (! $recent) {
-            $view = new static;
+            $view = new self;
             $view->forceFill(['user_id' => $user->id, 'vehicle_id' => $vehicle->id, 'viewed_at' => now()])->save();
         }
     }

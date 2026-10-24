@@ -48,7 +48,12 @@ class ForecastDemand
             $series = $lstm['series'][$type->value] ?? null;
 
             if ($series !== null) {
-                $forecast = collect($series['forecast'])->mapWithKeys(fn (array $point) => [$point['date'] => (float) $point['value']])->all();
+                $forecast = [];
+
+                foreach ($series['forecast'] as $point) {
+                    $forecast[$point['date']] = (float) $point['value'];
+                }
+
                 $method = DemandForecast::METHOD_LSTM;
                 $meta = ['model' => $lstm['version'] ?? 'lstm', 'val_mae' => $series['val_mae'] ?? null, 'train_windows' => $series['train_windows'] ?? null];
                 $note = null;
@@ -96,7 +101,7 @@ class ForecastDemand
      *
      * @param  array<string, array<string, int>>  $history
      * @param  array<string, mixed>  $config
-     * @return array{0: array<string, mixed>, 1: string|null} The parsed output, and an error if it failed.
+     * @return array{0: array<mixed>, 1: string|null} The parsed output, and an error if it failed.
      */
     protected function runLstm(array $history, array $config): array
     {
@@ -142,6 +147,10 @@ class ForecastDemand
 
         $decoded = json_decode(File::get($output), true);
 
-        return is_array($decoded) ? [$decoded, null] : [[], __('The LSTM forecaster returned unreadable output.')];
+        if (! is_array($decoded)) {
+            return [[], __('The LSTM forecaster returned unreadable output.')];
+        }
+
+        return [$decoded, null];
     }
 }
