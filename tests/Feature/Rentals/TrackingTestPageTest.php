@@ -29,7 +29,7 @@ test('administrators open the test page by typing its address', function () {
 
 test('only administrators can use the test page', function () {
     $this->get('/test-track-gps-map')->assertRedirect(route('login'));
-    $this->actingAs($this->vehicle->owner)->get('/test-track-gps-map')->assertForbidden();
+    $this->actingAs($this->vehicle->company)->get('/test-track-gps-map')->assertForbidden();
     $this->actingAs(User::factory()->create())->get('/test-track-gps-map')->assertForbidden();
 });
 

@@ -2,6 +2,8 @@
 
 use App\Actions\Users\ChangeAccountType;
 use App\Actions\Users\SuspendUser;
+use App\Enums\DocumentStatus;
+use App\Enums\IdentityStatus;
 use App\Enums\UserRole;
 use App\Models\User;
 use Flux\Flux;
@@ -23,6 +25,9 @@ new #[Title('Users')] class extends Component {
     #[Url(except: '')]
     public string $role = '';
 
+    #[Url(except: '')]
+    public string $identity = '';
+
     #[Url(except: false)]
     public bool $suspendedOnly = false;
 
@@ -39,11 +44,17 @@ new #[Title('Users')] class extends Component {
     public function users(): LengthAwarePaginator
     {
         return User::query()
-            ->withCount(['bookings', 'vehicles'])
+            ->withCount([
+                'bookings',
+                'vehicles',
+                'identityDocuments as approved_ids_count' => fn (Builder $query) => $query->where('status', DocumentStatus::Approved),
+                'identityDocuments as ids_on_file_count' => fn (Builder $query) => $query->whereIn('status', [DocumentStatus::Pending, DocumentStatus::Approved]),
+            ])
             ->when(filled($this->search), fn (Builder $query) => $query->where(fn (Builder $query) => $query
                 ->where('name', 'like', '%'.trim($this->search).'%')
                 ->orWhere('email', 'like', '%'.trim($this->search).'%')))
             ->when(UserRole::tryFrom($this->role), fn (Builder $query, UserRole $role) => $query->where('role', $role))
+            ->when(IdentityStatus::tryFrom($this->identity), fn (Builder $query, IdentityStatus $status) => $query->withIdentityStatus($status))
             ->when($this->suspendedOnly, fn (Builder $query) => $query->whereNotNull('suspended_at'))
             ->latest()
             ->paginate(15);
@@ -54,13 +65,13 @@ new #[Title('Users')] class extends Component {
      */
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'role', 'suspendedOnly'], true)) {
+        if (in_array($property, ['search', 'role', 'identity', 'suspendedOnly'], true)) {
             $this->resetPage();
         }
     }
 
     /**
-     * Switch an account between renter and owner.
+     * Switch an account between renter and rental company.
      */
     public function changeAccountType(int $userId, string $role, ChangeAccountType $changeAccountType): void
     {
@@ -119,11 +130,17 @@ new #[Title('Users')] class extends Component {
     <x-app.page-header :title="__('Users')" :description="__('Every account on CarHub. Fix an account type if someone signed up as the wrong kind of user.')" />
 
     <x-app.content class="space-y-6">
-        <div class="grid gap-4 sm:grid-cols-[1fr_14rem_auto] sm:items-center">
+        <div class="grid gap-4 sm:grid-cols-[1fr_12rem_12rem_auto] sm:items-center">
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by name or email')" clearable />
             <flux:select wire:model.live="role">
                 <flux:select.option value="">{{ __('All account types') }}</flux:select.option>
                 @foreach (UserRole::cases() as $option)
+                    <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
+                @endforeach
+            </flux:select>
+            <flux:select wire:model.live="identity" data-test="identity-filter">
+                <flux:select.option value="">{{ __('Any ID status') }}</flux:select.option>
+                @foreach (IdentityStatus::cases() as $option)
                     <flux:select.option :value="$option->value">{{ $option->label() }}</flux:select.option>
                 @endforeach
             </flux:select>
@@ -137,6 +154,7 @@ new #[Title('Users')] class extends Component {
                 <flux:table.columns>
                     <flux:table.column>{{ __('User') }}</flux:table.column>
                     <flux:table.column>{{ __('Account type') }}</flux:table.column>
+                    <flux:table.column>{{ __('ID status') }}</flux:table.column>
                     <flux:table.column>{{ __('Activity') }}</flux:table.column>
                     <flux:table.column>{{ __('Joined') }}</flux:table.column>
                     <flux:table.column></flux:table.column>
@@ -146,12 +164,15 @@ new #[Title('Users')] class extends Component {
                         <flux:table.row :key="$user->id">
                             <flux:table.cell>
                                 <div class="font-medium text-zinc-900">{{ $user->name }}</div>
+                                @if ($user->company_name)
+                                    <div class="text-xs text-zinc-600">{{ $user->company_name }}</div>
+                                @endif
                                 <div class="text-xs text-zinc-500">{{ $user->email }}</div>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge size="sm" :color="match (true) { $user->isAdmin() => 'zinc', $user->isOwner() => 'green', default => 'blue' }">{{ $user->role->label() }}</flux:badge>
-                                @if ($user->isOwner())
-                                    <span class="ms-1 text-xs text-zinc-500">{{ $user->isVerifiedOwner() ? __('verified') : __('not verified') }}</span>
+                                <flux:badge size="sm" :color="match (true) { $user->isAdmin() => 'zinc', $user->isCompany() => 'green', default => 'blue' }">{{ $user->role->label() }}</flux:badge>
+                                @if ($user->isCompany())
+                                    <span class="ms-1 text-xs text-zinc-500">{{ $user->isVerifiedCompany() ? __('verified') : __('not verified') }}</span>
                                 @endif
                                 @if ($user->isSuspended())
                                     <div class="mt-1">
@@ -160,8 +181,16 @@ new #[Title('Users')] class extends Component {
                                     </div>
                                 @endif
                             </flux:table.cell>
+                            <flux:table.cell>
+                                @if ($user->isRenter())
+                                    @php($identityStatus = IdentityStatus::fromCounts($user->approved_ids_count, $user->ids_on_file_count))
+                                    <flux:badge size="sm" :color="$identityStatus->color()" data-test="identity-status">{{ $identityStatus->label() }}</flux:badge>
+                                @else
+                                    <span class="text-zinc-400">&mdash;</span>
+                                @endif
+                            </flux:table.cell>
                             <flux:table.cell class="text-zinc-600">
-                                @if ($user->isOwner())
+                                @if ($user->isCompany())
                                     {{ trans_choice('{0} No vehicles|{1} :count vehicle|[2,*] :count vehicles', $user->vehicles_count, ['count' => $user->vehicles_count]) }}
                                 @elseif ($user->isRenter())
                                     {{ trans_choice('{0} No bookings|{1} :count booking|[2,*] :count bookings', $user->bookings_count, ['count' => $user->bookings_count]) }}
@@ -173,10 +202,10 @@ new #[Title('Users')] class extends Component {
                             <flux:table.cell align="end">
                                 <div class="flex justify-end gap-2">
                                 @if ($user->isRenter() && $user->bookings_count === 0)
-                                    <flux:button size="sm" wire:click="changeAccountType({{ $user->id }}, 'owner')" wire:confirm="{{ __('Make :name an owner account? They will need owner verification before listing.', ['name' => $user->name]) }}">
-                                        {{ __('Make owner') }}
+                                    <flux:button size="sm" wire:click="changeAccountType({{ $user->id }}, 'company')" wire:confirm="{{ __('Make :name a rental company account? They will need company verification before listing.', ['name' => $user->name]) }}">
+                                        {{ __('Make rental company') }}
                                     </flux:button>
-                                @elseif ($user->isOwner() && $user->vehicles_count === 0)
+                                @elseif ($user->isCompany() && $user->vehicles_count === 0)
                                     <flux:button size="sm" wire:click="changeAccountType({{ $user->id }}, 'renter')" wire:confirm="{{ __('Make :name a renter account?', ['name' => $user->name]) }}">
                                         {{ __('Make renter') }}
                                     </flux:button>
@@ -201,7 +230,7 @@ new #[Title('Users')] class extends Component {
         <form wire:submit="suspend" class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ __('Suspend this account?') }}</flux:heading>
-                <flux:text class="mt-2">{{ __('They are signed out and cannot sign back in. An owner\'s listings leave the marketplace; existing bookings are not cancelled.') }}</flux:text>
+                <flux:text class="mt-2">{{ __('They are signed out and cannot sign back in. A rental company\'s listings leave the marketplace; existing bookings are not cancelled.') }}</flux:text>
             </div>
             <flux:textarea wire:model="suspensionReason" :label="__('Reason')" rows="3" />
             <flux:error name="suspension" />

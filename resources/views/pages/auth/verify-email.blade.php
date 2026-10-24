@@ -1,7 +1,7 @@
 <x-layouts::auth
     :title="__('Email verification')"
     :panel-heading="__('One click and you are in.')"
-    :panel-description="__('Verifying your email keeps your account recoverable and lets owners know your contact details are real.')"
+    :panel-description="__('Verifying your email keeps your account recoverable and lets rental companies know your contact details are real.')"
 >
     <div class="flex flex-col gap-8">
         <x-auth-header

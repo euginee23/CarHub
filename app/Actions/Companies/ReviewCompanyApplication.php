@@ -1,22 +1,23 @@
 <?php
 
-namespace App\Actions\Owners;
+namespace App\Actions\Companies;
 
 use App\Enums\ApplicationStatus;
 use App\Enums\DocumentStatus;
-use App\Models\OwnerApplication;
+use App\Models\CompanyApplication;
 use App\Models\User;
-use App\Notifications\OwnerApplicationReviewed;
+use App\Notifications\CompanyApplicationReviewed;
 use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
-class ReviewOwnerApplication
+class ReviewCompanyApplication
 {
     /**
-     * Approve the application and verify the applicant as a vehicle owner.
+     * Approve the application, verifying the rental company and publishing its
+     * business name and address.
      */
-    public function approve(OwnerApplication $application, User $reviewer): void
+    public function approve(CompanyApplication $application, User $reviewer): void
     {
         $this->review($application, $reviewer, ApplicationStatus::Approved);
     }
@@ -24,7 +25,7 @@ class ReviewOwnerApplication
     /**
      * Reject the application, recording why so the applicant can fix and resubmit.
      */
-    public function reject(OwnerApplication $application, User $reviewer, string $reason): void
+    public function reject(CompanyApplication $application, User $reviewer, string $reason): void
     {
         $this->review($application, $reviewer, ApplicationStatus::Rejected, $reason);
     }
@@ -32,7 +33,7 @@ class ReviewOwnerApplication
     /**
      * Record the decision on the application, its documents, and the applicant.
      */
-    protected function review(OwnerApplication $application, User $reviewer, ApplicationStatus $decision, ?string $reason = null): void
+    protected function review(CompanyApplication $application, User $reviewer, ApplicationStatus $decision, ?string $reason = null): void
     {
         if (! $application->isPending()) {
             throw new LogicException('Only pending applications can be reviewed.');
@@ -53,18 +54,22 @@ class ReviewOwnerApplication
             ]);
 
             if ($decision === ApplicationStatus::Approved) {
-                $application->user->forceFill(['owner_verified_at' => now()])->save();
+                $application->user->forceFill([
+                    'company_verified_at' => now(),
+                    'company_name' => $application->company_name,
+                    'company_address' => $application->business_address,
+                ])->save();
             }
         });
 
         ActivityLogger::record(
-            'owner_application.'.$decision->value,
-            __('Owner application from :name :decision.', ['name' => $application->user->name, 'decision' => mb_strtolower($decision->label())]),
+            'company_application.'.$decision->value,
+            __('Company application from :company :decision.', ['company' => $application->company_name ?? $application->user->name, 'decision' => mb_strtolower($decision->label())]),
             $application,
             array_filter(['reason' => $reason]),
             $reviewer,
         );
 
-        $application->user->notify(new OwnerApplicationReviewed($application));
+        $application->user->notify(new CompanyApplicationReviewed($application));
     }
 }

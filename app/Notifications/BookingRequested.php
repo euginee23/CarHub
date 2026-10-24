@@ -44,7 +44,7 @@ class BookingRequested extends Notification implements ShouldQueue
                 'return' => $this->booking->return_at->format('M j, g:i A'),
             ]))
             ->line(__('Rental subtotal: ₱:amount', ['amount' => number_format($this->booking->subtotal)]))
-            ->action(__('Review the request'), route('owner.bookings.show', $this->booking));
+            ->action(__('Review the request'), route('company.bookings.show', $this->booking));
     }
 
     /**
@@ -61,7 +61,7 @@ class BookingRequested extends Notification implements ShouldQueue
                 'vehicle' => $this->booking->vehicle->name,
                 'pickup' => $this->booking->pickup_at->format('M j, g:i A'),
             ]),
-            'url' => route('owner.bookings.show', $this->booking),
+            'url' => route('company.bookings.show', $this->booking),
             'booking' => $this->booking->reference,
         ];
     }

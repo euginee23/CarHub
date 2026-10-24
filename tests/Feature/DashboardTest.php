@@ -2,7 +2,7 @@
 
 use App\Enums\BookingStatus;
 use App\Models\Booking;
-use App\Models\OwnerApplication;
+use App\Models\CompanyApplication;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VerificationDocument;
@@ -13,25 +13,24 @@ test('guests are redirected to the login page', function () {
 });
 
 test('the dashboard sends each user to the overview for their role', function (string $state, string $expectedRoute) {
-    $user = $state === 'renter' ? User::factory()->create() : User::factory()->{$state}()->create();
-
-    $this->actingAs($user)
+    $this->actingAs(User::factory()->{$state}()->create())
         ->get(route('dashboard'))
         ->assertRedirect(route($expectedRoute));
 })->with([
-    'renter' => ['renter', 'renter.dashboard'],
-    'verified owner' => ['verifiedOwner', 'owner.dashboard'],
+    'verified renter' => ['withVerifiedIdentity', 'renter.dashboard'],
+    'renter without approved IDs' => ['renter', 'identity.edit'],
+    'verified rental company' => ['verifiedCompany', 'company.dashboard'],
     'admin' => ['admin', 'admin.dashboard'],
 ]);
 
 test('the email verification flag survives the redirect', function () {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())
         ->get(route('dashboard', ['verified' => 1]))
         ->assertRedirect(route('renter.dashboard', ['verified' => 1]));
 });
 
-test('the renter overview shows trips, next steps, and identity status', function () {
-    $renter = User::factory()->create(['name' => 'Ana Reyes']);
+test('the renter overview shows trips and next steps', function () {
+    $renter = User::factory()->withVerifiedIdentity()->create(['name' => 'Ana Reyes']);
     $booking = Booking::factory()->approved()->for($renter, 'renter')->create();
 
     $this->actingAs($renter)
@@ -39,9 +38,8 @@ test('the renter overview shows trips, next steps, and identity status', functio
         ->assertOk()
         ->assertSee('Ana')
         ->assertSee('Finish checkout for your '.$booking->vehicle->name)
-        ->assertSee('Verify your identity')
         ->assertSee($booking->vehicle->name)
-        ->assertDontSee('Become an owner');
+        ->assertDontSee('Become a rental company');
 });
 
 test('the renter overview totals only confirmed spending', function () {
@@ -57,16 +55,16 @@ test('the renter overview totals only confirmed spending', function () {
         ->assertDontSee('Verify your identity');
 });
 
-test('the owner overview shows requests, schedule, fleet, and earnings', function () {
+test('the rental company overview shows requests, schedule, fleet, and earnings', function () {
     $this->travelTo(now()->startOfMonth()->addDays(2));
 
-    $owner = User::factory()->verifiedOwner()->create();
-    $vehicle = Vehicle::factory()->for($owner, 'owner')->create(['brand' => 'Toyota', 'model' => 'Vios']);
+    $company = User::factory()->verifiedCompany()->create();
+    $vehicle = Vehicle::factory()->for($company, 'company')->create(['brand' => 'Toyota', 'model' => 'Vios']);
     $request = Booking::factory()->forVehicle($vehicle)->create();
     Booking::factory()->forVehicle($vehicle)->confirmed()->create(['subtotal' => 4000, 'pickup_at' => now()->addDay(), 'return_at' => now()->addDays(2)]);
 
-    $this->actingAs($owner)
-        ->get(route('owner.dashboard'))
+    $this->actingAs($company)
+        ->get(route('company.dashboard'))
         ->assertOk()
         ->assertSee('Requests to answer')
         ->assertSee($request->renter->name)
@@ -74,25 +72,25 @@ test('the owner overview shows requests, schedule, fleet, and earnings', functio
         ->assertSee('₱4,000');
 });
 
-test('only verified owners can open the owner overview', function () {
-    $this->actingAs(User::factory()->owner()->create())
-        ->get(route('owner.dashboard'))
+test('only verified rental companies can open the rental company overview', function () {
+    $this->actingAs(User::factory()->company()->create())
+        ->get(route('company.dashboard'))
         ->assertForbidden();
 
     $this->actingAs(User::factory()->create())
-        ->get(route('owner.dashboard'))
+        ->get(route('company.dashboard'))
         ->assertRedirect(route('dashboard'));
 });
 
-test('owners who are not verified yet land on their verification', function () {
-    $this->actingAs(User::factory()->owner()->create())
+test('rental companies who are not verified yet land on their verification', function () {
+    $this->actingAs(User::factory()->company()->create())
         ->get(route('dashboard'))
-        ->assertRedirect(route('owner.apply'));
+        ->assertRedirect(route('company.apply'));
 });
 
 test('the admin overview shows platform numbers and review queues', function () {
     $admin = User::factory()->admin()->create();
-    OwnerApplication::factory()->count(2)->create();
+    CompanyApplication::factory()->count(2)->create();
     VerificationDocument::factory()->create([
         'documentable_type' => $admin->getMorphClass(),
         'documentable_id' => $admin->id,
@@ -103,20 +101,20 @@ test('the admin overview shows platform numbers and review queues', function () 
     $this->actingAs($admin)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSee('Owner applications to review')
+        ->assertSee('Company applications to review')
         ->assertSee('Renter IDs to review')
         ->assertSee($booking->reference)
         ->assertSee('Bookings by status');
 });
 
 test('only administrators can open the admin overview', function () {
-    $this->actingAs(User::factory()->verifiedOwner()->create())
+    $this->actingAs(User::factory()->verifiedCompany()->create())
         ->get(route('admin.dashboard'))
         ->assertForbidden();
 });
 
 test('signed-in pages use the same shell as the public site', function () {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())
         ->get(route('renter.dashboard'))
         ->assertOk()
         ->assertDontSee('<html lang="en" class="dark"', escape: false)
@@ -127,18 +125,19 @@ test('signed-in pages use the same shell as the public site', function () {
         ->assertSee('<meta name="robots" content="noindex" />', escape: false);
 });
 
-test('renters and owners each get only their own area', function () {
-    $this->actingAs(User::factory()->create())
+test('renters and rental companies each get only their own area', function () {
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())
         ->get(route('renter.dashboard'))
         ->assertSee('Renting')
         ->assertSee('My trips')
-        ->assertDontSee('Hosting')
+        ->assertDontSee('My vehicles')
         ->assertDontSee('Booking requests')
         ->assertDontSee('Administration');
 
-    $this->actingAs(User::factory()->verifiedOwner()->create())
-        ->get(route('owner.dashboard'))
-        ->assertSee('Hosting')
+    $this->actingAs(User::factory()->verifiedCompany()->create())
+        ->get(route('company.dashboard'))
+        ->assertSee('Company')
+        ->assertSee('My vehicles')
         ->assertSee('Booking requests')
         ->assertDontSee('My trips')
         ->assertDontSee('ID verification')
@@ -150,29 +149,29 @@ test('administrators only get the administration and account areas', function ()
         ->get(route('admin.dashboard'))
         ->assertOk()
         ->assertSee('Administration')
-        ->assertSee('Owner applications')
+        ->assertSee('Company applications')
         ->assertSee('ID reviews')
         ->assertDontSee('Renting')
         ->assertDontSee('My trips')
         ->assertDontSee('ID verification')
-        ->assertDontSee('Become an owner')
+        ->assertDontSee('Become a rental company')
         ->assertDontSee('Booking requests');
 });
 
-test('administrators are sent back to their own dashboard from renting and hosting pages', function (string $route) {
+test('administrators are sent back to their own dashboard from renting and company pages', function (string $route) {
     $this->actingAs(User::factory()->admin()->create())
         ->get(route($route))
         ->assertRedirect(route('dashboard'));
-})->with(['renter.dashboard', 'trips.index', 'identity.edit', 'owner.apply', 'owner.vehicles.index']);
+})->with(['renter.dashboard', 'trips.index', 'identity.edit', 'company.apply', 'company.vehicles.index']);
 
 test('each kind of account is kept out of the others\' areas', function (string $state, string $route) {
     $this->actingAs(User::factory()->{$state}()->create())
         ->get(route($route))
         ->assertRedirect(route('dashboard'));
 })->with([
-    'owner on renting' => ['verifiedOwner', 'trips.index'],
-    'owner on identity' => ['verifiedOwner', 'identity.edit'],
-    'renter on hosting' => ['renter', 'owner.apply'],
+    'rental company on renting' => ['verifiedCompany', 'trips.index'],
+    'rental company on identity' => ['verifiedCompany', 'identity.edit'],
+    'renter on company pages' => ['withVerifiedIdentity', 'company.apply'],
 ]);
 
 test('each page shows the tabs for its area', function (string $state, string $route, string $tab) {
@@ -181,8 +180,8 @@ test('each page shows the tabs for its area', function (string $state, string $r
         ->assertOk()
         ->assertSeeInOrder(['aria-current="page"', $tab], escape: false);
 })->with([
-    'renting' => ['renter', 'trips.index', 'My trips'],
-    'hosting' => ['verifiedOwner', 'owner.vehicles.index', 'My vehicles'],
+    'renting' => ['withVerifiedIdentity', 'trips.index', 'My trips'],
+    'company' => ['verifiedCompany', 'company.vehicles.index', 'My vehicles'],
     'admin' => ['admin', 'admin.id-reviews', 'ID reviews'],
     'account' => ['admin', 'profile.edit', 'Profile'],
 ]);
@@ -197,18 +196,27 @@ test('from public pages an administrator can always get back to administration',
 });
 
 test('from public pages a member can always get back to their areas', function () {
-    $this->actingAs(User::factory()->create())
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())
         ->get(route('vehicles.index'))
         ->assertOk()
         ->assertSee('href="'.route('renter.dashboard').'"', escape: false)
         ->assertSee('Renting')
-        ->assertDontSee('Hosting')
+        ->assertDontSee('href="'.route('company.dashboard').'"', escape: false)
         ->assertDontSee('Administration');
 
-    $this->actingAs(User::factory()->verifiedOwner()->create())
+    $this->actingAs(User::factory()->verifiedCompany()->create())
         ->get(route('home'))
-        ->assertSee('href="'.route('owner.dashboard').'"', escape: false)
-        ->assertSee('Hosting')
+        ->assertSee('href="'.route('company.dashboard').'"', escape: false)
+        ->assertSee('Company')
+        ->assertDontSee('href="'.route('renter.dashboard').'"', escape: false);
+});
+
+test('renters without approved IDs only get their ID verification', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('identity.edit'))
+        ->assertOk()
+        ->assertSee('ID verification')
+        ->assertDontSee('My trips')
         ->assertDontSee('href="'.route('renter.dashboard').'"', escape: false);
 });
 

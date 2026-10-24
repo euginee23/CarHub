@@ -24,8 +24,8 @@ test('marketing pages render in light mode', function () {
 });
 
 test('no public page advertises AI capabilities', function (string $routeName) {
-    // The recommendation engine, demand forecasting and chatbot are not implemented;
-    // the marketing site must not claim them.
+    // The marketing copy describes features plainly; it must not make AI claims
+    // about recommendations, forecasting, or the assistant.
     $response = $this->get(route($routeName))->assertOk();
 
     foreach (['AI-powered', 'AI-suggested', 'Where the AI helps', 'The intelligence layer', 'LSTM'] as $claim) {
@@ -42,13 +42,13 @@ test('the home page shows featured vehicles linking to their detail page', funct
         ->assertSee(route('vehicles.show', $featured));
 });
 
-test('a vehicle detail page shows the listing, its owner, and the ID requirement', function () {
+test('a vehicle detail page shows the listing, its rental company, and the ID requirement', function () {
     $vehicle = Vehicle::factory()->create(['price_per_day' => 2750]);
 
     $this->get(route('vehicles.show', $vehicle))
         ->assertOk()
         ->assertSee($vehicle->name)
-        ->assertSee($vehicle->owner->name)
+        ->assertSee($vehicle->company->displayName())
         ->assertSee('2,750')
         ->assertSee('Two valid government-issued IDs');
 });

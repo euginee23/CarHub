@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $reference
  * @property int $renter_id
- * @property int $owner_id
+ * @property int $company_id
  * @property int $vehicle_id
  * @property Carbon $pickup_at
  * @property Carbon $return_at
@@ -53,7 +53,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read User $renter
- * @property-read User $owner
+ * @property-read User $company
  * @property-read Vehicle $vehicle
  * @property-read TermsVersion|null $termsVersion
  * @property-read RentalContract|null $contract
@@ -130,13 +130,13 @@ class Booking extends Model
     }
 
     /**
-     * The owner of the booked vehicle.
+     * The rental company of the booked vehicle.
      *
      * @return BelongsTo<User, $this>
      */
-    public function owner(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(User::class, 'company_id');
     }
 
     /**

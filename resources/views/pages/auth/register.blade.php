@@ -1,19 +1,19 @@
 @php
-    // `?as=owner` (from the site's "List your vehicle" links) preselects an owner account.
-    $accountType = old('account_type', request('as') === 'owner' ? 'owner' : 'renter');
+    // `?as=company` (from the site's "List your vehicle" links) preselects a rental company account.
+    $accountType = old('account_type', request('as') === 'company' ? 'company' : 'renter');
 @endphp
 
 <x-layouts::auth
     :title="__('Register')"
     :panel-heading="__('Start renting, or start earning.')"
-    :panel-description="__('Renters book vehicles from verified local owners. Owners list the car already sitting in their garage and earn from it.')"
+    :panel-description="__('Renters book vehicles from verified local rental companies. Rental companies get verified once, then list their fleet.')"
 >
     <div class="flex flex-col gap-8">
         <x-auth-header
-            :title="$accountType === 'owner' ? __('Create your owner account') : __('Create your account')"
-            :description="$accountType === 'owner'
-                ? __('Sign up, then upload your documents so an administrator can verify you before your first listing.')
-                : __('It takes a minute. You can verify your ID later, when you make your first booking.')"
+            :title="$accountType === 'company' ? __('Create your rental company account') : __('Create your account')"
+            :description="$accountType === 'company'
+                ? __('Sign up, then upload your business permit and a valid ID so an administrator can verify your company before your first listing.')
+                : __('Sign up, then upload two valid government IDs. An administrator approves them before you can book.')"
         />
 
         <!-- Session Status -->
@@ -27,8 +27,8 @@
                 <legend class="text-sm font-medium text-zinc-800">{{ __('Account type') }}</legend>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
                     @foreach ([
-                        'renter' => ['label' => __('Renter'), 'description' => __('Find and book vehicles from verified owners.')],
-                        'owner' => ['label' => __('Vehicle owner'), 'description' => __('Get verified, then list your vehicles for rent.')],
+                        'renter' => ['label' => __('Renter'), 'description' => __('Find and book vehicles from verified rental companies.')],
+                        'company' => ['label' => __('Rental company'), 'description' => __('Get your company verified, then list your fleet for rent.')],
                     ] as $value => $option)
                         <label class="flex cursor-pointer gap-3 rounded-xl border border-zinc-300 bg-white p-4 has-checked:border-brand-600 has-checked:ring-1 has-checked:ring-brand-600">
                             <input
@@ -46,7 +46,7 @@
                     @endforeach
                 </div>
                 <p class="mt-3 text-xs text-zinc-500">
-                    {{ __('Renter and owner accounts are separate. To both rent and list, sign up for each with a different email.') }}
+                    {{ __('Renter and rental company accounts are separate. To both rent and list, sign up for each with a different email.') }}
                 </p>
             </fieldset>
             <!-- Name -->

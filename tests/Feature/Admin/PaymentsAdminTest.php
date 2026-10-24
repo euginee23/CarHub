@@ -48,5 +48,5 @@ test('only refunds that are due can be marked refunded', function () {
 });
 
 test('only administrators see payments', function () {
-    $this->actingAs(User::factory()->verifiedOwner()->create())->get(route('admin.payments.index'))->assertForbidden();
+    $this->actingAs(User::factory()->verifiedCompany()->create())->get(route('admin.payments.index'))->assertForbidden();
 });

@@ -58,7 +58,7 @@ test('a payment of the full amount confirms the booking', function () {
         ->and($this->booking->statusChanges()->latest('id')->first()->note)->toContain($this->payment->reference);
 
     Notification::assertSentTo($this->booking->renter, BookingStatusUpdated::class, fn ($n) => $n->status === BookingStatus::Confirmed);
-    Notification::assertSentTo($this->booking->owner, BookingStatusUpdated::class, fn ($n) => $n->status === BookingStatus::Confirmed);
+    Notification::assertSentTo($this->booking->company, BookingStatusUpdated::class, fn ($n) => $n->status === BookingStatus::Confirmed);
 });
 
 test('an unpaid checkout leaves everything waiting', function () {

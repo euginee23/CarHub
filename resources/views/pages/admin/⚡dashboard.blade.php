@@ -5,7 +5,7 @@ use App\Enums\BookingStatus;
 use App\Enums\DocumentStatus;
 use App\Enums\VehicleStatus;
 use App\Models\Booking;
-use App\Models\OwnerApplication;
+use App\Models\CompanyApplication;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VerificationDocument;
@@ -18,7 +18,7 @@ new #[Title('Admin overview')] class extends Component {
     /**
      * Platform-wide headline numbers.
      *
-     * @return array{users: int, newUsers: int, owners: int, listed: int, vehicles: int, bookingsThisMonth: int, bookingValue: int, pendingApplications: int, pendingIds: int}
+     * @return array{users: int, newUsers: int, companies: int, listed: int, vehicles: int, bookingsThisMonth: int, bookingValue: int, pendingApplications: int, pendingIds: int}
      */
     #[Computed]
     public function stats(): array
@@ -26,12 +26,12 @@ new #[Title('Admin overview')] class extends Component {
         return [
             'users' => User::count(),
             'newUsers' => User::where('created_at', '>=', now()->subDays(7))->count(),
-            'owners' => User::whereNotNull('owner_verified_at')->count(),
+            'companies' => User::whereNotNull('company_verified_at')->count(),
             'listed' => Vehicle::where('status', VehicleStatus::Listed)->count(),
             'vehicles' => Vehicle::count(),
             'bookingsThisMonth' => Booking::where('created_at', '>=', now()->startOfMonth())->count(),
             'bookingValue' => (int) Booking::whereIn('status', [BookingStatus::Confirmed, BookingStatus::Ongoing, BookingStatus::Completed])->sum('total'),
-            'pendingApplications' => OwnerApplication::where('status', ApplicationStatus::Pending)->count(),
+            'pendingApplications' => CompanyApplication::where('status', ApplicationStatus::Pending)->count(),
             'pendingIds' => VerificationDocument::where('documentable_type', (new User)->getMorphClass())->where('status', DocumentStatus::Pending)->count(),
         ];
     }
@@ -88,9 +88,9 @@ new #[Title('Admin overview')] class extends Component {
         @if ($this->stats['pendingApplications'] + $this->stats['pendingIds'] > 0)
             <div class="grid gap-4 sm:grid-cols-2">
                 <x-dashboard.stat
-                    :label="__('Owner applications to review')"
+                    :label="__('Company applications to review')"
                     :value="$this->stats['pendingApplications']"
-                    :href="route('admin.owner-applications')"
+                    :href="route('admin.company-applications')"
                     :tone="$this->stats['pendingApplications'] > 0 ? 'attention' : 'default'"
                 />
                 <x-dashboard.stat
@@ -104,7 +104,7 @@ new #[Title('Admin overview')] class extends Component {
 
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <x-dashboard.stat :label="__('Users')" :value="number_format($this->stats['users'])" :hint="__(':count new this week', ['count' => $this->stats['newUsers']])" />
-            <x-dashboard.stat :label="__('Verified owners')" :value="number_format($this->stats['owners'])" />
+            <x-dashboard.stat :label="__('Verified rental companies')" :value="number_format($this->stats['companies'])" />
             <x-dashboard.stat :label="__('Listed vehicles')" :value="number_format($this->stats['listed'])" :hint="__(':count in total', ['count' => $this->stats['vehicles']])" />
             <x-dashboard.stat
                 :label="__('Bookings this month')"
@@ -169,7 +169,7 @@ new #[Title('Admin overview')] class extends Component {
                                     <p class="truncate font-medium text-zinc-900">{{ $member->name }}</p>
                                     <p class="text-xs text-zinc-500">{{ $member->created_at?->diffForHumans() }}</p>
                                 </div>
-                                <flux:badge size="sm" :color="match (true) { $member->isAdmin() => 'zinc', $member->isOwner() => 'green', default => 'blue' }">{{ $member->role->label() }}</flux:badge>
+                                <flux:badge size="sm" :color="match (true) { $member->isAdmin() => 'zinc', $member->isCompany() => 'green', default => 'blue' }">{{ $member->role->label() }}</flux:badge>
                             </li>
                         @endforeach
                     </ul>

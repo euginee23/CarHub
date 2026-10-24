@@ -41,22 +41,22 @@ test('a suspension needs a reason', function () {
     expect($user->fresh()->isSuspended())->toBeFalse();
 });
 
-test('a suspended owner\'s listings leave the marketplace until reinstated', function () {
+test('a suspended rental company\'s listings leave the marketplace until reinstated', function () {
     $vehicle = Vehicle::factory()->create(['brand' => 'Hidden', 'model' => 'Car']);
-    $owner = $vehicle->owner;
+    $company = $vehicle->company;
 
     Livewire::actingAs($this->admin)
         ->test('pages::admin.users')
-        ->call('startSuspending', $owner->id)
+        ->call('startSuspending', $company->id)
         ->set('suspensionReason', 'Repeated no-shows.')
         ->call('suspend');
 
     expect(Vehicle::listed()->pluck('id')->all())->not->toContain($vehicle->id);
     $this->get(route('vehicles.show', $vehicle))->assertNotFound();
 
-    Livewire::actingAs($this->admin)->test('pages::admin.users')->call('reinstate', $owner->id);
+    Livewire::actingAs($this->admin)->test('pages::admin.users')->call('reinstate', $company->id);
 
-    expect($owner->fresh()->isSuspended())->toBeFalse()
+    expect($company->fresh()->isSuspended())->toBeFalse()
         ->and(Vehicle::listed()->pluck('id')->all())->toContain($vehicle->id);
 });
 

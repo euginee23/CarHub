@@ -27,7 +27,7 @@ enum BookingStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::Requested => __('Awaiting owner approval'),
+            self::Requested => __('Awaiting rental company approval'),
             self::Approved => __('Approved — complete checkout'),
             self::AwaitingPayment => __('Awaiting payment'),
             self::Confirmed => __('Confirmed'),

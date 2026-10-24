@@ -3,14 +3,14 @@
 namespace Database\Factories;
 
 use App\Enums\ApplicationStatus;
-use App\Models\OwnerApplication;
+use App\Models\CompanyApplication;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<OwnerApplication>
+ * @extends Factory<CompanyApplication>
  */
-class OwnerApplicationFactory extends Factory
+class CompanyApplicationFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -20,8 +20,10 @@ class OwnerApplicationFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory()->owner(),
+            'user_id' => User::factory()->company(),
             'status' => ApplicationStatus::Pending,
+            'company_name' => fake()->company().' Car Rental',
+            'business_address' => fake()->streetAddress().', Pagadian City',
             'notes' => fake()->optional()->sentence(),
         ];
     }

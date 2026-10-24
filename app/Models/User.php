@@ -4,10 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\DocumentStatus;
+use App\Enums\IdentityStatus;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,7 +30,9 @@ use Illuminate\Support\Str;
  * @property Carbon|null $email_verified_at
  * @property string $password
  * @property UserRole $role
- * @property Carbon|null $owner_verified_at
+ * @property Carbon|null $company_verified_at
+ * @property string|null $company_name
+ * @property string|null $company_address
  * @property Carbon|null $suspended_at
  * @property string|null $suspension_reason
  * @property string|null $two_factor_secret
@@ -38,10 +42,10 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Vehicle> $vehicles
- * @property-read Collection<int, OwnerApplication> $ownerApplications
- * @property-read OwnerApplication|null $latestOwnerApplication
+ * @property-read Collection<int, CompanyApplication> $companyApplications
+ * @property-read CompanyApplication|null $latestCompanyApplication
  * @property-read Collection<int, Booking> $bookings
- * @property-read Collection<int, Booking> $ownerBookings
+ * @property-read Collection<int, Booking> $companyBookings
  * @property-read Collection<int, VerificationDocument> $identityDocuments
  * @property-read RenterPreference|null $renterPreference
  */
@@ -78,39 +82,39 @@ class User extends Authenticatable
             'birthdate' => 'date',
             'password' => 'hashed',
             'role' => UserRole::class,
-            'owner_verified_at' => 'datetime',
+            'company_verified_at' => 'datetime',
             'suspended_at' => 'datetime',
         ];
     }
 
     /**
-     * The vehicles this user lists as an owner.
+     * The vehicles this user lists as a rental company.
      *
      * @return HasMany<Vehicle, $this>
      */
     public function vehicles(): HasMany
     {
-        return $this->hasMany(Vehicle::class, 'owner_id');
+        return $this->hasMany(Vehicle::class, 'company_id');
     }
 
     /**
-     * Every owner application this user has submitted.
+     * Every rental company application this user has submitted.
      *
-     * @return HasMany<OwnerApplication, $this>
+     * @return HasMany<CompanyApplication, $this>
      */
-    public function ownerApplications(): HasMany
+    public function companyApplications(): HasMany
     {
-        return $this->hasMany(OwnerApplication::class);
+        return $this->hasMany(CompanyApplication::class);
     }
 
     /**
-     * The user's most recent owner application.
+     * The user's most recent rental company application.
      *
-     * @return HasOne<OwnerApplication, $this>
+     * @return HasOne<CompanyApplication, $this>
      */
-    public function latestOwnerApplication(): HasOne
+    public function latestCompanyApplication(): HasOne
     {
-        return $this->hasOne(OwnerApplication::class)->latestOfMany();
+        return $this->hasOne(CompanyApplication::class)->latestOfMany();
     }
 
     /**
@@ -128,9 +132,9 @@ class User extends Authenticatable
      *
      * @return HasMany<Booking, $this>
      */
-    public function ownerBookings(): HasMany
+    public function companyBookings(): HasMany
     {
-        return $this->hasMany(Booking::class, 'owner_id');
+        return $this->hasMany(Booking::class, 'company_id');
     }
 
     /**
@@ -166,6 +170,41 @@ class User extends Authenticatable
     }
 
     /**
+     * Where the renter stands on the two-valid-ID requirement: approved once two
+     * different IDs are approved, pending while two are on file awaiting review,
+     * and not uploaded while fewer than two are on file (a rejected ID must be
+     * replaced).
+     */
+    public function identityStatus(): IdentityStatus
+    {
+        return IdentityStatus::fromCounts(
+            approved: $this->identityDocuments()->where('status', DocumentStatus::Approved)->distinct()->count('type'),
+            onFile: $this->identityDocuments()->whereIn('status', [DocumentStatus::Pending, DocumentStatus::Approved])->distinct()->count('type'),
+        );
+    }
+
+    /**
+     * Only renters at the given stage of ID verification.
+     *
+     * @param  Builder<User>  $query
+     */
+    public function scopeWithIdentityStatus(Builder $query, IdentityStatus $status): void
+    {
+        $required = self::REQUIRED_IDENTITY_DOCUMENTS;
+        $approved = fn (Builder $documents) => $documents->where('status', DocumentStatus::Approved);
+        $onFile = fn (Builder $documents) => $documents->whereIn('status', [DocumentStatus::Pending, DocumentStatus::Approved]);
+
+        $query->where('role', UserRole::Renter);
+
+        match ($status) {
+            IdentityStatus::Approved => $query->whereHas('identityDocuments', $approved, '>=', $required),
+            IdentityStatus::Pending => $query->whereHas('identityDocuments', $onFile, '>=', $required)
+                ->whereHas('identityDocuments', $approved, '<', $required),
+            IdentityStatus::NotUploaded => $query->whereHas('identityDocuments', $onFile, '<', $required),
+        };
+    }
+
+    /**
      * Whether this is an administrator account, which runs the platform.
      */
     public function isAdmin(): bool
@@ -174,11 +213,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Whether this is an owner account, which lists vehicles.
+     * Whether this is a rental company account, which lists vehicles.
      */
-    public function isOwner(): bool
+    public function isCompany(): bool
     {
-        return $this->role === UserRole::Owner;
+        return $this->role === UserRole::Company;
     }
 
     /**
@@ -190,11 +229,20 @@ class User extends Authenticatable
     }
 
     /**
-     * Determine whether the user is an owner who has been verified to list vehicles.
+     * Determine whether the user is a rental company who has been verified to list vehicles.
      */
-    public function isVerifiedOwner(): bool
+    public function isVerifiedCompany(): bool
     {
-        return $this->isOwner() && $this->owner_verified_at !== null;
+        return $this->isCompany() && $this->company_verified_at !== null;
+    }
+
+    /**
+     * The name shown to other people: a verified rental company's business name,
+     * or the account holder's own name.
+     */
+    public function displayName(): string
+    {
+        return $this->company_name ?: $this->name;
     }
 
     /**
@@ -210,7 +258,7 @@ class User extends Authenticatable
      */
     public function initials(): string
     {
-        $initials = Str::initials($this->name, true);
+        $initials = Str::initials($this->displayName(), true);
 
         return Str::length($initials) > 1
             ? Str::substr($initials, 0, 1).Str::substr($initials, -1)

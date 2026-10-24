@@ -273,7 +273,7 @@ new #[Title('Checkout')] class extends Component {
                             </form>
                         @endunless
                     @elseif ($booking->status === BookingStatus::Requested)
-                        <flux:text>{{ __('The contract is prepared once the owner approves your request.') }}</flux:text>
+                        <flux:text>{{ __('The contract is prepared once the rental company approves your request.') }}</flux:text>
                     @else
                         <flux:text>{{ __('Accept the rental terms and get two IDs approved to prepare your contract.') }}</flux:text>
                     @endif

@@ -28,9 +28,9 @@ test('the renter can open checkout', function () {
 });
 
 test('nobody else can open the renter\'s checkout', function () {
-    // Owners have no renting area at all; other renters are refused by the policy.
-    $this->actingAs($this->booking->owner)->get(route('trips.checkout', $this->booking))->assertRedirect(route('dashboard'));
-    $this->actingAs(User::factory()->create())->get(route('trips.checkout', $this->booking))->assertForbidden();
+    // Rental companies have no renting area at all; other renters are refused by the policy.
+    $this->actingAs($this->booking->company)->get(route('trips.checkout', $this->booking))->assertRedirect(route('dashboard'));
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())->get(route('trips.checkout', $this->booking))->assertForbidden();
 });
 
 test('checkout sends the renter back to the trip once it is over', function () {
@@ -63,7 +63,7 @@ test('the terms must be ticked to be accepted', function () {
     expect($this->booking->fresh()->terms_accepted_at)->toBeNull();
 });
 
-test('renters can accept the terms while the owner is still deciding', function () {
+test('renters can accept the terms while the rental company is still deciding', function () {
     $this->booking->forceFill(['status' => BookingStatus::Requested, 'approved_at' => null])->save();
 
     Livewire::actingAs($this->renter)
@@ -71,7 +71,7 @@ test('renters can accept the terms while the owner is still deciding', function 
         ->set('agreeToTerms', true)
         ->call('acceptTerms')
         ->assertHasNoErrors()
-        ->assertSee('The contract is prepared once the owner approves your request.');
+        ->assertSee('The contract is prepared once the rental company approves your request.');
 
     expect($this->booking->fresh()->contract)->toBeNull();
 });
@@ -164,15 +164,39 @@ test('a signed contract does not change when the listing does', function () {
     expect($contract->fresh()->snapshot['vehicle']['name'])->not->toContain('Renamed');
 });
 
-test('the printable contract is visible to the renter, owner, and admins only', function () {
+test('the printable contract is visible to the renter, rental company, and admins only', function () {
     $contract = RentalContract::factory()->for($this->booking)->create();
 
     $this->actingAs($this->renter)->get(route('bookings.contract', $this->booking))->assertOk()->assertSee($contract->contract_number);
-    $this->actingAs($this->booking->owner)->get(route('bookings.contract', $this->booking))->assertOk();
+    $this->actingAs($this->booking->company)->get(route('bookings.contract', $this->booking))->assertOk();
     $this->actingAs(User::factory()->admin()->create())->get(route('bookings.contract', $this->booking))->assertOk();
     $this->actingAs(User::factory()->create())->get(route('bookings.contract', $this->booking))->assertForbidden();
 });
 
 test('there is no contract page before a contract exists', function () {
     $this->actingAs($this->renter)->get(route('bookings.contract', $this->booking))->assertNotFound();
+});
+
+test('new contracts name the rental company and its address', function () {
+    $contract = app(GenerateRentalContract::class)->handle(Booking::factory()->approved()->withAcceptedTerms()->for($this->renter, 'renter')->create());
+    $company = $contract->booking->company;
+
+    expect($contract->snapshot['company'])->toMatchArray(['name' => $company->displayName(), 'address' => $company->company_address]);
+
+    $this->actingAs($this->renter)->get(route('bookings.contract', $contract->booking))
+        ->assertOk()
+        ->assertSee($company->company_name)
+        ->assertSee($company->company_address);
+});
+
+test('contracts signed before rental companies replaced owners still render', function () {
+    $contract = RentalContract::factory()->for($this->booking)->create();
+    $snapshot = $contract->snapshot;
+    $snapshot['owner'] = ['name' => 'Marco Villanueva', 'email' => 'marco@example.com', 'phone' => null, 'approved_at' => null];
+    unset($snapshot['company']);
+    $contract->forceFill(['snapshot' => $snapshot])->save();
+
+    $this->actingAs($this->renter)->get(route('bookings.contract', $this->booking))
+        ->assertOk()
+        ->assertSee('Marco Villanueva');
 });

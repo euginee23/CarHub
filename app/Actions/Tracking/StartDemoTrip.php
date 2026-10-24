@@ -63,7 +63,7 @@ class StartDemoTrip
 
             $booking->forceFill([
                 'renter_id' => self::demoRenter()->id,
-                'owner_id' => $vehicle->owner_id,
+                'company_id' => $vehicle->company_id,
                 'vehicle_id' => $vehicle->id,
                 'status' => BookingStatus::Ongoing,
                 'approved_at' => $pickup,

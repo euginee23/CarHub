@@ -1,6 +1,8 @@
 {{-- The body of a rental contract, rendered from its frozen snapshot. --}}
 @php
     $snapshot = $contract->snapshot;
+    // Contracts signed before rental companies replaced owners keep the party under `owner`.
+    $company = $snapshot['company'] ?? $snapshot['owner'];
     $peso = fn (int $amount): string => '₱'.number_format($amount);
     $when = fn (?string $value): string => $value ? \Carbon\CarbonImmutable::parse($value)->format('M j, Y g:i A') : '—';
 @endphp
@@ -12,8 +14,8 @@
     <h3>{{ __('Parties') }}</h3>
     <ul>
         <li>
-            <strong>{{ __('Owner:') }}</strong> {{ $snapshot['owner']['name'] }} ({{ $snapshot['owner']['email'] }})
-            &middot; {{ __('accepted the booking :date', ['date' => $when($snapshot['owner']['approved_at'])]) }}
+            <strong>{{ __('Rental company:') }}</strong> {{ $company['name'] }} ({{ $company['email'] }})@isset($company['address']), {{ $company['address'] }}@endisset
+            &middot; {{ __('accepted the booking :date', ['date' => $when($company['approved_at'])]) }}
         </li>
         <li>
             <strong>{{ __('Renter:') }}</strong> {{ $snapshot['renter']['name'] }} ({{ $snapshot['renter']['email'] }})
@@ -46,7 +48,7 @@
 
     <h3>{{ __('Signatures') }}</h3>
     <ul>
-        <li><strong>{{ __('Owner:') }}</strong> {{ __('accepted electronically by approving the booking, :date', ['date' => $when($snapshot['owner']['approved_at'])]) }}</li>
+        <li><strong>{{ __('Rental company:') }}</strong> {{ __('accepted electronically by approving the booking, :date', ['date' => $when($company['approved_at'])]) }}</li>
         <li>
             <strong>{{ __('Renter:') }}</strong>
             @if ($contract->isSigned())

@@ -7,7 +7,7 @@ return [
     | Pricing
     |--------------------------------------------------------------------------
     |
-    | The platform service fee charged on top of the owner's rental subtotal,
+    | The platform service fee charged on top of the rental company's rental subtotal,
     | expressed as a fraction (0.15 = 15%).
     |
     */
@@ -69,7 +69,7 @@ return [
     | Handover
     |--------------------------------------------------------------------------
     |
-    | How early before pickup time the owner may release the vehicle, and how
+    | How early before pickup time the rental company may release the vehicle, and how
     | late a return can be before it counts as late, both in minutes.
     |
     */
@@ -114,6 +114,29 @@ return [
         'lookback' => 28,
         'horizon' => 30,
         'timeout' => 600,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Assistant
+    |--------------------------------------------------------------------------
+    |
+    | The chat assistant on every page answers with Claude (the API key lives
+    | in config/services.php). `model` and `effort` trade answer quality for
+    | cost. Each visitor may send `messages_per_hour` messages; the model sees
+    | the last `history_messages` chat messages and may look things up at most
+    | `max_tool_rounds` times per reply.
+    |
+    */
+
+    'assistant' => [
+        'model' => env('ASSISTANT_MODEL', 'claude-opus-5-5'),
+        'effort' => env('ASSISTANT_EFFORT', 'low'),
+        'max_tokens' => 4096,
+        'max_tool_rounds' => 5,
+        'history_messages' => 12,
+        'max_message_length' => 500,
+        'messages_per_hour' => 30,
     ],
 
 ];

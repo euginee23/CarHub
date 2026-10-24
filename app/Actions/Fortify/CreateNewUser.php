@@ -25,7 +25,7 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             ...$this->profileRules(),
             'phone' => $this->phoneRules(),
-            'account_type' => ['required', Rule::in(['renter', 'owner'])],
+            'account_type' => ['required', Rule::in(['renter', 'company'])],
             'password' => $this->passwordRules(),
         ], [
             'phone.regex' => __('Enter a Philippine mobile number, e.g. 09171234567.'),
@@ -38,9 +38,9 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $input['password'],
         ]);
 
-        // Renters and owners are separate kinds of account, chosen here once.
+        // Renters and rental companies are separate kinds of account, chosen here once.
         $user->forceFill([
-            'role' => $input['account_type'] === 'owner' ? UserRole::Owner : UserRole::Renter,
+            'role' => $input['account_type'] === 'company' ? UserRole::Company : UserRole::Renter,
         ])->save();
 
         return $user;

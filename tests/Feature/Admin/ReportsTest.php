@@ -37,7 +37,7 @@ test('the summary adds up what was collected and what it was for', function () {
         'bookings' => 2,
         'collected' => 4600.0,
         'platformRevenue' => 600.0,
-        'ownerEarnings' => 4000.0,
+        'companyEarnings' => 4000.0,
         'averageBooking' => 4600.0,
         'cancellationRate' => 50.0,
     ]);
@@ -128,8 +128,8 @@ test('unknown reports and bad ranges are refused', function () {
 });
 
 test('only administrators see reports', function () {
-    $this->actingAs(User::factory()->verifiedOwner()->create())->get(route('admin.reports'))->assertForbidden();
-    $this->actingAs(User::factory()->verifiedOwner()->create())->get(route('admin.reports.export', ['report' => 'daily', 'from' => '2026-10-01', 'to' => '2026-10-31']))->assertForbidden();
+    $this->actingAs(User::factory()->verifiedCompany()->create())->get(route('admin.reports'))->assertForbidden();
+    $this->actingAs(User::factory()->verifiedCompany()->create())->get(route('admin.reports.export', ['report' => 'daily', 'from' => '2026-10-01', 'to' => '2026-10-31']))->assertForbidden();
 });
 
 test('chart axes use clean round numbers', function () {

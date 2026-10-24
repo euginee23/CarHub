@@ -17,7 +17,7 @@ class SignRentalContract
 
     /**
      * Sign the contract on the renter's behalf and move the booking on to payment.
-     * Every earlier checkout step must be complete: owner approval, accepted
+     * Every earlier checkout step must be complete: rental company approval, accepted
      * terms, and two approved government IDs.
      *
      * @throws ValidationException

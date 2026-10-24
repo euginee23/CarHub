@@ -28,7 +28,7 @@ new #[Title('Trip details')] class extends Component {
     {
         Gate::authorize('checkout', $booking);
 
-        $this->booking = $booking->load(['vehicle.coverPhoto', 'owner', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment', 'review.reviewer']);
+        $this->booking = $booking->load(['vehicle.coverPhoto', 'company', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment', 'review.reviewer']);
     }
 
     /**
@@ -84,8 +84,8 @@ new #[Title('Trip details')] class extends Component {
 
         @switch($booking->status)
             @case(BookingStatus::Requested)
-                <flux:callout icon="clock" :heading="__('Waiting for the owner')">
-                    <flux:callout.text>{{ __('The owner has been notified. Meanwhile you can accept the rental terms and verify your IDs so you are ready once they approve.') }}</flux:callout.text>
+                <flux:callout icon="clock" :heading="__('Waiting for the rental company')">
+                    <flux:callout.text>{{ __('The rental company has been notified. Meanwhile you can accept the rental terms and verify your IDs so you are ready once they approve.') }}</flux:callout.text>
                     <x-slot name="actions">
                         <flux:button :href="route('trips.checkout', $booking)" wire:navigate>{{ __('Get ready') }}</flux:button>
                     </x-slot>
@@ -131,7 +131,7 @@ new #[Title('Trip details')] class extends Component {
                 </flux:callout>
                 @break
             @case(BookingStatus::Declined)
-                <flux:callout variant="danger" icon="x-circle" :heading="__('The owner declined this request')">
+                <flux:callout variant="danger" icon="x-circle" :heading="__('The rental company declined this request')">
                     <flux:callout.text>{{ $booking->decline_reason }}</flux:callout.text>
                 </flux:callout>
                 @break
@@ -158,7 +158,7 @@ new #[Title('Trip details')] class extends Component {
                     <flux:card class="space-y-4">
                         <div>
                             <flux:heading size="lg">{{ __('Rate your trip') }}</flux:heading>
-                            <flux:text class="mt-1">{{ __('Your rating helps other renters choose and helps owners improve.') }}</flux:text>
+                            <flux:text class="mt-1">{{ __('Your rating helps other renters choose and helps rental companies improve.') }}</flux:text>
                         </div>
                         <form wire:submit="submitReview" class="space-y-4">
                             <div class="flex items-center gap-1" role="radiogroup" aria-label="{{ __('Rating') }}">
@@ -212,10 +212,10 @@ new #[Title('Trip details')] class extends Component {
 
             <div class="space-y-6">
                 <flux:card>
-                    <flux:heading>{{ __('Owner') }}</flux:heading>
-                    <flux:text class="mt-2">{{ $booking->owner->name }}</flux:text>
+                    <flux:heading>{{ __('Rental company') }}</flux:heading>
+                    <flux:text class="mt-2">{{ $booking->company->displayName() }}</flux:text>
                     @if (in_array($booking->status, [BookingStatus::Confirmed, BookingStatus::Ongoing], true))
-                        <flux:text>{{ $booking->owner->phone }}</flux:text>
+                        <flux:text>{{ $booking->company->phone }}</flux:text>
                     @endif
                 </flux:card>
 
@@ -235,7 +235,7 @@ new #[Title('Trip details')] class extends Component {
             <form wire:submit="cancel" class="space-y-6">
                 <div>
                     <flux:heading size="lg">{{ __('Cancel this booking?') }}</flux:heading>
-                    <flux:text class="mt-2">{{ __('The owner will be told. Nothing has been charged yet.') }}</flux:text>
+                    <flux:text class="mt-2">{{ __('The rental company will be told. Nothing has been charged yet.') }}</flux:text>
                 </div>
                 <flux:textarea wire:model="cancellationReason" :label="__('Reason (optional)')" rows="3" />
                 <flux:error name="booking" />

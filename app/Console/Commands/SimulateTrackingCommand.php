@@ -31,7 +31,7 @@ class SimulateTrackingCommand extends Command
         $booking = Booking::with(['vehicle.gpsDevice', 'locations'])->firstWhere('reference', $this->argument('booking'));
 
         if ($booking === null || $booking->status !== BookingStatus::Ongoing) {
-            $this->error('Give the reference of a booking that is currently on a trip (the owner has released the vehicle).');
+            $this->error('Give the reference of a booking that is currently on a trip (the rental company has released the vehicle).');
 
             return self::FAILURE;
         }

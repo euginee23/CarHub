@@ -36,7 +36,7 @@ new #[Title('Activity')] class extends Component {
             'auth' => __('Sign-ins'),
             'user' => __('Accounts'),
             'vehicle' => __('Listings'),
-            'owner_application' => __('Owner applications'),
+            'company_application' => __('Company applications'),
             'identity_document' => __('ID reviews'),
             'tracker' => __('GPS trackers'),
             'review' => __('Reviews'),

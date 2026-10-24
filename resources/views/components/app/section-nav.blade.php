@@ -1,4 +1,4 @@
-{{-- Tabs for the pages in the current area of the app (Renting, Hosting, ...). --}}
+{{-- Tabs for the pages in the current area of the app (Renting, Company, ...). --}}
 @php
     $sections = \App\Support\AppNavigation::sections(auth()->user());
     $current = \App\Support\AppNavigation::currentSection($sections);

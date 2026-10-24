@@ -160,7 +160,7 @@ new #[Title('Reports')] class extends Component {
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <x-dashboard.stat :label="__('Collected')" :value="'₱'.\App\Support\ChartScale::compact($summary['collected'])" :hint="__('Payments that went through')" />
                 <x-dashboard.stat :label="__('Platform revenue')" :value="'₱'.\App\Support\ChartScale::compact($summary['platformRevenue'])" :hint="__('CarHub service fees')" />
-                <x-dashboard.stat :label="__('Owner earnings')" :value="'₱'.\App\Support\ChartScale::compact($summary['ownerEarnings'])" :hint="__('Rental subtotals paid')" />
+                <x-dashboard.stat :label="__('Rental company earnings')" :value="'₱'.\App\Support\ChartScale::compact($summary['companyEarnings'])" :hint="__('Rental subtotals paid')" />
                 <x-dashboard.stat :label="__('Booking requests')" :value="number_format($summary['bookings'])" :hint="__('Average paid booking ₱:avg', ['avg' => number_format($summary['averageBooking'])])" />
                 <x-dashboard.stat :label="__('Lost requests')" :value="$summary['cancellationRate'].'%'" :hint="__('Declined, cancelled, or expired')" />
                 <x-dashboard.stat :label="__('Fleet utilization')" :value="$summary['utilization'].'%'" :hint="__('Vehicle-days rented of those available')" />

@@ -43,7 +43,7 @@ new #[Title('Overview')] class extends Component {
                 ]
                 : [
                     'title' => __('Finish checkout for your :vehicle', ['vehicle' => $booking->vehicle->name]),
-                    'body' => __('The owner approved your request for :date. Accept the terms and sign the contract.', ['date' => $booking->pickup_at->format('M j')]),
+                    'body' => __('The rental company approved your request for :date. Accept the terms and sign the contract.', ['date' => $booking->pickup_at->format('M j')]),
                     'href' => route('trips.checkout', $booking),
                     'action' => __('Continue'),
                 ])
@@ -118,7 +118,7 @@ new #[Title('Overview')] class extends Component {
     {
         return Vehicle::listed()
             ->with('coverPhoto')
-            ->where('owner_id', '!=', $this->user->id)
+            ->where('company_id', '!=', $this->user->id)
             ->orderByDesc('rating')
             ->orderByDesc('trips_count')
             ->take(3)

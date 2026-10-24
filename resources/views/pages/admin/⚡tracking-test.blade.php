@@ -55,7 +55,7 @@ new #[Title('GPS tracker test')] class extends Component {
     public function vehicles(): Collection
     {
         return Vehicle::query()
-            ->with(['owner', 'gpsDevice'])
+            ->with(['company', 'gpsDevice'])
             ->withExists(['bookings as on_trip' => fn ($query) => $query->where('status', BookingStatus::Ongoing)])
             ->orderBy('brand')
             ->orderBy('model')
@@ -171,7 +171,7 @@ new #[Title('GPS tracker test')] class extends Component {
             <flux:select wire:model.live="vehicleId" :label="__('Vehicle the tracker is fitted to')" :placeholder="__('Choose a vehicle…')">
                 @foreach ($this->vehicles as $option)
                     <flux:select.option :value="$option->id">
-                        {{ $option->year }} {{ $option->name }} — {{ $option->owner->name }}{{ $option->on_trip ? ' · '.__('on a trip') : '' }}{{ $option->gpsDevice ? ' · '.__('tracker paired') : '' }}
+                        {{ $option->year }} {{ $option->name }} — {{ $option->company->displayName() }}{{ $option->on_trip ? ' · '.__('on a trip') : '' }}{{ $option->gpsDevice ? ' · '.__('tracker paired') : '' }}
                     </flux:select.option>
                 @endforeach
             </flux:select>

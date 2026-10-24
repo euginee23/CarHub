@@ -24,7 +24,7 @@ class extends Component {
         $ids = app(CompareList::class)->ids();
 
         return Vehicle::listed()
-            ->with(['coverPhoto', 'owner'])
+            ->with(['coverPhoto', 'company'])
             ->whereKey($ids)
             ->get()
             ->sortBy(fn (Vehicle $vehicle) => array_search($vehicle->id, $ids, true))

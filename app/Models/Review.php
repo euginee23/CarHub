@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $booking_id
  * @property int $vehicle_id
  * @property int $reviewer_id
- * @property int $owner_id
+ * @property int $company_id
  * @property int $rating 1 to 5.
  * @property string|null $comment
  * @property Carbon|null $created_at
@@ -24,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property-read Booking $booking
  * @property-read Vehicle $vehicle
  * @property-read User $reviewer
- * @property-read User $owner
+ * @property-read User $company
  */
 #[Fillable(['rating', 'comment'])]
 class Review extends Model
@@ -75,12 +75,12 @@ class Review extends Model
     }
 
     /**
-     * The owner whose vehicle was reviewed.
+     * The rental company whose vehicle was reviewed.
      *
      * @return BelongsTo<User, $this>
      */
-    public function owner(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(User::class, 'company_id');
     }
 }

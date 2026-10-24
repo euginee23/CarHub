@@ -68,7 +68,7 @@ class TransitionBooking
         $recipients = match ($status) {
             BookingStatus::Approved, BookingStatus::Declined, BookingStatus::Expired => [$booking->renter],
             BookingStatus::AwaitingPayment => [],
-            default => [$booking->renter, $booking->owner],
+            default => [$booking->renter, $booking->company],
         };
 
         foreach ($recipients as $recipient) {

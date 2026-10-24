@@ -14,12 +14,12 @@ class CompleteRental
     public function __construct(protected TransitionBooking $transitions) {}
 
     /**
-     * The owner takes the vehicle back: record the return time and condition and
+     * The rental company takes the vehicle back: record the return time and condition and
      * close the rental. Tracking stops, and the vehicle is free to book again.
      *
      * @throws ValidationException
      */
-    public function handle(Booking $booking, User $owner, int $odometer, FuelLevel $fuel, ?string $notes = null): Booking
+    public function handle(Booking $booking, User $company, int $odometer, FuelLevel $fuel, ?string $notes = null): Booking
     {
         if ($booking->status !== BookingStatus::Ongoing) {
             throw ValidationException::withMessages(['handover' => __('Only vehicles out on a rental can be returned.')]);
@@ -29,7 +29,7 @@ class CompleteRental
             throw ValidationException::withMessages(['returnOdometer' => __('The odometer cannot read less than at pickup (:km km).', ['km' => number_format($booking->pickup_odometer)])]);
         }
 
-        return DB::transaction(function () use ($booking, $owner, $odometer, $fuel, $notes): Booking {
+        return DB::transaction(function () use ($booking, $company, $odometer, $fuel, $notes): Booking {
             $booking->vehicle()->increment('trips_count');
 
             $distance = $booking->pickup_odometer !== null ? $odometer - $booking->pickup_odometer : null;
@@ -37,7 +37,7 @@ class CompleteRental
             return $this->transitions->handle(
                 $booking,
                 BookingStatus::Completed,
-                $owner,
+                $company,
                 $distance !== null
                     ? __('Vehicle returned at :odometer km (:distance km driven) with a :fuel.', ['odometer' => number_format($odometer), 'distance' => number_format($distance), 'fuel' => mb_strtolower($fuel->label())])
                     : __('Vehicle returned with a :fuel.', ['fuel' => mb_strtolower($fuel->label())]),

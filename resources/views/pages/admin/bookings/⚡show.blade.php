@@ -16,7 +16,7 @@ new #[Title('Booking')] class extends Component {
     public function mount(Booking $booking): void
     {
         $this->booking = $booking->load([
-            'vehicle.coverPhoto', 'vehicle.gpsDevice', 'renter', 'owner', 'statusChanges.actor',
+            'vehicle.coverPhoto', 'vehicle.gpsDevice', 'renter', 'company', 'statusChanges.actor',
             'contract', 'payments', 'successfulPayment', 'latestPayment', 'review.reviewer',
         ]);
     }
@@ -83,9 +83,9 @@ new #[Title('Booking')] class extends Component {
                         </p>
                     </div>
                     <div class="border-t border-zinc-100 pt-3">
-                        <flux:heading>{{ __('Owner') }}</flux:heading>
-                        <p class="mt-1 text-zinc-900">{{ $booking->owner->name }}</p>
-                        <p class="text-zinc-500">{{ $booking->owner->email }} &middot; {{ $booking->owner->phone }}</p>
+                        <flux:heading>{{ __('Rental company') }}</flux:heading>
+                        <p class="mt-1 text-zinc-900">{{ $booking->company->displayName() }}</p>
+                        <p class="text-zinc-500">{{ $booking->company->email }} &middot; {{ $booking->company->phone }}</p>
                     </div>
                 </flux:card>
 

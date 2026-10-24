@@ -6,10 +6,10 @@
             ['label' => __('SUVs & vans'), 'href' => route('vehicles.index', ['type' => 'SUV'])],
             ['label' => __('Budget rentals'), 'href' => route('vehicles.index', ['sort' => 'price-asc'])],
         ],
-        __('Host') => [
-            ['label' => __('List your vehicle'), 'href' => route('register', ['as' => 'owner'])],
-            ['label' => __('Owner guide'), 'href' => route('how-it-works').'#for-owners'],
-            ['label' => __('Pricing & payouts'), 'href' => route('faq').'#for-owners'],
+        __('Rental companies') => [
+            ['label' => __('List your vehicle'), 'href' => route('register', ['as' => 'company'])],
+            ['label' => __('Rental company guide'), 'href' => route('how-it-works').'#for-companies'],
+            ['label' => __('Pricing & payouts'), 'href' => route('faq').'#for-rental-companies'],
         ],
         __('Company') => [
             ['label' => __('About CarHub'), 'href' => route('about')],
@@ -36,7 +36,7 @@
                 </a>
 
                 <p class="mt-4 max-w-sm text-sm/6 text-zinc-600">
-                    {{ __('A vehicle rental marketplace connecting verified owners and renters — smarter matches, fairer prices, safer trips.') }}
+                    {{ __('A vehicle rental marketplace connecting verified rental companies and renters — smarter matches, fairer prices, safer trips.') }}
                 </p>
 
                 <div class="mt-6 flex items-center gap-2">

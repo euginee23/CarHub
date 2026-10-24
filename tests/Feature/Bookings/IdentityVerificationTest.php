@@ -2,6 +2,7 @@
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Enums\IdentityStatus;
 use App\Models\User;
 use App\Models\VerificationDocument;
 use App\Notifications\IdentityDocumentReviewed;
@@ -46,8 +47,63 @@ test('the ID verification settings page is displayed', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('identity.edit'))
         ->assertOk()
-        ->assertSee('Two valid government IDs are required to rent');
+        ->assertSee('Upload two valid government IDs to start renting')
+        ->assertSee('ID 1 of 2');
 });
+
+test('renters without two approved IDs are kept on their ID verification', function (string $route) {
+    $renter = User::factory()->create();
+    idOnFile($renter, DocumentType::Passport, DocumentStatus::Approved);
+    idOnFile($renter, DocumentType::NationalId);
+
+    $this->actingAs($renter)
+        ->get(route($route))
+        ->assertRedirect(route('identity.edit'));
+})->with(['renter.dashboard', 'trips.index']);
+
+test('renters with two approved IDs can use the renting area', function () {
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())
+        ->get(route('renter.dashboard'))
+        ->assertOk();
+});
+
+test('renters waiting on review are told so', function () {
+    $renter = User::factory()->create();
+    idOnFile($renter, DocumentType::Passport);
+    idOnFile($renter, DocumentType::NationalId);
+
+    $this->actingAs($renter)
+        ->get(route('identity.edit'))
+        ->assertOk()
+        ->assertSee('Waiting for an administrator to review your IDs')
+        ->assertDontSee('data-test="upload-id"', escape: false);
+});
+
+test('a verified renter is offered the way to their dashboard', function () {
+    $this->actingAs(User::factory()->withVerifiedIdentity()->create())
+        ->get(route('identity.edit'))
+        ->assertOk()
+        ->assertSee('Your identity is verified')
+        ->assertSee('Go to your dashboard');
+});
+
+test('the identity status follows the renter\'s IDs', function (array $documents, IdentityStatus $expected) {
+    $renter = User::factory()->create();
+
+    foreach ($documents as [$type, $status]) {
+        idOnFile($renter, $type, $status);
+    }
+
+    expect($renter->identityStatus())->toBe($expected)
+        ->and(User::withIdentityStatus($expected)->pluck('id')->all())->toBe([$renter->id]);
+})->with([
+    'no IDs' => [[], IdentityStatus::NotUploaded],
+    'one ID' => [[[DocumentType::Passport, DocumentStatus::Pending]], IdentityStatus::NotUploaded],
+    'one approved, one rejected' => [[[DocumentType::Passport, DocumentStatus::Approved], [DocumentType::Umid, DocumentStatus::Rejected]], IdentityStatus::NotUploaded],
+    'two pending' => [[[DocumentType::Passport, DocumentStatus::Pending], [DocumentType::Umid, DocumentStatus::Pending]], IdentityStatus::Pending],
+    'one approved, one pending' => [[[DocumentType::Passport, DocumentStatus::Approved], [DocumentType::Umid, DocumentStatus::Pending]], IdentityStatus::Pending],
+    'two approved' => [[[DocumentType::Passport, DocumentStatus::Approved], [DocumentType::Umid, DocumentStatus::Approved]], IdentityStatus::Approved],
+]);
 
 test('a renter can upload two different IDs for review', function () {
     $user = User::factory()->create();
@@ -139,8 +195,8 @@ test('administrators review renter IDs', function () {
     Notification::assertSentToTimes($user, IdentityDocumentReviewed::class, 2);
 });
 
-test('owner application documents are not in the renter ID queue', function () {
-    VerificationDocument::factory()->create(); // Attached to an owner application.
+test('rental company application documents are not in the renter ID queue', function () {
+    VerificationDocument::factory()->create(); // Attached to a rental company application.
 
     $component = Livewire::actingAs(User::factory()->admin()->create())->test('pages::admin.id-reviews');
 

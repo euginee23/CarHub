@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureUserHasRole
 {
     /**
-     * Keep each kind of account in its own area. Renters rent, owners list, and
+     * Keep each kind of account in its own area. Renters rent, rental companies list, and
      * administrators run the platform; anyone in the wrong area is sent back to
      * their own dashboard.
      *

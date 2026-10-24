@@ -28,9 +28,9 @@ class BookingFactory extends Factory
         $fee = (int) round($subtotal * (float) config('carhub.service_fee_rate'));
 
         return [
-            'renter_id' => User::factory(),
+            'renter_id' => User::factory()->withVerifiedIdentity(),
             'vehicle_id' => Vehicle::factory(),
-            'owner_id' => fn (array $attributes) => Vehicle::whereKey($attributes['vehicle_id'])->value('owner_id'),
+            'company_id' => fn (array $attributes) => Vehicle::whereKey($attributes['vehicle_id'])->value('company_id'),
             'pickup_at' => $pickup,
             'return_at' => $pickup->addDays($days),
             'pickup_location' => 'Cebu City',
@@ -44,7 +44,7 @@ class BookingFactory extends Factory
     }
 
     /**
-     * Book the given vehicle, copying its owner, rate, and pickup area.
+     * Book the given vehicle, copying its rental company, rate, and pickup area.
      */
     public function forVehicle(Vehicle $vehicle): static
     {
@@ -54,7 +54,7 @@ class BookingFactory extends Factory
 
             return [
                 'vehicle_id' => $vehicle->id,
-                'owner_id' => $vehicle->owner_id,
+                'company_id' => $vehicle->company_id,
                 'pickup_location' => $vehicle->location,
                 'daily_rate' => $vehicle->price_per_day,
                 'subtotal' => $subtotal,
@@ -87,7 +87,7 @@ class BookingFactory extends Factory
     }
 
     /**
-     * Indicate that the owner has approved the request.
+     * Indicate that the rental company has approved the request.
      */
     public function approved(): static
     {

@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * The agreement between owner and renter, frozen from the booking at the
+ * The agreement between rental company and renter, frozen from the booking at the
  * moment it was generated so later edits to the listing cannot change it.
  *
  * @phpstan-type ContractSnapshot array{
  *     generated_at: string,
  *     booking: array{reference: string, pickup_at: string, return_at: string, pickup_location: string},
  *     renter: array{name: string, email: string, phone: string|null, identity_verified: bool},
- *     owner: array{name: string, email: string, phone: string|null, approved_at: string|null},
+ *     company: array{name: string, address?: string|null, email: string, phone: string|null, approved_at: string|null},
  *     vehicle: array{name: string, year: int, type: string, transmission: string, fuel: string, seats: int},
  *     pricing: array{daily_rate: int, days: int, subtotal: int, service_fee: int, total: int},
  *     terms: array{version: string|null, accepted_at: string|null, body: string|null}

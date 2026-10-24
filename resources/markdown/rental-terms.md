@@ -1,6 +1,6 @@
 ## 1. The parties
 
-This agreement is between the **vehicle owner** and the **renter** named on the booking. CarHub is the marketplace that connects them. It is not a party to the rental and does not own, lease, or operate the vehicle.
+This agreement is between the **rental company** and the **renter** named on the booking. CarHub is the marketplace that connects them. It is not a party to the rental and does not own, lease, or operate the vehicle.
 
 ## 2. Eligibility
 
@@ -27,7 +27,7 @@ The renter confirms that they:
 
 - The renter may cancel free of charge up to 24 hours before pickup.
 - Cancellations within 24 hours of pickup forfeit the first day of the rental.
-- If the owner cancels a confirmed booking, the renter receives a full refund.
+- If the rental company cancels a confirmed booking, the renter receives a full refund.
 
 ## 6. Renter responsibilities
 
@@ -35,10 +35,10 @@ The renter confirms that they:
 - Operate the vehicle lawfully, never under the influence of alcohol or prohibited substances.
 - Do not sublet, re-rent, or use the vehicle for commercial passenger transport.
 - Return the vehicle with the same fuel level it was collected with.
-- Report any accident, breakdown, or traffic violation to the owner and to CarHub without delay.
+- Report any accident, breakdown, or traffic violation to the rental company and to CarHub without delay.
 - Traffic violations, tolls, and parking penalties incurred during the rental are the renter's responsibility.
 
-## 7. Owner responsibilities
+## 7. Rental company responsibilities
 
 - Provide a roadworthy, clean, and mechanically sound vehicle matching its listing.
 - Hold valid registration and insurance for the vehicle.
@@ -46,7 +46,7 @@ The renter confirms that they:
 
 ## 8. GPS tracking
 
-The renter consents to the vehicle's GPS unit reporting its location to the owner and to CarHub for the duration of the rental only. Tracking stops when the rental is closed, and trip location history is kept for 30 days for dispute resolution.
+The renter consents to the vehicle's GPS unit reporting its location to the rental company and to CarHub for the duration of the rental only. Tracking stops when the rental is closed, and trip location history is kept for 30 days for dispute resolution.
 
 ## 9. Damage and liability
 

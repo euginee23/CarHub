@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
-use App\Models\OwnerApplication;
+use App\Models\CompanyApplication;
 use App\Models\VerificationDocument;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,9 +21,9 @@ class VerificationDocumentFactory extends Factory
     public function definition(): array
     {
         return [
-            'documentable_type' => (new OwnerApplication)->getMorphClass(),
-            'documentable_id' => OwnerApplication::factory(),
-            'user_id' => fn (array $attributes) => OwnerApplication::whereKey($attributes['documentable_id'])->value('user_id'),
+            'documentable_type' => (new CompanyApplication)->getMorphClass(),
+            'documentable_id' => CompanyApplication::factory(),
+            'user_id' => fn (array $attributes) => CompanyApplication::whereKey($attributes['documentable_id'])->value('user_id'),
             'type' => DocumentType::DriversLicense,
             'path' => 'documents/'.fake()->uuid().'.jpg',
             'original_name' => 'license.jpg',

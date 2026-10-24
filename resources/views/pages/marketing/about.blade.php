@@ -8,7 +8,7 @@
 
 <x-layouts::marketing
     :title="__('About')"
-    :description="__('CarHub is a web-based vehicle rental marketplace connecting vehicle owners and renters, built as an undergraduate thesis in Computer Science.')"
+    :description="__('CarHub is a web-based vehicle rental marketplace connecting rental companies and renters, built as an undergraduate thesis in Computer Science.')"
 >
     {{-- Header --}}
     <section class="relative isolate overflow-hidden border-b border-zinc-200 bg-white">
@@ -36,7 +36,7 @@
                     <h2 class="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{{ __('The problem') }}</h2>
                     <div class="mt-5 space-y-4 text-base/7 text-zinc-600">
                         <p>{{ __('Most privately owned vehicles in the Philippines are used a fraction of the week. Meanwhile, renting a car through traditional agencies is expensive, inventory is thin outside the major cities, and informal peer-to-peer rentals happen over group chats with no verification, no contract, and no recourse when something goes wrong.') }}</p>
-                        <p>{{ __('Both sides carry real risk. Owners hand over a major asset to someone whose identity they cannot confirm. Renters send deposits to strangers and hope the vehicle exists and is roadworthy. Neither has a record to point to when a dispute happens.') }}</p>
+                        <p>{{ __('Both sides carry real risk. Rental companies hand over a major asset to someone whose identity they cannot confirm. Renters send deposits to strangers and hope the vehicle exists and is roadworthy. Neither has a record to point to when a dispute happens.') }}</p>
                     </div>
                 </div>
 
@@ -44,7 +44,7 @@
                     <h2 class="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">{{ __('Our approach') }}</h2>
                     <div class="mt-5 space-y-4 text-base/7 text-zinc-600">
                         <p>{{ __('CarHub formalises the transaction without making it slow. Identity is verified once with two government-issued IDs. Payments are authorised and validated before a reservation is held. Every trip is governed by a digital contract that records the vehicle\'s condition at both ends, and GPS-tracked for its duration.') }}</p>
-                        <p>{{ __('On top of that base sits the matching work a plain listings page cannot do: narrowing thousands of combinations down to the vehicles that actually suit a trip, helping owners price against real local demand, and locating vehicles by distance rather than by city label.') }}</p>
+                        <p>{{ __('On top of that base sits the matching work a plain listings page cannot do: narrowing thousands of combinations down to the vehicles that actually suit a trip, helping rental companies price against real local demand, and locating vehicles by distance rather than by city label.') }}</p>
                     </div>
                 </div>
             </div>
@@ -74,7 +74,7 @@
                             <circle cx="8.25" cy="11.25" r="1.75" />
                         </svg>
                     </x-slot:icon>
-                    {{ __('Renters submit two independently issued government IDs before their first booking, matched against the name on the account. Owners prove registration and ownership before a listing goes live. Documents are stored encrypted and never shared between users.') }}
+                    {{ __('Renters submit two independently issued government IDs before their first booking, matched against the name on the account. Rental companies submit their Mayor\'s / Business permit and a representative\'s valid ID, and are approved by an administrator, before they can list. Documents are stored encrypted and never shared between users.') }}
                 </x-marketing.feature-card>
 
                 <x-marketing.feature-card tone="dark" :title="__('Validated payments')" :badge="__('Authorise & capture')">
@@ -84,7 +84,7 @@
                             <path stroke-linecap="round" d="M3 10.5h18M6.75 14.25h3" />
                         </svg>
                     </x-slot:icon>
-                    {{ __('The rental total is authorised when a booking is requested, checked against the booking record, and captured only once the owner accepts. A reservation is never held against an unverified payment, and a declined request releases the authorisation in full.') }}
+                    {{ __('The rental total is authorised when a booking is requested, checked against the booking record, and captured only once the rental company accepts. A reservation is never held against an unverified payment, and a declined request releases the authorisation in full.') }}
                 </x-marketing.feature-card>
 
                 <x-marketing.feature-card tone="dark" :title="__('Location & tracking')" :badge="__('GPS')">
@@ -93,7 +93,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 20.25 3 22.5v-15L9 5.25m0 15 6-2.25m-6 2.25V5.25m6 12.75 6 2.25V6l-6-2.25m0 14.25V3.75" />
                         </svg>
                     </x-slot:icon>
-                    {{ __('Listings carry coordinates so search can be run by radius from a dropped pin. During an active rental the vehicle reports its position to the owner; the feed is closed the moment the trip ends.') }}
+                    {{ __('Listings carry coordinates so search can be run by radius from a dropped pin. During an active rental the vehicle reports its position to the rental company; the feed is closed the moment the trip ends.') }}
                 </x-marketing.feature-card>
             </div>
         </div>
@@ -109,9 +109,9 @@
 
             <div class="mt-14 grid gap-6 lg:grid-cols-3">
                 @foreach ([
-                    ['title' => __('Verification is not optional'), 'body' => __('Two valid IDs from every renter, proof of ownership from every host. There is no fast lane around it, because the fast lane is where fraud lives.')],
-                    ['title' => __('Tracking has a boundary'), 'body' => __('Location data exists to protect a vehicle during a rental — nothing more. It is visible only to the owner, only while a trip is active, and it is disclosed up front.')],
-                    ['title' => __('Pricing should be explainable'), 'body' => __('The model suggests; the owner decides. Renters see the full breakdown of rate, service fee, and deposit before committing to anything.')],
+                    ['title' => __('Verification is not optional'), 'body' => __('Two valid IDs from every renter, a verified business permit from every rental company. There is no fast lane around it, because the fast lane is where fraud lives.')],
+                    ['title' => __('Tracking has a boundary'), 'body' => __('Location data exists to protect a vehicle during a rental — nothing more. It is visible only to the rental company, only while a trip is active, and it is disclosed up front.')],
+                    ['title' => __('Pricing should be explainable'), 'body' => __('The model suggests; the rental company decides. Renters see the full breakdown of rate, service fee, and deposit before committing to anything.')],
                 ] as $index => $principle)
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6">
                         <span class="flex size-10 items-center justify-center rounded-xl bg-brand-50 text-sm font-bold text-brand-700">
@@ -131,7 +131,7 @@
             <x-marketing.section-heading
                 :eyebrow="__('The team')"
                 :title="__('Built as undergraduate research')"
-                :description="__('CarHub: A Web-Based Vehicle Rental Marketplace for Connecting Vehicle Owners and Renters — presented to the Department of Computer Science, College of Computing Studies, in partial fulfilment of the requirements for the degree of Bachelor of Science in Computer Science.')"
+                :description="__('CarHub: A Web-Based Vehicle Rental Marketplace for Connecting Vehicle Rental companies and Renters — presented to the Department of Computer Science, College of Computing Studies, in partial fulfilment of the requirements for the degree of Bachelor of Science in Computer Science.')"
             />
 
             <div class="mx-auto mt-14 grid max-w-4xl gap-6 sm:grid-cols-3">

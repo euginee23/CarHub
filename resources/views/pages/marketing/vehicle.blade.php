@@ -102,19 +102,19 @@
                         </ul>
                     </div>
 
-                    {{-- Owner --}}
+                    {{-- Rental company --}}
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6">
-                        <h2 class="text-lg font-semibold text-zinc-900">{{ __('Hosted by') }}</h2>
+                        <h2 class="text-lg font-semibold text-zinc-900">{{ __('Rental company') }}</h2>
 
                         <div class="mt-5 flex flex-wrap items-center gap-4">
                             <span class="flex size-14 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-brand-600 to-brand-500 text-lg font-semibold text-white">
-                                {{ $vehicle->owner->initials() }}
+                                {{ $vehicle->company->initials() }}
                             </span>
 
                             <div class="min-w-0 flex-1">
                                 <p class="flex items-center gap-2 font-semibold text-zinc-900">
-                                    {{ $vehicle->owner->name }}
-                                    @if ($vehicle->owner->isVerifiedOwner())
+                                    {{ $vehicle->company->displayName() }}
+                                    @if ($vehicle->company->isVerifiedCompany())
                                         <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
                                             <svg class="size-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                                 <path d="M12 2 4 5.5v6c0 4.6 3.4 8.9 8 10 4.6-1.1 8-5.4 8-10v-6L12 2Zm-1 13.4-3.2-3.2 1.4-1.4 1.8 1.8 4.3-4.3 1.4 1.4-5.7 5.7Z" />
@@ -123,13 +123,16 @@
                                         </span>
                                     @endif
                                 </p>
+                                @if ($vehicle->company->company_address)
+                                    <p class="mt-1 text-sm text-zinc-600">{{ $vehicle->company->company_address }}</p>
+                                @endif
                                 <p class="mt-1 text-sm text-zinc-500">
-                                    {{ __('Hosting since :year', ['year' => $vehicle->owner->owner_verified_at?->year ?? $vehicle->owner->created_at->year]) }}
+                                    {{ __('On CarHub since :year', ['year' => $vehicle->company->company_verified_at?->year ?? $vehicle->company->created_at->year]) }}
                                     &middot;
-                                    {{ trans_choice('{1} :count trip|[2,*] :count trips', $ownerTrips, ['count' => $ownerTrips]) }}
-                                    @if ($ownerRating !== null)
+                                    {{ trans_choice('{1} :count trip|[2,*] :count trips', $companyTrips, ['count' => $companyTrips]) }}
+                                    @if ($companyRating !== null)
                                         &middot;
-                                        {{ __(':rating average rating', ['rating' => number_format($ownerRating, 1)]) }}
+                                        {{ __(':rating average rating', ['rating' => number_format($companyRating, 1)]) }}
                                     @endif
                                 </p>
                             </div>
@@ -188,7 +191,7 @@
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6">
                         <h2 class="text-lg font-semibold text-zinc-900">{{ __('What you will need') }}</h2>
                         <p class="mt-2 text-sm/6 text-zinc-600">
-                            {{ __('These checks run once, before your first booking is confirmed. Nothing is shared with the owner beyond your verification status.') }}
+                            {{ __('These checks run once, before your first booking is confirmed. Nothing is shared with the rental company beyond your verification status.') }}
                         </p>
 
                         <div class="mt-6 space-y-5">
@@ -203,11 +206,11 @@
                                 ],
                                 [
                                     'title' => __('A signed digital rental contract'),
-                                    'body' => __('At pickup, you and the owner both sign a contract recording condition, fuel level, mileage, and the deposit held.'),
+                                    'body' => __('At pickup, you and the rental company both sign a contract recording condition, fuel level, mileage, and the deposit held.'),
                                 ],
                                 [
                                     'title' => __('Consent to GPS tracking'),
-                                    'body' => __('The owner can see the vehicle\'s location for the duration of your trip only. Tracking stops the moment the rental closes.'),
+                                    'body' => __('The rental company can see the vehicle\'s location for the duration of your trip only. Tracking stops the moment the rental closes.'),
                                 ],
                             ] as $requirement)
                                 <div class="flex gap-3.5">

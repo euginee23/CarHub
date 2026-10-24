@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ApplicationStatus;
-use Database\Factories\OwnerApplicationFactory;
+use Database\Factories\CompanyApplicationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,6 +17,8 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $user_id
  * @property ApplicationStatus $status
+ * @property string|null $company_name
+ * @property string|null $business_address
  * @property string|null $notes
  * @property int|null $reviewed_by
  * @property Carbon|null $reviewed_at
@@ -27,10 +29,10 @@ use Illuminate\Support\Carbon;
  * @property-read User|null $reviewer
  * @property-read Collection<int, VerificationDocument> $documents
  */
-#[Fillable(['notes'])]
-class OwnerApplication extends Model
+#[Fillable(['company_name', 'business_address', 'notes'])]
+class CompanyApplication extends Model
 {
-    /** @use HasFactory<OwnerApplicationFactory> */
+    /** @use HasFactory<CompanyApplicationFactory> */
     use HasFactory;
 
     /**
@@ -56,7 +58,7 @@ class OwnerApplication extends Model
     }
 
     /**
-     * The user applying to become a vehicle owner.
+     * The rental company account applying to be verified.
      *
      * @return BelongsTo<User, $this>
      */
@@ -88,7 +90,7 @@ class OwnerApplication extends Model
     /**
      * Only applications that are still awaiting review.
      *
-     * @param  Builder<OwnerApplication>  $query
+     * @param  Builder<CompanyApplication>  $query
      */
     public function scopePending(Builder $query): void
     {

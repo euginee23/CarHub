@@ -213,7 +213,7 @@ class extends Component {
 
     /**
      * The results as map pins. Coordinates are rounded to roughly 100 m so an
-     * owner's exact address is never published.
+     * rental company's exact address is never published.
      *
      * @return array<int, array{id: int, lat: float, lng: float, name: string, price: string, subtitle: string, url: string}>
      */
@@ -390,7 +390,7 @@ class extends Component {
         <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
             <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">{{ __('Browse vehicles') }}</h1>
             <p class="mt-3 max-w-2xl text-lg/8 text-zinc-600">
-                {{ __('Every listing below is from a verified owner. Filter by what matters to your trip — the matching engine handles the rest.') }}
+                {{ __('Every listing below is from a verified rental company. Filter by what matters to your trip — the matching engine handles the rest.') }}
             </p>
 
             @if ($this->tripWindow)

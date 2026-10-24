@@ -12,7 +12,7 @@ class VehiclePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isVerifiedOwner();
+        return $user->isVerifiedCompany();
     }
 
     /**
@@ -20,7 +20,7 @@ class VehiclePolicy
      */
     public function update(User $user, Vehicle $vehicle): bool
     {
-        return $user->isVerifiedOwner() && $vehicle->owner_id === $user->id;
+        return $user->isVerifiedCompany() && $vehicle->company_id === $user->id;
     }
 
     /**

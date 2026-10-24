@@ -28,7 +28,7 @@ new #[Title('Bookings')] class extends Component {
     public function bookings(): LengthAwarePaginator
     {
         return Booking::query()
-            ->with(['vehicle', 'renter', 'owner', 'successfulPayment'])
+            ->with(['vehicle', 'renter', 'company', 'successfulPayment'])
             ->when(BookingStatus::tryFrom($this->status), fn (Builder $query, BookingStatus $status) => $query->where('status', $status))
             ->when(filled($this->search), function (Builder $query) {
                 $term = '%'.trim($this->search).'%';
@@ -36,7 +36,7 @@ new #[Title('Bookings')] class extends Component {
                 $query->where(fn (Builder $query) => $query
                     ->where('reference', 'like', $term)
                     ->orWhereHas('renter', fn (Builder $query) => $query->where('name', 'like', $term))
-                    ->orWhereHas('owner', fn (Builder $query) => $query->where('name', 'like', $term))
+                    ->orWhereHas('company', fn (Builder $query) => $query->where('name', 'like', $term))
                     ->orWhereHas('vehicle', fn (Builder $query) => $query->where('brand', 'like', $term)->orWhere('model', 'like', $term)));
             })
             ->latest()
@@ -80,7 +80,7 @@ new #[Title('Bookings')] class extends Component {
             @endforeach
         </div>
 
-        <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by reference, renter, owner, or vehicle')" clearable />
+        <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" :placeholder="__('Search by reference, renter, rental company, or vehicle')" clearable />
 
         @if ($this->bookings->isEmpty())
             <flux:card class="text-center">
@@ -91,7 +91,7 @@ new #[Title('Bookings')] class extends Component {
                 <flux:table :paginate="$this->bookings">
                     <flux:table.columns>
                         <flux:table.column>{{ __('Booking') }}</flux:table.column>
-                        <flux:table.column>{{ __('Renter / owner') }}</flux:table.column>
+                        <flux:table.column>{{ __('Renter / rental company') }}</flux:table.column>
                         <flux:table.column>{{ __('Dates') }}</flux:table.column>
                         <flux:table.column>{{ __('Total') }}</flux:table.column>
                         <flux:table.column>{{ __('Status') }}</flux:table.column>
@@ -105,7 +105,7 @@ new #[Title('Bookings')] class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <div class="text-zinc-900">{{ $booking->renter->name }}</div>
-                                    <div class="text-xs text-zinc-500">{{ $booking->owner->name }}</div>
+                                    <div class="text-xs text-zinc-500">{{ $booking->company->displayName() }}</div>
                                 </flux:table.cell>
                                 <flux:table.cell class="text-zinc-600">{{ $booking->pickup_at->format('M j') }} &ndash; {{ $booking->return_at->format('M j, Y') }}</flux:table.cell>
                                 <flux:table.cell>

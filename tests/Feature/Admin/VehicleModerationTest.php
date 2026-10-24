@@ -21,10 +21,10 @@ test('administrators see every listing', function () {
         ->get(route('admin.vehicles.index'))
         ->assertOk()
         ->assertSee($this->vehicle->name)
-        ->assertSee($draft->owner->name);
+        ->assertSee($draft->company->displayName());
 });
 
-test('an administrator takes a listing down and the owner is told why', function () {
+test('an administrator takes a listing down and the rental company is told why', function () {
     Livewire::actingAs($this->admin)
         ->test('pages::admin.vehicles.index')
         ->call('startTakingDown', $this->vehicle->id)
@@ -40,15 +40,15 @@ test('an administrator takes a listing down and the owner is told why', function
         ->moderation_reason->toBe('Photos do not match the vehicle.')
         ->and(ActivityLog::where('action', 'vehicle.taken_down')->exists())->toBeTrue();
 
-    Notification::assertSentTo($vehicle->owner, VehicleTakenDown::class);
+    Notification::assertSentTo($vehicle->company, VehicleTakenDown::class);
     $this->get(route('vehicles.show', $vehicle))->assertNotFound();
 });
 
-test('the owner cannot relist a taken-down vehicle until it is allowed', function () {
+test('the rental company cannot relist a taken-down vehicle until it is allowed', function () {
     $this->vehicle->forceFill(['status' => VehicleStatus::Unlisted, 'moderated_at' => now(), 'moderation_reason' => 'Fake photos.'])->save();
 
-    Livewire::actingAs($this->vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $this->vehicle])
+    Livewire::actingAs($this->vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $this->vehicle])
         ->assertSee('This listing was taken down by an administrator.')
         ->assertSee('Fake photos.')
         ->set('form.status', 'listed')
@@ -59,8 +59,8 @@ test('the owner cannot relist a taken-down vehicle until it is allowed', functio
 
     Livewire::actingAs($this->admin)->test('pages::admin.vehicles.index')->call('allowRelisting', $this->vehicle->id);
 
-    Livewire::actingAs($this->vehicle->owner)
-        ->test('pages::owner.vehicles.form', ['vehicle' => $this->vehicle->fresh()])
+    Livewire::actingAs($this->vehicle->company)
+        ->test('pages::company.vehicles.form', ['vehicle' => $this->vehicle->fresh()])
         ->assertDontSee('This listing was taken down by an administrator.')
         ->set('form.status', 'listed')
         ->call('save')
@@ -88,5 +88,5 @@ test('a take-down needs a reason', function () {
 });
 
 test('only administrators can moderate listings', function () {
-    $this->actingAs($this->vehicle->owner)->get(route('admin.vehicles.index'))->assertForbidden();
+    $this->actingAs($this->vehicle->company)->get(route('admin.vehicles.index'))->assertForbidden();
 });

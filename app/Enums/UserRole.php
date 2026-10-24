@@ -3,13 +3,13 @@
 namespace App\Enums;
 
 /**
- * What an account is for. Renters and owners are separate kinds of account,
+ * What an account is for. Renters and rental companies are separate kinds of account,
  * chosen at registration; administrators run the platform.
  */
 enum UserRole: string
 {
     case Renter = 'renter';
-    case Owner = 'owner';
+    case Company = 'company';
     case Admin = 'admin';
 
     /**
@@ -19,7 +19,7 @@ enum UserRole: string
     {
         return match ($this) {
             self::Renter => __('Renter'),
-            self::Owner => __('Owner'),
+            self::Company => __('Rental company'),
             self::Admin => __('Admin'),
         };
     }

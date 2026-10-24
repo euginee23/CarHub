@@ -14,7 +14,7 @@ test('registration screen can be rendered', function () {
     $response->assertOk();
 });
 
-test('new users can register', function () {
+test('new renters can register and are sent to upload their IDs', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'John Doe',
         'email' => 'test@example.com',
@@ -25,7 +25,7 @@ test('new users can register', function () {
     ]);
 
     $response->assertSessionHasNoErrors()
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('identity.edit', absolute: false));
 
     $this->assertAuthenticated();
 });
@@ -60,19 +60,19 @@ test('registration requires a valid philippine mobile number', function (?string
     'letters' => '09abc123456',
 ]);
 
-test('users registering to list a vehicle are sent to the owner application', function () {
+test('rental companies registering are sent to the company application', function () {
     $this->post(route('register.store'), [
-        'name' => 'Jane Owner',
-        'email' => 'owner@example.com',
+        'name' => 'Jane Nemaria',
+        'email' => 'company@example.com',
         'phone' => '09171234567',
-        'account_type' => 'owner',
+        'account_type' => 'company',
         'password' => 'password',
         'password_confirmation' => 'password',
-    ])->assertRedirect(route('owner.apply'));
+    ])->assertRedirect(route('company.apply'));
 
     $this->assertAuthenticated();
 
-    expect(User::firstWhere('email', 'owner@example.com')->role)->toBe(UserRole::Owner);
+    expect(User::firstWhere('email', 'company@example.com')->role)->toBe(UserRole::Company);
 });
 
 test('renters are registered as renter accounts', function () {
@@ -101,16 +101,16 @@ test('an account type must be chosen and cannot be admin', function (?string $ac
     $this->assertGuest();
 })->with(['missing' => null, 'admin' => 'admin']);
 
-test('the list your vehicle links open owner sign-up', function () {
-    $this->get(route('home'))->assertSee(route('register', ['as' => 'owner']), escape: false);
+test('the list your vehicle links open rental company sign-up', function () {
+    $this->get(route('home'))->assertSee(route('register', ['as' => 'company']), escape: false);
 
-    $this->get(route('register', ['as' => 'owner']))
+    $this->get(route('register', ['as' => 'company']))
         ->assertOk()
-        ->assertSee('Create your owner account')
-        ->assertSee('value="owner"'."\n".'                                checked', escape: false);
+        ->assertSee('Create your rental company account')
+        ->assertSee('value="company"'."\n".'                                checked', escape: false);
 
     $this->get(route('register'))
         ->assertOk()
         ->assertSee('Create your account')
-        ->assertDontSee('Create your owner account');
+        ->assertDontSee('Create your rental company account');
 });

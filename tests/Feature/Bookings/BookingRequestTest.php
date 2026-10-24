@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Bookings\CreateBookingRequest;
 use App\Enums\BookingStatus;
 use App\Models\Booking;
 use App\Models\User;
@@ -9,6 +10,7 @@ use App\Notifications\BookingStatusUpdated;
 use App\Services\Availability\AvailabilityChecker;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -17,7 +19,7 @@ beforeEach(function () {
     $this->travelTo(CarbonImmutable::parse('2026-10-01 08:00'));
 
     $this->vehicle = Vehicle::factory()->create(['price_per_day' => 2000, 'instant_book' => false, 'location' => 'Cebu City']);
-    $this->renter = User::factory()->create();
+    $this->renter = User::factory()->withVerifiedIdentity()->create();
 });
 
 /**
@@ -45,7 +47,7 @@ test('a renter can request to book an available vehicle', function () {
     expect($booking)
         ->status->toBe(BookingStatus::Requested)
         ->renter_id->toBe($this->renter->id)
-        ->owner_id->toBe($this->vehicle->owner_id)
+        ->company_id->toBe($this->vehicle->company_id)
         ->pickup_location->toBe('Cebu City')
         ->days->toBe(2)
         ->subtotal->toBe(4000)
@@ -55,7 +57,7 @@ test('a renter can request to book an available vehicle', function () {
         ->and($booking->reference)->toStartWith('BK-')
         ->and($booking->statusChanges)->toHaveCount(1);
 
-    Notification::assertSentTo($this->vehicle->owner, BookingRequested::class);
+    Notification::assertSentTo($this->vehicle->company, BookingRequested::class);
 });
 
 test('instant book vehicles are approved straight away', function () {
@@ -70,7 +72,7 @@ test('instant book vehicles are approved straight away', function () {
         ->and($booking->statusChanges->pluck('to_status')->all())->toBe([BookingStatus::Requested, BookingStatus::Approved]);
 
     Notification::assertSentTo($this->renter, BookingStatusUpdated::class);
-    Notification::assertNotSentTo($this->vehicle->owner, BookingRequested::class);
+    Notification::assertNotSentTo($this->vehicle->company, BookingRequested::class);
 });
 
 test('guests are sent to sign in and brought back to the vehicle', function () {
@@ -80,8 +82,8 @@ test('guests are sent to sign in and brought back to the vehicle', function () {
         ->and(Booking::count())->toBe(0);
 });
 
-test('owners cannot book their own vehicle', function () {
-    requestVehicle($this->vehicle, $this->vehicle->owner)->assertHasErrors('schedule');
+test('rental companies cannot book their own vehicle', function () {
+    requestVehicle($this->vehicle, $this->vehicle->company)->assertHasErrors('schedule');
 
     expect(Booking::count())->toBe(0);
 });
@@ -154,7 +156,7 @@ test('the booking panel offers the request button once dates are available', fun
         ->assertSee('Request to book')
         ->set('pickupDate', '2026-10-05')
         ->set('returnDate', '2026-10-07')
-        ->assertSee('Message to the owner');
+        ->assertSee('Message to the rental company');
 });
 
 test('administrators cannot book vehicles', function () {
@@ -168,4 +170,27 @@ test('administrators see a notice instead of the booking button', function () {
         ->test('vehicle.booking-panel', ['vehicle' => $this->vehicle])
         ->assertSee('Admin accounts manage the marketplace and cannot book vehicles.')
         ->assertDontSee('Request to book');
+});
+
+test('renters without two approved IDs are sent to verify them instead of booking', function () {
+    requestVehicle($this->vehicle, User::factory()->create())
+        ->assertRedirect(route('identity.edit'));
+
+    expect(Booking::count())->toBe(0);
+});
+
+test('renters without two approved IDs see a prompt instead of the booking button', function () {
+    Livewire::actingAs(User::factory()->create())
+        ->test('vehicle.booking-panel', ['vehicle' => $this->vehicle])
+        ->assertSee('Verify your IDs to book')
+        ->assertDontSee('Request to book');
+});
+
+test('a booking request cannot be created for a renter without two approved IDs', function () {
+    $renter = User::factory()->create();
+
+    expect(fn () => app(CreateBookingRequest::class)->handle($renter, $this->vehicle, CarbonImmutable::parse('2026-10-05 09:00'), CarbonImmutable::parse('2026-10-07 09:00')))
+        ->toThrow(ValidationException::class);
+
+    expect(Booking::count())->toBe(0);
 });

@@ -62,7 +62,7 @@ class RentalReports
     /**
      * Headline figures for the range.
      *
-     * @return array{bookings: int, collected: float, platformRevenue: float, ownerEarnings: float, averageBooking: float, cancellationRate: float, utilization: float, newUsers: int}
+     * @return array{bookings: int, collected: float, platformRevenue: float, companyEarnings: float, averageBooking: float, cancellationRate: float, utilization: float, newUsers: int}
      */
     public function summary(): array
     {
@@ -75,7 +75,7 @@ class RentalReports
             'bookings' => $created->count(),
             'collected' => $collected,
             'platformRevenue' => (float) $paidBookings->sum('service_fee'),
-            'ownerEarnings' => (float) $paidBookings->sum('subtotal'),
+            'companyEarnings' => (float) $paidBookings->sum('subtotal'),
             'averageBooking' => $paidBookings->isEmpty() ? 0.0 : round($collected / $paidBookings->count(), 2),
             'cancellationRate' => $created->isEmpty() ? 0.0 : round($lost / $created->count() * 100, 1),
             'utilization' => $this->utilization(),
@@ -174,7 +174,7 @@ class RentalReports
     }
 
     /**
-     * The vehicles that earned their owners the most in the range.
+     * The vehicles that earned their rental companies the most in the range.
      *
      * @return array<int, array{vehicle: Vehicle, bookings: int, earnings: float}>
      */
@@ -234,7 +234,7 @@ class RentalReports
     public function bookingsCreated(): Collection
     {
         return $this->created ??= Booking::query()
-            ->with(['vehicle', 'renter', 'owner'])
+            ->with(['vehicle', 'renter', 'company'])
             ->whereBetween('created_at', [$this->from, $this->to])
             ->oldest()
             ->get();

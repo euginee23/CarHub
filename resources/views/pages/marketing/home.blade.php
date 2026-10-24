@@ -12,8 +12,8 @@
 @endphp
 
 <x-layouts::marketing
-    :title="__('Rent a vehicle from trusted local owners')"
-    :description="__('Rent a vehicle from verified local owners. Every CarHub trip is ID-verified, GPS-tracked from pickup to return, and paid for through validated, secure payments.')"
+    :title="__('Rent a vehicle from trusted local rental companies')"
+    :description="__('Rent a vehicle from verified local rental companies. Every CarHub trip is ID-verified, GPS-tracked from pickup to return, and paid for through validated, secure payments.')"
 >
     {{-- Hero --}}
     <section class="relative isolate overflow-hidden bg-white">
@@ -27,7 +27,7 @@
                 </h1>
 
                 <p class="mx-auto mt-6 max-w-2xl text-lg/8 text-pretty text-zinc-600">
-                    {{ __('CarHub connects renters with verified local vehicle owners. Filter down to exactly the vehicle you need, book it in minutes, and drive away covered — every trip is GPS-tracked from pickup to return.') }}
+                    {{ __('CarHub connects renters with verified local rental companies. Filter down to exactly the vehicle you need, book it in minutes, and drive away covered — every trip is GPS-tracked from pickup to return.') }}
                 </p>
             </div>
 
@@ -148,11 +148,11 @@
                     </x-marketing.step>
 
                     <x-marketing.step number="2" :title="__('Book and verify your identity')">
-                        {{ __('Pick your dates and upload two valid government-issued IDs. Verification is one-time and usually clears in minutes — the owner sees a confirmed identity before accepting.') }}
+                        {{ __('Pick your dates and upload two valid government-issued IDs. Verification is one-time and usually clears in minutes — the rental company sees a confirmed identity before accepting.') }}
                     </x-marketing.step>
 
                     <x-marketing.step number="3" :title="__('Pay securely')">
-                        {{ __('Pay with GCash, Maya, card, or bank transfer. Every payment is validated and confirmed before a reservation is held, and released in full if the owner declines.') }}
+                        {{ __('Pay with GCash, Maya, card, or bank transfer. Every payment is validated and confirmed before a reservation is held, and released in full if the rental company declines.') }}
                     </x-marketing.step>
 
                     <x-marketing.step number="4" :title="__('Drive, tracked and covered')" :last="true">
@@ -171,7 +171,7 @@
                     align="left"
                     :eyebrow="__('Available now')"
                     :title="__('Featured vehicles')"
-                    :description="__('A cross-section of what owners near you have listed this week.')"
+                    :description="__('A cross-section of what rental companies near you have listed this week.')"
                 />
 
                 <a
@@ -212,14 +212,14 @@
                     {{ __('Every renter submits two independent government-issued IDs before their first booking. No verification, no keys.') }}
                 </x-marketing.feature-card>
 
-                <x-marketing.feature-card :title="__('Verified owners')">
+                <x-marketing.feature-card :title="__('Verified rental companies')">
                     <x-slot:icon>
                         <svg class="size-5.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 4.5 6v6c0 4.4 3.1 8.2 7.5 9.4 4.4-1.2 7.5-5 7.5-9.4V6L12 3Z" />
                             <path stroke-linecap="round" stroke-linejoin="round" d="m9.5 12 1.9 1.9 3.6-3.8" />
                         </svg>
                     </x-slot:icon>
-                    {{ __('Owners prove vehicle registration and identity before listing. Their rating, response time, and trip count are public on every listing.') }}
+                    {{ __('Rental companies prove vehicle registration and identity before listing. Their rating, response time, and trip count are public on every listing.') }}
                 </x-marketing.feature-card>
 
                 <x-marketing.feature-card :title="__('Digital rental contract')">
@@ -245,16 +245,16 @@
         </div>
     </section>
 
-    {{-- For owners --}}
+    {{-- For rental companies --}}
     <section class="border-y border-zinc-200 bg-zinc-50 py-20 lg:py-28">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
                 <div>
                     <x-marketing.section-heading
                         align="left"
-                        :eyebrow="__('For vehicle owners')"
-                        :title="__('Your idle car is working capital')"
-                        :description="__('Most privately owned vehicles sit unused five days a week. List yours and let CarHub handle the matching, the vetting, and the paperwork.')"
+                        :eyebrow="__('For rental companies')"
+                        :title="__('Fill your fleet\'s empty days')"
+                        :description="__('Get your rental company verified once, then post your vehicles straight to the marketplace and let CarHub handle the matching, the renter vetting, and the paperwork.')"
                     />
 
                     <ul class="mt-8 space-y-4">
@@ -275,16 +275,16 @@
 
                     <div class="mt-9 flex flex-wrap gap-3">
                         <a
-                            href="{{ route('register', ['as' => 'owner']) }}"
+                            href="{{ route('register', ['as' => 'company']) }}"
                             class="rounded-lg bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 transition hover:bg-brand-700"
                         >
                             {{ __('List your vehicle') }}
                         </a>
                         <a
-                            href="{{ route('how-it-works') }}#for-owners"
+                            href="{{ route('how-it-works') }}#for-companies"
                             class="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400"
                         >
-                            {{ __('How hosting works') }}
+                            {{ __('How it works for companies') }}
                         </a>
                     </div>
                 </div>
@@ -354,7 +354,7 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <x-marketing.section-heading
                 :eyebrow="__('From the community')"
-                :title="__('Renters and owners, both covered')"
+                :title="__('Renters and rental companies, both covered')"
             />
 
             <div class="mt-14 grid gap-6 lg:grid-cols-3">
@@ -396,7 +396,7 @@
                 {{ __('Your next trip is one search away') }}
             </h2>
             <p class="mx-auto mt-4 max-w-xl text-lg/8 text-pretty text-brand-100">
-                {{ __('Join CarHub as a renter or list the vehicle already sitting in your garage.') }}
+                {{ __('Join CarHub as a renter, or register your rental company and list your fleet.') }}
             </p>
 
             <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
@@ -407,7 +407,7 @@
                     {{ __('Find a vehicle') }}
                 </a>
                 <a
-                    href="{{ route('register', ['as' => 'owner']) }}"
+                    href="{{ route('register', ['as' => 'company']) }}"
                     class="rounded-lg border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
                 >
                     {{ __('List your vehicle') }}

@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 
 /**
  * @property int $id
- * @property int $owner_id
+ * @property int $company_id
  * @property string $slug
  * @property string $brand
  * @property string $model
@@ -51,7 +51,7 @@ use Illuminate\Support\Str;
  * @property-read string $name
  * @property float|null $distance_km Set on search results that have an origin.
  * @property float|null $similarity Set on content-based matches.
- * @property-read User $owner
+ * @property-read User $company
  * @property-read Collection<int, VehiclePhoto> $photos
  * @property-read VehiclePhoto|null $coverPhoto
  * @property-read Collection<int, VehicleBlackout> $blackouts
@@ -69,7 +69,7 @@ class Vehicle extends Model
     use HasFactory;
 
     /**
-     * The features owners can tick when describing their vehicle.
+     * The features rental companies can tick when describing their vehicle.
      *
      * @var array<int, string>
      */
@@ -137,13 +137,13 @@ class Vehicle extends Model
     }
 
     /**
-     * The verified owner listing the vehicle.
+     * The verified rental company listing the vehicle.
      *
      * @return BelongsTo<User, $this>
      */
-    public function owner(): BelongsTo
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(User::class, 'company_id');
     }
 
     /**
@@ -167,7 +167,7 @@ class Vehicle extends Model
     }
 
     /**
-     * The date ranges the owner has blocked the vehicle for.
+     * The date ranges the rental company has blocked the vehicle for.
      *
      * @return HasMany<VehicleBlackout, $this>
      */
@@ -207,14 +207,14 @@ class Vehicle extends Model
     }
 
     /**
-     * Only vehicles that are publicly listed for rent by an owner in good standing.
+     * Only vehicles that are publicly listed for rent by a rental company in good standing.
      *
      * @param  Builder<Vehicle>  $query
      */
     public function scopeListed(Builder $query): void
     {
         $query->where('status', VehicleStatus::Listed)
-            ->whereNotIn('owner_id', User::query()->whereNotNull('suspended_at')->select('id'));
+            ->whereNotIn('company_id', User::query()->whereNotNull('suspended_at')->select('id'));
     }
 
     /**
@@ -255,7 +255,7 @@ class Vehicle extends Model
 
     /**
      * Only vehicles free for the whole of the given rental window: no day of it is
-     * blocked by the owner, and no booking that holds the vehicle overlaps it.
+     * blocked by the rental company, and no booking that holds the vehicle overlaps it.
      *
      * @param  Builder<Vehicle>  $query
      */
@@ -303,11 +303,11 @@ class Vehicle extends Model
     }
 
     /**
-     * Determine whether the vehicle is publicly listed by an owner in good standing.
+     * Determine whether the vehicle is publicly listed by a rental company in good standing.
      */
     public function isListed(): bool
     {
-        return $this->status === VehicleStatus::Listed && ! $this->owner->isSuspended();
+        return $this->status === VehicleStatus::Listed && ! $this->company->isSuspended();
     }
 
     /**

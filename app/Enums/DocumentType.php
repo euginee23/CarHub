@@ -11,6 +11,11 @@ enum DocumentType: string
     case PrcId = 'prc_id';
     case PostalId = 'postal_id';
     case VotersId = 'voters_id';
+    case BusinessPermit = 'business_permit';
+
+    /**
+     * Only on applications submitted before companies replaced private owners.
+     */
     case VehicleRegistration = 'vehicle_registration';
 
     /**
@@ -26,6 +31,7 @@ enum DocumentType: string
             self::PrcId => __('PRC ID'),
             self::PostalId => __('Postal ID'),
             self::VotersId => __('Voter\'s ID'),
+            self::BusinessPermit => __('Mayor\'s / Business permit'),
             self::VehicleRegistration => __('Vehicle OR/CR'),
         };
     }

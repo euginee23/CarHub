@@ -9,7 +9,7 @@ use Livewire\Component;
 
 new #[Title('My vehicles')] class extends Component {
     /**
-     * The signed-in owner's vehicles, newest first.
+     * The signed-in rental company's vehicles, newest first.
      *
      * @return Collection<int, Vehicle>
      */
@@ -23,7 +23,7 @@ new #[Title('My vehicles')] class extends Component {
 <div>
     <x-app.page-header :title="__('My vehicles')" :description="__('Manage your listings, rates, and photos.')">
         <x-slot:actions>
-            <flux:button :href="route('owner.vehicles.create')" variant="primary" icon="plus" wire:navigate>{{ __('List a vehicle') }}</flux:button>
+            <flux:button :href="route('company.vehicles.create')" variant="primary" icon="plus" wire:navigate>{{ __('List a vehicle') }}</flux:button>
         </x-slot:actions>
     </x-app.page-header>
 
@@ -62,7 +62,7 @@ new #[Title('My vehicles')] class extends Component {
                                     <flux:badge size="sm" :color="$vehicle->status->color()">{{ $vehicle->status->label() }}</flux:badge>
                                 </flux:table.cell>
                                 <flux:table.cell align="end">
-                                    <flux:button size="sm" :href="route('owner.vehicles.edit', $vehicle)" wire:navigate>{{ __('Edit') }}</flux:button>
+                                    <flux:button size="sm" :href="route('company.vehicles.edit', $vehicle)" wire:navigate>{{ __('Edit') }}</flux:button>
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach
