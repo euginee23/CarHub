@@ -2,10 +2,13 @@
 
 use App\Actions\Bookings\GenerateRentalContract;
 use App\Enums\BookingStatus;
+use App\Enums\DocumentStatus;
+use App\Enums\DocumentType;
 use App\Models\Booking;
 use App\Models\RentalContract;
 use App\Models\TermsVersion;
 use App\Models\User;
+use App\Models\VerificationDocument;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
@@ -199,4 +202,88 @@ test('contracts signed before rental companies replaced owners still render', fu
     $this->actingAs($this->renter)->get(route('bookings.contract', $this->booking))
         ->assertOk()
         ->assertSee('Marco Villanueva');
+});
+
+test('the guide greets the renter and starts with a plain-words version of the terms', function () {
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->assertSee('Step 1 of 4')
+        ->assertSee('Hi Ana! Let’s get you on the road.')
+        ->assertSee('Here are the most important rules, in plain words:')
+        ->assertSee('You can cancel for free up to 24 hours before pickup.')
+        ->assertSee('I agree — next step')
+        ->assertDontSee('Sign by typing your full name');
+});
+
+test('once the terms are accepted the guide moves on to signing the contract', function () {
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->set('agreeToTerms', true)
+        ->call('acceptTerms')
+        ->assertSee('Step 3 of 4')
+        ->assertSee('Accepted Oct 1 · version 2026.1')
+        ->assertSee('Both IDs approved — you’re verified.')
+        ->assertSee('Sign by typing your full name')
+        ->assertSee('Type it exactly like this:')
+        ->assertSee('Vehicle rental contract');
+});
+
+test('after signing, the payment step shows the deadline and how paying works', function () {
+    $this->booking->forceFill(['terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->set('signature', 'Ana Reyes')
+        ->set('agreeToContract', true)
+        ->call('signContract')
+        ->assertSee('Step 4 of 4 — the last one!')
+        ->assertSee('Signed Oct 1 as “Ana Reyes”')
+        ->assertSee('Car held for you')
+        ->assertSee('How paying works');
+});
+
+test('while the rental company decides, checkout waits and checks for an answer by itself', function () {
+    $this->booking->forceFill(['status' => BookingStatus::Requested, 'approved_at' => null, 'terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+
+    $component = Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->assertSee('You’re all done for now — time for a coffee!')
+        ->assertSeeHtml('wire:poll.15s="checkProgress"');
+
+    $this->booking->forceFill(['status' => BookingStatus::Approved, 'approved_at' => now()])->save();
+
+    $component->call('checkProgress')
+        ->assertSee('Step 3 of 4')
+        ->assertDontSeeHtml('wire:poll.15s');
+});
+
+test('checkout closes when the rental company declines while the renter waits', function () {
+    $this->booking->forceFill(['status' => BookingStatus::Requested, 'approved_at' => null, 'terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+
+    $component = Livewire::actingAs($this->renter)->test('pages::trips.checkout', ['booking' => $this->booking]);
+
+    $this->booking->forceFill(['status' => BookingStatus::Declined])->save();
+
+    $component->call('checkProgress')->assertRedirect(route('trips.show', $this->booking));
+});
+
+test('renters whose IDs are under review are told the page updates by itself', function () {
+    $renter = User::factory()->create(['name' => 'Ben Cruz']);
+
+    foreach ([DocumentType::DriversLicense, DocumentType::Passport] as $type) {
+        VerificationDocument::factory()->create([
+            'documentable_type' => $renter->getMorphClass(),
+            'documentable_id' => $renter->id,
+            'user_id' => $renter->id,
+            'type' => $type,
+            'status' => DocumentStatus::Pending,
+        ]);
+    }
+
+    $booking = Booking::factory()->approved()->withAcceptedTerms()->for($renter, 'renter')->create();
+
+    Livewire::actingAs($renter)
+        ->test('pages::trips.checkout', ['booking' => $booking])
+        ->assertSee('Thank you! We’re checking your IDs.')
+        ->assertSeeHtml('wire:poll.15s="checkProgress"');
 });

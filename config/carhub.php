@@ -20,7 +20,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | How far ahead renters can book, and the shortest and longest rental.
-    | Rentals are charged per started 24-hour period.
+    | Rentals are charged per started 24-hour period. Pickups and returns are
+    | offered on the half hour between handover_from and handover_until.
     |
     */
 
@@ -29,6 +30,8 @@ return [
         'max_advance_days' => 90,
         'min_rental_hours' => 24,
         'max_rental_days' => 30,
+        'handover_from' => '06:00',
+        'handover_until' => '21:00',
     ],
 
     /*

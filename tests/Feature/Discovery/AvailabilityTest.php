@@ -162,20 +162,73 @@ test('the calendar marks blocked days and only passes bookable ones on', functio
     $component->call('select', '2026-10-05')->assertDispatched('calendar-dates-selected', pickupDate: '2026-10-05', returnDate: '');
 });
 
-test('dates typed into the booking panel show on the calendar', function () {
+test('the booking panel walks renters through dates, times, then price', function () {
     Livewire::test('vehicle.booking-panel', ['vehicle' => $this->vehicle])
-        ->set('pickupDate', '2026-11-03')
-        ->assertDispatched('booking-dates-changed', pickupDate: '2026-11-03', returnDate: '');
+        ->assertSee('Book in 3 easy steps.')
+        ->assertSee('Tap your dates on the calendar')
+        ->assertSee('Comes after your dates.')
+        ->assertSee('Your price shows here once you pick dates.')
+        ->assertDontSee('Pick up at')
+        ->dispatch('calendar-dates-selected', pickupDate: '2026-10-05', returnDate: '')
+        ->assertSee('Mon, Oct 5')
+        ->assertSee('Now tap your return day on the calendar')
+        ->dispatch('calendar-dates-selected', pickupDate: '2026-10-05', returnDate: '2026-10-07')
+        ->assertSee('Wed, Oct 7')
+        ->assertDontSee('Tap your dates on the calendar')
+        ->assertSee('Pick up at')
+        ->assertSee('Bring back by')
+        ->assertSee('Available for your dates')
+        ->assertSee('4,600');
+});
+
+test('a pickup too soon is moved to the earliest time that works instead of showing an error', function () {
+    Livewire::test('vehicle.booking-panel', ['vehicle' => $this->vehicle])
+        ->dispatch('calendar-dates-selected', pickupDate: '2026-10-01', returnDate: '')
+        ->dispatch('calendar-dates-selected', pickupDate: '2026-10-01', returnDate: '2026-10-03')
+        ->assertSet('pickupTime', '10:00')
+        ->assertSet('returnTime', '10:00')
+        ->assertSee('Pickups need 2 hours’ notice, so we set the earliest time that works: 10:00 AM.')
+        ->assertSeeHtml('<option value="09:30" disabled')
+        ->assertDontSee('Pickup must be at least 2 hours from now.')
+        ->assertSee('Available for your dates');
+});
+
+test('the return time follows the pickup time, and a return that makes the trip too short is moved', function () {
+    Livewire::test('vehicle.booking-panel', ['vehicle' => $this->vehicle])
+        ->dispatch('calendar-dates-selected', pickupDate: '2026-10-05', returnDate: '2026-10-06')
+        ->set('pickupTime', '14:00')
+        ->assertSet('returnTime', '14:00')
+        ->set('returnTime', '10:00')
+        ->assertSet('returnTime', '14:00')
+        ->assertSee('Trips last at least 24 hours, so we set the return to 2:00 PM.')
+        ->assertDontSee('The minimum rental is 24 hours.');
+});
+
+test('a return time set apart from pickup stays put and the extra day is explained', function () {
+    Livewire::test('vehicle.booking-panel', ['vehicle' => $this->vehicle])
+        ->dispatch('calendar-dates-selected', pickupDate: '2026-10-05', returnDate: '2026-10-07')
+        ->set('returnTime', '12:00')
+        ->set('pickupTime', '10:00')
+        ->assertSet('returnTime', '12:00')
+        ->assertSee('Tip: bringing it back after 10:00 AM counts as one more day.')
+        ->assertSee('3 days');
+});
+
+test('today stops being bookable on the calendar once it is too late for a pickup', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-01 18:30'));
 
     Livewire::test('vehicle.availability-calendar', ['vehicle' => $this->vehicle])
-        ->dispatch('booking-dates-changed', pickupDate: '2026-11-03', returnDate: '2026-11-06')
-        ->assertSet('month', '2026-11')
-        ->assertSet('slide', 'next')
-        ->assertSee('November 2026')
-        ->assertSee('A 3-day trip — Nov 3 to Nov 6')
-        ->dispatch('booking-dates-changed', pickupDate: 'not-a-date', returnDate: '2026-11-06')
+        ->call('select', '2026-10-01')
+        ->assertDispatched('calendar-dates-selected', pickupDate: '2026-10-01', returnDate: '');
+
+    $this->travelTo(CarbonImmutable::parse('2026-10-01 19:30'));
+
+    Livewire::test('vehicle.availability-calendar', ['vehicle' => $this->vehicle])
+        ->call('select', '2026-10-01')
+        ->assertNotDispatched('calendar-dates-selected')
         ->assertSet('pickupDate', '')
-        ->assertSet('returnDate', '');
+        ->call('select', '2026-10-02')
+        ->assertSet('pickupDate', '2026-10-02');
 });
 
 test('the calendar only pages through the bookable window', function () {

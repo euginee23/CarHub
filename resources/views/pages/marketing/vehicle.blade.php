@@ -140,7 +140,13 @@
                     </div>
 
                     {{-- Availability --}}
-                    <div class="rounded-2xl border border-zinc-200 bg-white p-6">
+                    <div
+                        id="availability"
+                        x-data="{ glow: false, glowTimer: null }"
+                        x-on:highlight-calendar.window="glow = true; clearTimeout(glowTimer); glowTimer = setTimeout(() => glow = false, 1800)"
+                        class="scroll-mt-24 rounded-2xl border border-zinc-200 bg-white p-6 transition duration-500"
+                        :class="{ 'border-brand-400! ring-4 ring-brand-100': glow }"
+                    >
                         <h2 class="text-lg font-semibold text-zinc-900">{{ __('Availability') }}</h2>
                         <p class="mt-1 text-sm text-zinc-600">{{ __('Two taps: first the day you pick up the car, then the day you bring it back.') }}</p>
                         <div class="mt-5">
@@ -234,8 +240,8 @@
                     </div>
                 </div>
 
-                {{-- Booking panel --}}
-                <div id="book" class="mt-8 scroll-mt-24 lg:sticky lg:top-24 lg:mt-0">
+                {{-- Booking panel: kept in view while scrolling only on screens tall enough to show all of it --}}
+                <div id="book" class="mt-8 scroll-mt-24 lg:top-24 lg:mt-0 lg:[@media(min-height:70rem)]:sticky">
                     <livewire:vehicle.booking-panel :vehicle="$vehicle" />
                 </div>
             </div>

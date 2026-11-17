@@ -5,7 +5,6 @@ use App\Services\Availability\AvailabilityChecker;
 use Carbon\CarbonImmutable;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\On;
 use Livewire\Component;
 
 new class extends Component {
@@ -103,6 +102,7 @@ new class extends Component {
         $start = $this->monthStart->startOfWeek(CarbonImmutable::SUNDAY);
         $end = $this->monthStart->endOfMonth()->endOfWeek(CarbonImmutable::SATURDAY);
         $today = CarbonImmutable::today();
+        $firstBookableDay = $this->firstBookableDay();
         $lastBookableDay = $today->addDays(config('carhub.booking.max_advance_days'));
         $unavailable = app(AvailabilityChecker::class)->unavailableDates($this->vehicle, $start, $end);
         $hasTrip = $this->pickupDay !== null && $this->returnDay !== null;
@@ -118,7 +118,7 @@ new class extends Component {
                 'day' => $day->day,
                 'weekday' => $day->dayOfWeek,
                 'inMonth' => $day->month === $this->monthStart->month,
-                'bookable' => ! $isUnavailable && $day->gte($today) && $day->lte($lastBookableDay),
+                'bookable' => ! $isUnavailable && $day->gte($firstBookableDay) && $day->lte($lastBookableDay),
                 'unavailable' => $isUnavailable,
                 'isToday' => $day->isSameDay($today),
                 'isPickup' => $date === $this->pickupDate,
@@ -208,25 +208,6 @@ new class extends Component {
     }
 
     /**
-     * Show dates typed into the booking panel, turning to the pickup month.
-     */
-    #[On('booking-dates-changed')]
-    public function syncDates(string $pickupDate = '', string $returnDate = ''): void
-    {
-        $pickup = $this->parseDay($pickupDate);
-        $return = $this->parseDay($returnDate);
-
-        $this->pickupDate = $pickup?->toDateString() ?? '';
-        $this->returnDate = $pickup && $return?->gt($pickup) ? $return->toDateString() : '';
-        $this->notice = '';
-
-        if ($pickup && $pickup->format('Y-m') !== $this->month) {
-            $this->slide = $pickup->format('Y-m') > $this->month ? 'next' : 'previous';
-            $this->month = $pickup->format('Y-m');
-        }
-    }
-
-    /**
      * Whether the trip can run from the pickup day to this one: no unavailable
      * day in between and no longer than the longest rental. Explains why not.
      */
@@ -263,11 +244,23 @@ new class extends Component {
      */
     protected function isBookable(CarbonImmutable $day): bool
     {
-        $today = CarbonImmutable::today();
-
-        return $day->gte($today)
-            && $day->lte($today->addDays(config('carhub.booking.max_advance_days')))
+        return $day->gte($this->firstBookableDay())
+            && $day->lte(CarbonImmutable::today()->addDays(config('carhub.booking.max_advance_days')))
             && app(AvailabilityChecker::class)->unavailableDates($this->vehicle, $day, $day) === [];
+    }
+
+    /**
+     * Today, unless it is too late for a pickup with enough notice before the
+     * last handover time; then tomorrow.
+     */
+    protected function firstBookableDay(): CarbonImmutable
+    {
+        $today = CarbonImmutable::today();
+        $lastHandoverToday = $today->setTimeFromTimeString(config('carhub.booking.handover_until'));
+
+        return CarbonImmutable::now()->addHours(config('carhub.booking.min_lead_hours'))->lte($lastHandoverToday)
+            ? $today
+            : $today->addDay();
     }
 
     /**
@@ -433,7 +426,7 @@ new class extends Component {
                     @else
                         <p class="text-[0.7rem] font-semibold uppercase tracking-wide text-emerald-600">{{ __('All set') }}</p>
                         <p class="font-semibold">{{ __('A :count-day trip — :pickup to :return', ['count' => $tripDays, 'pickup' => $this->pickupDay->format('M j'), 'return' => $this->returnDay->format('M j')]) }}</p>
-                        <p class="mt-0.5 text-sm text-emerald-950/70">{{ __('Now choose your pickup and return times in the booking box, then book.') }}</p>
+                        <p class="mt-0.5 text-sm text-emerald-950/70">{{ __('Next, check the times and price in the booking box, then book.') }}</p>
                     @endif
                 </div>
             </div>
@@ -444,7 +437,7 @@ new class extends Component {
                         <a
                             href="#book"
                             x-on:click.prevent="document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' })"
-                            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 lg:hidden"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
                         >
                             {{ __('See price & book') }}
                             <flux:icon.arrow-down variant="micro" class="size-4 motion-safe:animate-bounce" />
