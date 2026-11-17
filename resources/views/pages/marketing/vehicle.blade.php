@@ -142,7 +142,7 @@
                     {{-- Availability --}}
                     <div class="rounded-2xl border border-zinc-200 bg-white p-6">
                         <h2 class="text-lg font-semibold text-zinc-900">{{ __('Availability') }}</h2>
-                        <p class="mt-1 text-sm text-zinc-600">{{ __('Pick your pickup and return days on the calendar.') }}</p>
+                        <p class="mt-1 text-sm text-zinc-600">{{ __('Two taps: first the day you pick up the car, then the day you bring it back.') }}</p>
                         <div class="mt-5">
                             <livewire:vehicle.availability-calendar :vehicle="$vehicle" />
                         </div>

@@ -8,6 +8,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Services/Availability/** | .ai/rules/availability.md |
 | app/Actions/Bookings/** | .ai/rules/bookings.md |
 | app/Actions/Companies/** | .ai/rules/companies.md |
+| resources/views/components/** | .ai/rules/components.md |
 | config/demo.php | .ai/rules/config.md |
 | resources/views/layouts/** | .ai/rules/layouts.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |

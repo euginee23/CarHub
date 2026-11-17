@@ -151,31 +151,43 @@ new class extends Component {
     }
 
     /**
-     * Fill in the dates from a day clicked on the availability calendar: the
-     * first click sets pickup, the next later day sets the return.
+     * Take the days tapped on the availability calendar, which walks the renter
+     * through choosing pickup then return.
      */
-    #[On('calendar-date-selected')]
-    public function selectDate(string $date): void
+    #[On('calendar-dates-selected')]
+    public function useCalendarDates(string $pickupDate = '', string $returnDate = ''): void
     {
-        if (filled($this->pickupDate) && blank($this->returnDate) && $date > $this->pickupDate) {
-            $this->returnDate = $date;
+        $this->pickupDate = $pickupDate;
+        $this->returnDate = $returnDate;
+    }
 
-            return;
+    /**
+     * Show dates typed into the panel on the calendar too.
+     */
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['pickupDate', 'returnDate'], true)) {
+            $this->dispatch('booking-dates-changed', pickupDate: $this->pickupDate, returnDate: $this->returnDate);
         }
-
-        $this->pickupDate = $date;
-        $this->returnDate = '';
     }
 }; ?>
 
-<div class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-lg shadow-zinc-900/5">
+<div
+    x-data="{ flash: null, flashTimer: null }"
+    x-on:calendar-dates-selected.window="
+        flash = $event.detail.returnDate ? 'return' : ($event.detail.pickupDate ? 'pickup' : null);
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(() => flash = null, 1400);
+    "
+    class="rounded-2xl border border-zinc-200 bg-white p-6 shadow-lg shadow-zinc-900/5"
+>
     <p class="flex items-baseline gap-1.5">
         <span class="text-3xl font-bold tracking-tight text-zinc-900">&#8369;{{ number_format($vehicle->price_per_day) }}</span>
         <span class="text-zinc-500">/ {{ __('day') }}</span>
     </p>
 
     <div class="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-zinc-300 bg-zinc-300">
-        <div class="bg-white p-3">
+        <div class="bg-white p-3 transition-shadow duration-500" :class="{ 'shadow-[inset_0_0_0_2px_var(--color-brand-500)]': flash === 'pickup' }">
             <label for="pickup-date" class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">{{ __('Pickup') }}</label>
             <input
                 id="pickup-date"
@@ -191,7 +203,7 @@ new class extends Component {
                 @endforeach
             </select>
         </div>
-        <div class="bg-white p-3">
+        <div class="bg-white p-3 transition-shadow duration-500" :class="{ 'shadow-[inset_0_0_0_2px_var(--color-brand-500)]': flash === 'return' }">
             <label for="return-date" class="block text-xs font-semibold uppercase tracking-wide text-zinc-500">{{ __('Return') }}</label>
             <input
                 id="return-date"

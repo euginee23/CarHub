@@ -47,6 +47,49 @@
     --color-spark-400: #38d6f5;
     --color-spark-500: #12bde0;
     --color-spark-600: #0797b8;
+
+    /* Availability calendar: a chosen day pops in, the trip fills in day by day, the
+       guidance slides up, a refused tap shakes, and months slide the way you paged. */
+    --animate-date-pop: date-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    --animate-band-in: band-in 320ms ease-out both;
+    --animate-step-in: step-in 320ms ease-out both;
+    --animate-shake: shake 420ms ease-in-out;
+    --animate-month-next: month-next 260ms ease-out;
+    --animate-month-previous: month-previous 260ms ease-out;
+
+    @keyframes date-pop {
+        0% { transform: scale(0.55); }
+        55% { transform: scale(1.14); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes band-in {
+        from { opacity: 0; transform: scaleX(0.2); }
+        to { opacity: 1; transform: scaleX(1); }
+    }
+
+    @keyframes step-in {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-6px); }
+        40% { transform: translateX(5px); }
+        60% { transform: translateX(-4px); }
+        80% { transform: translateX(2px); }
+    }
+
+    @keyframes month-next {
+        from { opacity: 0; transform: translateX(1.5rem); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes month-previous {
+        from { opacity: 0; transform: translateX(-1.5rem); }
+        to { opacity: 1; transform: translateX(0); }
+    }
 }
 
 @layer base {
