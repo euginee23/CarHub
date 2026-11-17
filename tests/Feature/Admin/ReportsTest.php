@@ -71,6 +71,14 @@ test('breakdowns by status and payment method', function () {
         ->and($this->reports->topVehicles()[0]['vehicle']->is($this->suv))->toBeTrue();
 });
 
+test('QR Ph payments are counted in the method breakdown', function () {
+    Payment::factory()->paid()->for($this->paid)->create(['amount' => 120000, 'method' => PaymentMethod::QrPh, 'paid_at' => '2026-10-06 11:00']);
+
+    $qrph = collect($this->reports->paymentsByMethod())->firstWhere('method', PaymentMethod::QrPh);
+
+    expect($qrph)->toMatchArray(['count' => 1, 'amount' => 1200.0]);
+});
+
 test('demand history counts requests per pickup day and body type for forecasting', function () {
     $demand = $this->reports->dailyDemandByType();
 

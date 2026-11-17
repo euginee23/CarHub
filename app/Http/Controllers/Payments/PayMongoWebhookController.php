@@ -10,9 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Receives PayMongo webhook events. Configure the webhook in the PayMongo
- * dashboard to POST to /webhooks/paymongo for `checkout_session.payment.paid`
- * and `payment.paid`, and put its secret in PAYMONGO_WEBHOOK_SECRET.
+ * Receives PayMongo webhook events. Register it with `php artisan paymongo:webhook --create`
+ * (POST /webhooks/paymongo for `checkout_session.payment.paid` and `payment.paid`)
+ * and put the secret it prints in PAYMONGO_WEBHOOK_SECRET.
  *
  * The event body is only used to find the payment; the outcome is always
  * re-fetched from the PayMongo API by ValidatePayment.

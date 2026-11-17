@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\BookingStatus;
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\URL;
 
 beforeEach(function () {
     Notification::fake();
-    config(['carhub.payments.driver' => 'simulated']);
+    config(['carhub.payments.driver' => 'simulated', 'services.paymongo.methods' => ['qrph', 'gcash']]);
 
     $this->booking = Booking::factory()->status(BookingStatus::AwaitingPayment)->create(['total' => 4600, 'payment_due_at' => now()->addDay()]);
     $this->payment = Payment::factory()->for($this->booking)->create(['provider' => 'simulated', 'provider_checkout_id' => null]);
@@ -22,7 +23,21 @@ test('the renter can open the simulated checkout through its signed link', funct
         ->get(URL::temporarySignedRoute('payments.simulated.show', now()->addHour(), $this->payment))
         ->assertOk()
         ->assertSee('Test payment — no money moves')
-        ->assertSee('4,600.00');
+        ->assertSee('4,600.00')
+        ->assertSeeInOrder(['QR Ph', 'GCash']);
+});
+
+test('the method picked on the simulated checkout is recorded on the payment', function () {
+    $this->actingAs($this->renter)->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'paid', 'method' => 'gcash']);
+    $this->actingAs($this->renter)->get(route('payments.return', $this->payment));
+
+    expect($this->payment->fresh()->method)->toBe(PaymentMethod::Gcash);
+});
+
+test('the simulated checkout only accepts enabled methods', function () {
+    $this->actingAs($this->renter)
+        ->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'paid', 'method' => 'grab_pay'])
+        ->assertSessionHasErrors('method');
 });
 
 test('the simulated checkout needs a valid signature', function () {
@@ -31,7 +46,7 @@ test('the simulated checkout needs a valid signature', function () {
 
 test('a successful test payment confirms the booking on return', function () {
     $this->actingAs($this->renter)
-        ->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'paid'])
+        ->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'paid', 'method' => 'qrph'])
         ->assertRedirect(route('payments.return', $this->payment));
 
     $this->actingAs($this->renter)
@@ -44,7 +59,7 @@ test('a successful test payment confirms the booking on return', function () {
 });
 
 test('a failed test payment sends the renter back to try again', function () {
-    $this->actingAs($this->renter)->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'failed']);
+    $this->actingAs($this->renter)->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'failed', 'method' => 'qrph']);
 
     $this->actingAs($this->renter)
         ->get(route('payments.return', $this->payment))
@@ -68,7 +83,7 @@ test('nobody else can use the renter\'s payment pages', function () {
     $stranger = User::factory()->withVerifiedIdentity()->create();
 
     $this->actingAs($stranger)->get(route('payments.return', $this->payment))->assertForbidden();
-    $this->actingAs($stranger)->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'paid'])->assertForbidden();
+    $this->actingAs($stranger)->post(route('payments.simulated.complete', $this->payment), ['outcome' => 'paid', 'method' => 'qrph'])->assertForbidden();
 });
 
 test('the simulated checkout is closed for PayMongo payments', function () {

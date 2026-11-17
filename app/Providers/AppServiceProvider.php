@@ -36,6 +36,11 @@ class AppServiceProvider extends ServiceProvider
             requestOptions: ['timeout' => 60, 'maxRetries' => 1],
         ));
 
+        $this->app->bind(PayMongoGateway::class, fn (): PayMongoGateway => new PayMongoGateway(
+            config('services.paymongo.secret_key'),
+            config('services.paymongo.base_url'),
+        ));
+
         $this->app->bind(PaymentGateway::class, function (): PaymentGateway {
             $driver = config('carhub.payments.driver');
 
@@ -44,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return match ($driver) {
-                'paymongo' => new PayMongoGateway(config('services.paymongo.secret_key'), config('services.paymongo.base_url')),
+                'paymongo' => app(PayMongoGateway::class),
                 'simulated' => new SimulatedGateway,
                 default => throw new RuntimeException("Unknown payment driver [{$driver}]."),
             };

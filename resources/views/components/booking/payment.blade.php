@@ -18,7 +18,7 @@
             </div>
             <div class="flex justify-between gap-4">
                 <dt class="text-zinc-500">{{ __('Method') }}</dt>
-                <dd class="text-zinc-900">{{ $payment->method->label() }}</dd>
+                <dd class="text-zinc-900">{{ $payment->methodLabel() }}</dd>
             </div>
             <div class="flex justify-between gap-4">
                 <dt class="text-zinc-500">{{ __('Reference') }}</dt>

@@ -60,7 +60,6 @@ return [
 
     'payments' => [
         'driver' => env('PAYMENT_DRIVER', 'simulated'),
-        'methods' => ['gcash', 'maya', 'card', 'grab_pay'],
         'window_hours' => 24,
     ],
 

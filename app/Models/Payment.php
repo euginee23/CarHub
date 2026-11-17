@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $reference
  * @property int $booking_id
- * @property PaymentMethod $method
+ * @property PaymentMethod|null $method Chosen on the gateway's checkout page, so only known once paid.
  * @property int $amount In centavos.
  * @property string $currency
  * @property PaymentStatus $status
@@ -103,10 +103,27 @@ class Payment extends Model
     }
 
     /**
+     * How the renter paid, for display.
+     */
+    public function methodLabel(): string
+    {
+        return $this->method?->label() ?? '—';
+    }
+
+    /**
      * Whether the payment is still waiting on the renter.
      */
     public function isPending(): bool
     {
         return $this->status === PaymentStatus::Pending;
+    }
+
+    /**
+     * Whether the gateway may still report money for this payment: it is pending,
+     * or CarHub gave up on it while the renter could still have paid.
+     */
+    public function canStillSettle(): bool
+    {
+        return in_array($this->status, [PaymentStatus::Pending, PaymentStatus::Expired], true);
     }
 }

@@ -90,7 +90,7 @@ class ReportExportController extends Controller
             'payments' => $reports->paidPayments()->map(fn (Payment $payment) => [
                 $payment->reference,
                 $payment->booking->reference,
-                $payment->method->label(),
+                $payment->methodLabel(),
                 $payment->provider,
                 number_format($payment->amountInPesos(), 2, '.', ''),
                 $payment->paid_at?->toDateTimeString(),

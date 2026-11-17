@@ -2,7 +2,9 @@
 
 use App\Actions\Bookings\TransitionBooking;
 use App\Enums\BookingStatus;
+use App\Enums\PaymentStatus;
 use App\Models\Booking;
+use App\Models\Payment;
 use App\Models\User;
 use App\Notifications\BookingStatusUpdated;
 use Illuminate\Support\Facades\Notification;
@@ -66,6 +68,20 @@ test('the renter can cancel before paying and the rental company is told', funct
 
     Notification::assertSentTo($booking->company, BookingStatusUpdated::class);
     Notification::assertNotSentTo($booking->renter, BookingStatusUpdated::class);
+});
+
+test('cancelling while awaiting payment closes the open checkout', function () {
+    config(['carhub.payments.driver' => 'simulated']);
+    $booking = Booking::factory()->status(BookingStatus::AwaitingPayment)->create(['payment_due_at' => now()->addDay()]);
+    $payment = Payment::factory()->for($booking)->create(['provider' => 'simulated']);
+
+    Livewire::actingAs($booking->renter)
+        ->test('pages::trips.show', ['booking' => $booking])
+        ->call('cancel')
+        ->assertHasNoErrors();
+
+    expect($booking->fresh()->status)->toBe(BookingStatus::Cancelled)
+        ->and($payment->fresh()->status)->toBe(PaymentStatus::Expired);
 });
 
 test('a confirmed booking cannot be cancelled from the trip page', function () {

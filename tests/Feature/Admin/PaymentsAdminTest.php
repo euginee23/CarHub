@@ -23,6 +23,15 @@ test('administrators see every payment attempt with totals', function () {
     expect($component->instance()->payments->total())->toBe(1);
 });
 
+test('an attempt the renter never finished shows no method', function () {
+    $unfinished = Payment::factory()->create(['method' => null]);
+
+    Livewire::actingAs($this->admin)
+        ->test('pages::admin.payments.index')
+        ->assertSee($unfinished->reference)
+        ->assertSee('—');
+});
+
 test('a refund due can be marked as refunded', function () {
     $payment = Payment::factory()->create(['status' => PaymentStatus::RefundDue, 'failure_reason' => 'Paid after expiry.']);
 

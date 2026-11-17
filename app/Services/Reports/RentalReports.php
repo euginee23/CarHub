@@ -130,7 +130,7 @@ class RentalReports
      */
     public function paymentsByMethod(): array
     {
-        $byMethod = $this->paidPayments()->groupBy(fn (Payment $payment) => $payment->method->value);
+        $byMethod = $this->paidPayments()->groupBy(fn (Payment $payment) => $payment->method?->value ?? 'unknown');
 
         return collect(PaymentMethod::cases())
             ->map(fn (PaymentMethod $method) => [

@@ -144,7 +144,7 @@ new #[Title('Payments')] class extends Component {
                                 <a href="{{ route('admin.bookings.show', $payment->booking) }}" wire:navigate class="text-zinc-900 hover:text-brand-700">{{ $payment->booking->reference }}</a>
                                 <div class="text-xs text-zinc-500">{{ $payment->booking->renter->name }}</div>
                             </flux:table.cell>
-                            <flux:table.cell class="text-zinc-600">{{ $payment->method->label() }}</flux:table.cell>
+                            <flux:table.cell class="text-zinc-600">{{ $payment->methodLabel() }}</flux:table.cell>
                             <flux:table.cell align="end" class="font-medium text-zinc-900 tabular-nums">&#8369;{{ number_format($payment->amountInPesos(), 2) }}</flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge size="sm" :color="$payment->status->color()">{{ $payment->status->label() }}</flux:badge>

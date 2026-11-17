@@ -3,6 +3,7 @@
 use App\Actions\Bookings\CancelBooking;
 use App\Actions\Reviews\SubmitReview;
 use App\Enums\BookingStatus;
+use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +30,17 @@ new #[Title('Trip details')] class extends Component {
         Gate::authorize('checkout', $booking);
 
         $this->booking = $booking->load(['vehicle.coverPhoto', 'company', 'statusChanges.actor', 'contract', 'successfulPayment', 'latestPayment', 'review.reviewer']);
+    }
+
+    /**
+     * Whether a payment is out with the gateway and the page should watch for it
+     * clearing (the webhook confirms the booking in the background).
+     */
+    public function isConfirmingPayment(): bool
+    {
+        return $this->booking->status === BookingStatus::AwaitingPayment
+            && $this->booking->latestPayment?->status === PaymentStatus::Pending
+            && filled($this->booking->latestPayment->provider_checkout_id);
     }
 
     /**
@@ -69,7 +81,7 @@ new #[Title('Trip details')] class extends Component {
     }
 }; ?>
 
-<div>
+<div @if ($this->isConfirmingPayment()) wire:poll.10s data-test="payment-poll" @endif>
     <x-app.page-header
         :title="$booking->vehicle->year.' '.$booking->vehicle->name"
         :description="__('Trip :reference', ['reference' => $booking->reference])"

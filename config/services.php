@@ -32,7 +32,11 @@ return [
         'secret_key' => env('PAYMONGO_SECRET_KEY'),
         'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
         'base_url' => env('PAYMONGO_BASE_URL', 'https://api.paymongo.com/v1'),
-        'live' => (bool) env('PAYMONGO_LIVE', false),
+        'live' => (bool) env('PAYMONGO_LIVE', str_starts_with((string) env('PAYMONGO_SECRET_KEY'), 'sk_live_')),
+
+        // PayMongo `payment_method_types` offered on its hosted checkout page; the renter picks one there.
+        // Supported: qrph, gcash, paymaya, card, grab_pay. Only list methods activated on the account.
+        'methods' => array_values(array_filter(array_map('trim', explode(',', (string) env('PAYMONGO_METHODS', 'qrph'))))),
     ],
 
     'anthropic' => [

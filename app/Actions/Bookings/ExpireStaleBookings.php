@@ -2,6 +2,7 @@
 
 namespace App\Actions\Bookings;
 
+use App\Actions\Payments\AbandonPayment;
 use App\Actions\Payments\ValidatePayment;
 use App\Enums\BookingStatus;
 use App\Enums\PaymentStatus;
@@ -15,6 +16,7 @@ class ExpireStaleBookings
     public function __construct(
         protected TransitionBooking $transitions,
         protected ValidatePayment $validatePayment,
+        protected AbandonPayment $abandonPayment,
     ) {}
 
     /**
@@ -69,12 +71,13 @@ class ExpireStaleBookings
     }
 
     /**
-     * Expire the booking and abandon its unfinished payments.
+     * Expire the booking and close its unfinished checkouts at the gateway.
      */
     protected function expire(Booking $booking, string $reason): void
     {
         $this->transitions->handle($booking, BookingStatus::Expired, note: $reason);
 
-        Payment::whereBelongsTo($booking)->where('status', PaymentStatus::Pending)->update(['status' => PaymentStatus::Expired]);
+        Payment::whereBelongsTo($booking)->where('status', PaymentStatus::Pending)->get()
+            ->each(fn (Payment $payment) => $this->abandonPayment->handle($payment));
     }
 }

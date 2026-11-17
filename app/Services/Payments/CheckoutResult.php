@@ -2,6 +2,8 @@
 
 namespace App\Services\Payments;
 
+use App\Enums\PaymentMethod;
+
 /**
  * What the gateway reports about a checkout when asked directly.
  */
@@ -13,6 +15,7 @@ final readonly class CheckoutResult
      * PayMongo checkout, so a declined attempt there is not a failed checkout.
      *
      * @param  array<string, mixed>  $raw  The gateway's response, kept for the audit trail.
+     * @param  PaymentMethod|null  $method  How the renter paid, chosen on the gateway's checkout page.
      */
     public function __construct(
         public bool $paid,
@@ -22,5 +25,6 @@ final readonly class CheckoutResult
         public ?string $referenceNumber,
         public array $raw = [],
         public bool $failed = false,
+        public ?PaymentMethod $method = null,
     ) {}
 }

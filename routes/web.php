@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\Payments\PaymentCancelController;
 use App\Http\Controllers\Payments\PaymentReturnController;
 use App\Http\Controllers\Payments\PayMongoWebhookController;
 use App\Http\Controllers\Payments\SimulatedCheckoutController;
@@ -62,6 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::livewire('trips/{booking}/checkout', 'pages::trips.checkout')->name('trips.checkout');
 
         Route::get('payments/{payment}/return', PaymentReturnController::class)->name('payments.return');
+        Route::get('payments/{payment}/cancel', PaymentCancelController::class)->name('payments.cancel');
         Route::get('payments/{payment}/simulated', [SimulatedCheckoutController::class, 'show'])->middleware('signed')->name('payments.simulated.show');
         Route::post('payments/{payment}/simulated', [SimulatedCheckoutController::class, 'complete'])->name('payments.simulated.complete');
     });

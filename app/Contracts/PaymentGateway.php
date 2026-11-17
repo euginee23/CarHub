@@ -23,4 +23,10 @@ interface PaymentGateway
      * of truth for validation — webhook bodies and redirects are never trusted.
      */
     public function retrieveCheckout(Payment $payment): CheckoutResult;
+
+    /**
+     * Close a hosted checkout CarHub has given up on, so the renter can no longer
+     * pay into it. Best effort: it must not throw when the gateway refuses.
+     */
+    public function expireCheckout(Payment $payment): void;
 }

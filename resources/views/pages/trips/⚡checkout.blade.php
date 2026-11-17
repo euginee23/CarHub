@@ -12,7 +12,6 @@ use App\Models\TermsVersion;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
@@ -28,8 +27,6 @@ new #[Title('Checkout')] class extends Component {
     public string $signature = '';
 
     public bool $agreeToContract = false;
-
-    public string $paymentMethod = 'gcash';
 
     /**
      * Load the renter's booking, sending them back to the trip if checkout is over.
@@ -161,26 +158,24 @@ new #[Title('Checkout')] class extends Component {
     }
 
     /**
-     * The payment methods renters can choose from.
+     * The payment methods offered on the gateway's checkout page.
      *
      * @return array<int, PaymentMethod>
      */
     #[Computed]
     public function paymentMethods(): array
     {
-        return array_map(fn (string $method) => PaymentMethod::from($method), config('carhub.payments.methods'));
+        return PaymentMethod::enabled();
     }
 
     /**
-     * Open the gateway's hosted checkout for the booking total.
+     * Open the gateway's hosted checkout for the booking total; the renter picks how to pay there.
      */
     public function pay(StartPayment $startPayment): void
     {
         Gate::authorize('checkout', $this->booking);
 
-        $this->validate(['paymentMethod' => ['required', Rule::in(config('carhub.payments.methods'))]]);
-
-        $payment = $startPayment->handle($this->booking, PaymentMethod::from($this->paymentMethod));
+        $payment = $startPayment->handle($this->booking);
 
         $this->redirect($payment->checkout_url);
     }
@@ -204,6 +199,10 @@ new #[Title('Checkout')] class extends Component {
     />
 
     <x-app.content class="space-y-6">
+        @if (session('status'))
+            <flux:callout variant="secondary" icon="information-circle" :heading="session('status')" data-test="checkout-status" />
+        @endif
+
         <ol class="grid gap-2 sm:grid-cols-4">
             @foreach ($this->steps as $key => $step)
                 <li wire:key="step-{{ $key }}" @class([
@@ -296,11 +295,17 @@ new #[Title('Checkout')] class extends Component {
                         @endif
 
                         <form wire:submit="pay" class="space-y-4">
-                            <flux:radio.group wire:model="paymentMethod" :label="__('Payment method')">
-                                @foreach ($this->paymentMethods as $method)
-                                    <flux:radio :value="$method->value" :label="$method->label()" />
-                                @endforeach
-                            </flux:radio.group>
+                            <div class="space-y-2">
+                                <flux:text class="text-sm font-medium text-zinc-800 dark:text-white">{{ __('Pay with') }}</flux:text>
+                                <div class="flex flex-wrap gap-2" data-test="payment-methods">
+                                    @foreach ($this->paymentMethods as $method)
+                                        <flux:badge size="sm" wire:key="method-{{ $method->value }}">{{ $method->label() }}</flux:badge>
+                                    @endforeach
+                                </div>
+                                @if (in_array(PaymentMethod::QrPh, $this->paymentMethods, true))
+                                    <flux:text class="text-xs">{{ __('QR Ph: scan the code with any bank or e-wallet app (GCash, Maya, BPI, BDO and more).') }}</flux:text>
+                                @endif
+                            </div>
 
                             <div class="space-y-1 rounded-xl bg-zinc-50 p-4 text-sm">
                                 <div class="flex justify-between text-zinc-600">
@@ -320,9 +325,10 @@ new #[Title('Checkout')] class extends Component {
                             <flux:error name="payment" />
 
                             <flux:button type="submit" variant="primary" data-test="pay-now">
-                                {{ __('Pay ₱:amount', ['amount' => number_format($booking->total)]) }}
+                                <span wire:loading.remove wire:target="pay">{{ __('Pay ₱:amount', ['amount' => number_format($booking->total)]) }}</span>
+                                <span wire:loading wire:target="pay">{{ __('Taking you to the payment page…') }}</span>
                             </flux:button>
-                            <flux:text class="text-xs">{{ __('You will be taken to our secure payment partner to finish paying.') }}</flux:text>
+                            <flux:text class="text-xs">{{ __('You will choose how to pay on PayMongo\'s secure checkout page. Nothing is charged until you finish there.') }}</flux:text>
                         </form>
                     @else
                         <flux:text>{{ __('Payment opens after you sign the contract.') }}</flux:text>

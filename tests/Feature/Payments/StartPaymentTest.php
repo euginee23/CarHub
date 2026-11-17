@@ -17,8 +17,9 @@ use Livewire\Livewire;
 beforeEach(function () {
     Notification::fake();
     $this->travelTo(CarbonImmutable::parse('2026-10-01 08:00'));
+    config(['services.paymongo.methods' => ['qrph']]);
 
-    $this->renter = User::factory()->withVerifiedIdentity()->create(['name' => 'Ana Reyes']);
+    $this->renter = User::factory()->withVerifiedIdentity()->create(['name' => 'Ana Reyes', 'email' => 'ana@example.com', 'phone' => '09171234567']);
     $this->booking = Booking::factory()
         ->status(BookingStatus::AwaitingPayment)
         ->for($this->renter, 'renter')
@@ -47,15 +48,15 @@ test('with the simulated gateway, paying opens the local test checkout', functio
 
     $component = Livewire::actingAs($this->renter)
         ->test('pages::trips.checkout', ['booking' => $this->booking])
-        ->set('paymentMethod', 'maya')
         ->call('pay')
         ->assertHasNoErrors();
 
     $payment = Payment::sole();
 
+    // The renter picks how to pay on the checkout page, so the method is not known yet.
     expect($payment)
         ->status->toBe(PaymentStatus::Pending)
-        ->method->toBe(PaymentMethod::Maya)
+        ->method->toBeNull()
         ->amount->toBe(460000)
         ->provider->toBe('simulated')
         ->and($payment->checkout_url)->toContain('/payments/'.$payment->reference.'/simulated');
@@ -78,21 +79,43 @@ test('with PayMongo, paying opens a hosted checkout session', function () {
 
     Livewire::actingAs($this->renter)
         ->test('pages::trips.checkout', ['booking' => $this->booking])
-        ->set('paymentMethod', 'gcash')
         ->call('pay')
         ->assertRedirect('https://checkout.paymongo.com/cs_test_abc');
 
-    expect(Payment::sole())
+    $payment = Payment::sole();
+
+    expect($payment)
         ->provider->toBe('paymongo')
         ->provider_checkout_id->toBe('cs_test_abc')
-        ->provider_payment_intent_id->toBe('pi_test_abc');
+        ->provider_payment_intent_id->toBe('pi_test_abc')
+        ->method->toBeNull();
 
     Http::assertSent(fn (Request $request) => $request->url() === 'https://api.paymongo.com/v1/checkout_sessions'
         && $request->hasHeader('Authorization', 'Basic '.base64_encode('sk_test_123:'))
         && $request['data']['attributes']['line_items'][0]['amount'] === 460000
         && $request['data']['attributes']['line_items'][0]['currency'] === 'PHP'
-        && $request['data']['attributes']['payment_method_types'] === ['gcash']
-        && $request['data']['attributes']['reference_number'] === $this->booking->reference);
+        && $request['data']['attributes']['payment_method_types'] === ['qrph']
+        && $request['data']['attributes']['reference_number'] === $this->booking->reference
+        && $request['data']['attributes']['billing'] === ['name' => 'Ana Reyes', 'email' => 'ana@example.com', 'phone' => '09171234567']
+        && $request['data']['attributes']['success_url'] === route('payments.return', $payment)
+        && $request['data']['attributes']['cancel_url'] === route('payments.cancel', $payment)
+        && $request['data']['attributes']['metadata'] === ['payment_reference' => $payment->reference, 'booking_reference' => $this->booking->reference]);
+});
+
+test('PayMongo is offered every enabled method, in PayMongo\'s names', function () {
+    config([
+        'carhub.payments.driver' => 'paymongo',
+        'services.paymongo.secret_key' => 'sk_test_123',
+        'services.paymongo.methods' => ['qrph', 'gcash', 'paymaya', 'card', 'grab_pay'],
+    ]);
+    Http::fake(['api.paymongo.com/v1/checkout_sessions' => Http::response(['data' => ['id' => 'cs_test_abc', 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_test_abc']]])]);
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->assertSeeInOrder(['QR Ph', 'GCash', 'Maya', 'Credit or debit card', 'GrabPay'])
+        ->call('pay');
+
+    Http::assertSent(fn (Request $request) => $request['data']['attributes']['payment_method_types'] === ['qrph', 'gcash', 'paymaya', 'card', 'grab_pay']);
 });
 
 test('a gateway outage is reported and the attempt marked failed', function () {
@@ -117,6 +140,51 @@ test('starting again abandons the earlier unfinished attempt', function () {
         ->and($this->booking->payments()->where('status', PaymentStatus::Pending)->count())->toBe(1);
 });
 
+test('starting again closes the earlier PayMongo checkout so it can no longer be paid', function () {
+    config(['carhub.payments.driver' => 'paymongo', 'services.paymongo.secret_key' => 'sk_test_123']);
+    $earlier = Payment::factory()->for($this->booking)->create(['provider_checkout_id' => 'cs_test_old']);
+
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.paymongo.com/v1/checkout_sessions/cs_test_old/expire' => Http::response(['data' => ['id' => 'cs_test_old', 'attributes' => ['status' => 'expired']]]),
+        'api.paymongo.com/v1/checkout_sessions/cs_test_old' => Http::response(['data' => ['id' => 'cs_test_old', 'attributes' => ['reference_number' => $this->booking->reference, 'payments' => []]]]),
+        'api.paymongo.com/v1/checkout_sessions' => Http::response(['data' => ['id' => 'cs_test_new', 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_test_new']]]),
+    ]);
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->call('pay')
+        ->assertRedirect('https://checkout.paymongo.com/cs_test_new');
+
+    expect($earlier->fresh()->status)->toBe(PaymentStatus::Expired);
+
+    Http::assertSent(fn (Request $request) => $request->method() === 'POST' && $request->url() === 'https://api.paymongo.com/v1/checkout_sessions/cs_test_old/expire');
+});
+
+test('an earlier attempt that was paid after all confirms the booking instead of opening another checkout', function () {
+    config(['carhub.payments.driver' => 'paymongo', 'services.paymongo.secret_key' => 'sk_test_123']);
+    $earlier = Payment::factory()->for($this->booking)->create(['provider_checkout_id' => 'cs_test_old']);
+
+    Http::preventStrayRequests();
+    Http::fake([
+        'api.paymongo.com/v1/checkout_sessions/cs_test_old' => Http::response(['data' => ['id' => 'cs_test_old', 'attributes' => [
+            'reference_number' => $this->booking->reference,
+            'payments' => [['id' => 'pay_test_old', 'attributes' => ['amount' => 460000, 'currency' => 'PHP', 'status' => 'paid', 'source' => ['type' => 'qrph']]]],
+        ]]]),
+    ]);
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->call('pay')
+        ->assertHasErrors(['payment']);
+
+    expect($earlier->fresh())
+        ->status->toBe(PaymentStatus::Paid)
+        ->method->toBe(PaymentMethod::QrPh)
+        ->and($this->booking->fresh()->status)->toBe(BookingStatus::Confirmed)
+        ->and(Payment::count())->toBe(1);
+});
+
 test('payment cannot start once the deadline has passed', function () {
     $this->booking->forceFill(['payment_due_at' => now()->subMinute()])->save();
 
@@ -138,9 +206,33 @@ test('payment cannot start before the contract is signed', function () {
 });
 
 test('payment methods are limited to the configured list', function () {
+    config([
+        'carhub.payments.driver' => 'paymongo',
+        'services.paymongo.secret_key' => 'sk_test_123',
+        'services.paymongo.methods' => ['bitcoin', 'qrph'],
+    ]);
+    Http::fake(['api.paymongo.com/v1/checkout_sessions' => Http::response(['data' => ['id' => 'cs_test_abc', 'attributes' => ['checkout_url' => 'https://checkout.paymongo.com/cs_test_abc']]])]);
+
     Livewire::actingAs($this->renter)
         ->test('pages::trips.checkout', ['booking' => $this->booking])
-        ->set('paymentMethod', 'bitcoin')
+        ->assertDontSee('bitcoin')
+        ->call('pay');
+
+    Http::assertSent(fn (Request $request) => $request['data']['attributes']['payment_method_types'] === ['qrph']);
+});
+
+test('without any enabled method no checkout is opened', function () {
+    config([
+        'carhub.payments.driver' => 'paymongo',
+        'services.paymongo.secret_key' => 'sk_test_123',
+        'services.paymongo.methods' => [],
+    ]);
+    Http::preventStrayRequests();
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
         ->call('pay')
-        ->assertHasErrors(['paymentMethod' => 'in']);
+        ->assertHasErrors('payment');
+
+    expect(Payment::sole()->status)->toBe(PaymentStatus::Failed);
 });

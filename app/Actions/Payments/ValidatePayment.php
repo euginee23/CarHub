@@ -16,22 +16,27 @@ class ValidatePayment
     public function __construct(
         protected ResolvePaymentGateway $gateways,
         protected TransitionBooking $transitions,
+        protected AbandonPayment $abandonPayment,
     ) {}
 
     /**
      * Ask the gateway what happened to a payment and act on it: a payment that is
      * paid in full, in pesos, for this booking confirms it. Safe to call any number
      * of times — from the webhook, the return page, and the expiry sweep.
+     *
+     * Expired payments are checked too: a renter can still pay a checkout CarHub
+     * gave up on, and that money must be recorded (as refund due if the booking
+     * has moved on) rather than lost.
      */
     public function handle(Payment $payment): Payment
     {
-        if (! $payment->isPending()) {
+        if (! $payment->canStillSettle()) {
             return $payment;
         }
 
         $result = $this->gateways->for($payment)->retrieveCheckout($payment);
 
-        if ($result->failed) {
+        if ($result->failed && $payment->isPending()) {
             $payment->forceFill([
                 'status' => PaymentStatus::Failed,
                 'failure_reason' => __('The payment was declined. You can try again with another method.'),
@@ -45,10 +50,10 @@ class ValidatePayment
             return $payment;
         }
 
-        return DB::transaction(function () use ($payment, $result): Payment {
+        $payment = DB::transaction(function () use ($payment, $result): Payment {
             $payment = Payment::whereKey($payment->getKey())->lockForUpdate()->firstOrFail();
 
-            if (! $payment->isPending()) {
+            if (! $payment->canStillSettle()) {
                 return $payment;
             }
 
@@ -69,6 +74,7 @@ class ValidatePayment
 
             $payment->forceFill([
                 'status' => $confirmable ? PaymentStatus::Paid : PaymentStatus::RefundDue,
+                'method' => $result->method ?? $payment->method,
                 'paid_at' => now(),
                 'provider_payment_id' => $result->paymentId,
                 'failure_reason' => $confirmable ? null : __('Paid after the booking was :status; the renter must be refunded.', ['status' => mb_strtolower($booking->status->label())]),
@@ -87,12 +93,30 @@ class ValidatePayment
                 $this->transitions->handle($booking, BookingStatus::Confirmed, note: __('Payment :reference of ₱:amount received via :method.', [
                     'reference' => $payment->reference,
                     'amount' => number_format($payment->amountInPesos(), 2),
-                    'method' => $payment->method->label(),
+                    'method' => $payment->methodLabel(),
                 ]));
             }
 
             return $payment;
         });
+
+        if ($payment->status === PaymentStatus::Paid) {
+            $this->closeOtherCheckouts($payment);
+        }
+
+        return $payment;
+    }
+
+    /**
+     * Once a booking is paid, close its other open checkouts so the renter cannot pay twice.
+     */
+    protected function closeOtherCheckouts(Payment $payment): void
+    {
+        Payment::whereBelongsTo($payment->booking)
+            ->whereKeyNot($payment->getKey())
+            ->where('status', PaymentStatus::Pending)
+            ->get()
+            ->each(fn (Payment $other) => $this->abandonPayment->handle($other));
     }
 
     /**

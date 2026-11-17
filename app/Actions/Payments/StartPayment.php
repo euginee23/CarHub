@@ -4,7 +4,6 @@ namespace App\Actions\Payments;
 
 use App\Contracts\PaymentGateway;
 use App\Enums\BookingStatus;
-use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Booking;
 use App\Models\Payment;
@@ -14,28 +13,28 @@ use Throwable;
 
 class StartPayment
 {
-    public function __construct(protected PaymentGateway $gateway) {}
+    public function __construct(
+        protected PaymentGateway $gateway,
+        protected ValidatePayment $validatePayment,
+        protected AbandonPayment $abandonPayment,
+    ) {}
 
     /**
-     * Open a hosted checkout for the booking total with the chosen method. Any
-     * earlier unfinished attempt is abandoned so only one checkout is live.
+     * Open a hosted checkout for the booking total. The renter picks how to pay on
+     * the gateway's page. Any earlier unfinished attempt is checked first, in case
+     * it was paid after all, and otherwise closed so only one checkout is live.
      *
      * @throws ValidationException
      */
-    public function handle(Booking $booking, PaymentMethod $method): Payment
+    public function handle(Booking $booking): Payment
     {
-        if ($booking->status !== BookingStatus::AwaitingPayment) {
-            throw ValidationException::withMessages(['payment' => __('This booking is not waiting for payment.')]);
-        }
+        $this->ensureAwaitingPayment($booking);
 
-        if ($booking->payment_due_at?->isPast()) {
-            throw ValidationException::withMessages(['payment' => __('The payment window for this booking has closed.')]);
-        }
+        $this->settleEarlierAttempts($booking);
 
-        $booking->payments()->where('status', PaymentStatus::Pending)->update(['status' => PaymentStatus::Expired]);
+        $this->ensureAwaitingPayment($booking->refresh());
 
         $payment = new Payment([
-            'method' => $method,
             'amount' => $booking->totalInCentavos(),
             'currency' => 'PHP',
             'provider' => $this->gateway->name(),
@@ -59,5 +58,41 @@ class StartPayment
         ])->save();
 
         return $payment;
+    }
+
+    /**
+     * Refuse to open a checkout for a booking that is not waiting on payment.
+     *
+     * @throws ValidationException
+     */
+    protected function ensureAwaitingPayment(Booking $booking): void
+    {
+        if ($booking->status === BookingStatus::Confirmed) {
+            throw ValidationException::withMessages(['payment' => __('This booking is already paid and confirmed.')]);
+        }
+
+        if ($booking->status !== BookingStatus::AwaitingPayment) {
+            throw ValidationException::withMessages(['payment' => __('This booking is not waiting for payment.')]);
+        }
+
+        if ($booking->payment_due_at?->isPast()) {
+            throw ValidationException::withMessages(['payment' => __('The payment window for this booking has closed.')]);
+        }
+    }
+
+    /**
+     * Check unfinished attempts with the gateway, then close whatever is still open.
+     */
+    protected function settleEarlierAttempts(Booking $booking): void
+    {
+        foreach ($booking->payments()->where('status', PaymentStatus::Pending)->get() as $earlier) {
+            try {
+                $earlier = $this->validatePayment->handle($earlier);
+            } catch (Throwable $exception) {
+                Log::warning('Could not re-check an earlier payment attempt.', ['payment' => $earlier->reference, 'exception' => $exception->getMessage()]);
+            }
+
+            $this->abandonPayment->handle($earlier);
+        }
     }
 }

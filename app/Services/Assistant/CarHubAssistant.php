@@ -214,7 +214,7 @@ class CarHubAssistant
     {
         $booking = config('carhub.booking');
         $ids = collect(DocumentType::governmentIds())->map(fn (DocumentType $type): string => $type->label())->join(', ');
-        $methods = collect(PaymentMethod::cases())->map(fn (PaymentMethod $method): string => $method->label())->join(', ');
+        $methods = collect(PaymentMethod::enabled())->map(fn (PaymentMethod $method): string => $method->label())->join(', ');
         $now = CarbonImmutable::now()->format('l, j F Y, H:i');
 
         return <<<PROMPT

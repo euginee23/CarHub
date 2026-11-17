@@ -3,13 +3,14 @@
 namespace App\Services\Payments;
 
 use App\Contracts\PaymentGateway;
+use App\Enums\PaymentMethod;
 use App\Models\Payment;
 use Illuminate\Support\Facades\URL;
 
 /**
  * A stand-in gateway for local development and demos: it "hosts" checkout on a
- * CarHub page where the tester chooses whether the payment succeeds. The page
- * records the outcome on the payment, and retrieveCheckout() reports it back.
+ * CarHub page where the tester picks a method and whether the payment succeeds.
+ * The page records the outcome on the payment, and retrieveCheckout() reports it back.
  */
 class SimulatedGateway implements PaymentGateway
 {
@@ -47,6 +48,12 @@ class SimulatedGateway implements PaymentGateway
             referenceNumber: $payment->booking->reference,
             raw: ['simulated_outcome' => data_get($payment->payload, 'simulated_outcome')],
             failed: data_get($payment->payload, 'simulated_outcome') === 'failed',
+            method: $paid ? PaymentMethod::tryFrom((string) data_get($payment->payload, 'simulated_method')) : null,
         );
     }
+
+    /**
+     * Nothing to close: the test checkout page refuses payments that are no longer pending.
+     */
+    public function expireCheckout(Payment $payment): void {}
 }

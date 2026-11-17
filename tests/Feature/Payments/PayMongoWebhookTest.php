@@ -134,3 +134,13 @@ test('events for unknown payments and other event types are acknowledged and ign
 
     expect($this->booking->fresh()->status)->toBe(BookingStatus::AwaitingPayment);
 });
+
+test('a payment into a checkout CarHub already expired is still recorded, as refund due', function () {
+    $this->booking->forceFill(['status' => BookingStatus::Expired])->save();
+    $this->payment->forceFill(['status' => PaymentStatus::Expired])->save();
+    fakePaidCheckoutSession($this->booking);
+
+    sendWebhook(webhookEvent('checkout_session.payment.paid', ['id' => 'cs_test_abc']))->assertOk();
+
+    expect($this->payment->fresh()->status)->toBe(PaymentStatus::RefundDue);
+});

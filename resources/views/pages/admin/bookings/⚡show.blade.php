@@ -55,7 +55,7 @@ new #[Title('Booking')] class extends Component {
                                 <li wire:key="payment-{{ $payment->id }}" class="flex flex-wrap items-center justify-between gap-3 py-2">
                                     <span>
                                         <span class="font-medium text-zinc-900">{{ $payment->reference }}</span>
-                                        <span class="text-zinc-500">&middot; {{ $payment->method->label() }} &middot; {{ $payment->provider }} &middot; {{ $payment->created_at?->format('M j, g:i A') }}</span>
+                                        <span class="text-zinc-500">&middot; {{ $payment->methodLabel() }} &middot; {{ $payment->provider }} &middot; {{ $payment->created_at?->format('M j, g:i A') }}</span>
                                         @if ($payment->failure_reason)
                                             <span class="block text-xs text-red-600">{{ $payment->failure_reason }}</span>
                                         @endif

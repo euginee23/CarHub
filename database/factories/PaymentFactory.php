@@ -23,7 +23,7 @@ class PaymentFactory extends Factory
     {
         return [
             'booking_id' => Booking::factory()->status(BookingStatus::AwaitingPayment),
-            'method' => PaymentMethod::Gcash,
+            'method' => null,
             'amount' => fn (array $attributes) => Booking::whereKey($attributes['booking_id'])->value('total') * 100,
             'currency' => 'PHP',
             'status' => PaymentStatus::Pending,
@@ -40,6 +40,7 @@ class PaymentFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => PaymentStatus::Paid,
+            'method' => $attributes['method'] ?? PaymentMethod::Gcash,
             'paid_at' => now(),
             'provider_payment_id' => 'pay_'.fake()->bothify('????????????????'),
         ]);
