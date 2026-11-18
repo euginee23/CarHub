@@ -21,8 +21,9 @@ class ExpireStaleBookings
 
     /**
      * Release vehicles held by bookings that will never go ahead: unpaid past
-     * their payment deadline, or still waiting on the rental company or the renter's
-     * checkout when pickup time arrives. Returns how many bookings expired.
+     * their payment deadline, still waiting on the rental company at pickup time,
+     * or still in the renter's checkout when the rental period ends (renters may
+     * finish checkout late and pick the vehicle up late). Returns how many expired.
      */
     public function handle(): int
     {
@@ -40,12 +41,17 @@ class ExpireStaleBookings
             $expired++;
         }
 
-        $neverReady = Booking::whereIn('status', [BookingStatus::Requested, BookingStatus::Approved])->where('pickup_at', '<', now())->get();
+        $neverAnswered = Booking::where('status', BookingStatus::Requested)->where('pickup_at', '<', now())->get();
 
-        foreach ($neverReady as $booking) {
-            $this->expire($booking, $booking->status === BookingStatus::Requested
-                ? __('The rental company did not answer before pickup time.')
-                : __('Checkout was not completed before pickup time.'));
+        foreach ($neverAnswered as $booking) {
+            $this->expire($booking, __('The rental company did not answer before pickup time.'));
+            $expired++;
+        }
+
+        $neverCheckedOut = Booking::where('status', BookingStatus::Approved)->where('return_at', '<', now())->get();
+
+        foreach ($neverCheckedOut as $booking) {
+            $this->expire($booking, __('Checkout was not completed before the rental period ended.'));
             $expired++;
         }
 

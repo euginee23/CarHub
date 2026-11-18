@@ -6,6 +6,7 @@ use App\Models\CompanyApplication;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VerificationDocument;
+use Carbon\CarbonImmutable;
 
 test('guests are redirected to the login page', function () {
     $response = $this->get(route('dashboard'));
@@ -70,6 +71,70 @@ test('the rental company overview shows requests, schedule, fleet, and earnings'
         ->assertSee($request->renter->name)
         ->assertSee('Toyota Vios')
         ->assertSee('₱4,000');
+});
+
+test('the rental company overview says what to do first and puts each request on the to-do list', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-01 08:00'));
+
+    $company = User::factory()->verifiedCompany()->create();
+    $vehicle = Vehicle::factory()->for($company, 'company')->create(['brand' => 'Mazda', 'model' => '3']);
+    $request = Booking::factory()->forVehicle($vehicle)->create(['pickup_at' => '2026-10-01 18:00', 'return_at' => '2026-10-03 18:00', 'days' => 2]);
+
+    $this->actingAs($company)
+        ->get(route('company.dashboard'))
+        ->assertOk()
+        ->assertSee('You have 1 booking request to answer.')
+        ->assertSee($request->renter->name.' wants your Mazda 3')
+        ->assertSee('Answer within 10 hours')
+        ->assertSee('Review and answer')
+        ->assertSee('Answer now');
+});
+
+test('the rental company overview reminds the company of handovers, returns, and renters still checking out', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-01 08:00'));
+
+    $company = User::factory()->verifiedCompany()->create();
+    $vehicle = Vehicle::factory()->for($company, 'company')->create(['brand' => 'Honda', 'model' => 'Civic']);
+    $handover = Booking::factory()->forVehicle($vehicle)->confirmed()->create(['pickup_at' => '2026-10-02 09:00', 'return_at' => '2026-10-04 09:00']);
+    Booking::factory()->forVehicle(Vehicle::factory()->for($company, 'company')->create(['brand' => 'Toyota', 'model' => 'Vios']))
+        ->status(BookingStatus::Ongoing)->create(['pickup_at' => '2026-09-29 09:00', 'return_at' => '2026-10-01 17:00']);
+    Booking::factory()->forVehicle(Vehicle::factory()->for($company, 'company')->create())->approved()->create(['pickup_at' => '2026-10-10 09:00', 'return_at' => '2026-10-12 09:00']);
+
+    $this->actingAs($company)
+        ->get(route('company.dashboard'))
+        ->assertOk()
+        ->assertSee('Get ready: '.$handover->renter->name.' picks up the Honda Civic tomorrow at 9:00 AM.')
+        ->assertSee('See handover steps')
+        ->assertSee('The Toyota Vios comes back from')
+        ->assertSee('1 approved booking is waiting for the renter.');
+});
+
+test('the rental company overview says when a renter is picking up late', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-10-01 12:00'));
+
+    $company = User::factory()->verifiedCompany()->create();
+    $vehicle = Vehicle::factory()->for($company, 'company')->create(['brand' => 'Mazda', 'model' => '3']);
+    $handover = Booking::factory()->forVehicle($vehicle)->confirmed()->create(['pickup_at' => '2026-10-01 09:00', 'return_at' => '2026-10-04 09:00']);
+
+    $this->actingAs($company)
+        ->get(route('company.dashboard'))
+        ->assertOk()
+        ->assertSee('Get ready: '.$handover->renter->name.' picks up the Mazda 3 late — it was due Thu, Oct 1 at 9:00 AM.');
+});
+
+test('a rental company with nothing to do is told it is all caught up, or to list its first vehicle', function () {
+    $company = User::factory()->verifiedCompany()->create();
+
+    $this->actingAs($company)
+        ->get(route('company.dashboard'))
+        ->assertSee('Let’s list your first vehicle!')
+        ->assertSee('List my first vehicle');
+
+    Vehicle::factory()->for($company, 'company')->create();
+
+    $this->actingAs($company)
+        ->get(route('company.dashboard'))
+        ->assertSee('You’re all caught up!');
 });
 
 test('only verified rental companies can open the rental company overview', function () {

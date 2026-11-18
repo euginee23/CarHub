@@ -2,15 +2,16 @@
 @props(['booking'])
 
 <flux:card {{ $attributes->class('space-y-5') }}>
-    <div class="flex items-start gap-4">
-        <x-marketing.vehicle-image :vehicle="$booking->vehicle" :caption="false" class="aspect-[4/3] !w-24 shrink-0 rounded-lg" />
-        <div class="min-w-0 flex-1">
-            <flux:heading size="lg">{{ $booking->vehicle->year }} {{ $booking->vehicle->name }}</flux:heading>
-            <flux:text class="mt-1">{{ $booking->pickup_location }}</flux:text>
-            <div class="mt-2">
-                <flux:badge size="sm" :color="$booking->status->color()">{{ $booking->status->label() }}</flux:badge>
+    <div class="space-y-3">
+        <div class="flex items-center gap-4">
+            <x-marketing.vehicle-image :vehicle="$booking->vehicle" :caption="false" class="aspect-[4/3] !w-24 shrink-0 rounded-lg" />
+            <div class="min-w-0 flex-1">
+                <flux:heading size="lg">{{ $booking->vehicle->year }} {{ $booking->vehicle->name }}</flux:heading>
+                <flux:text class="mt-1">{{ $booking->pickup_location }}</flux:text>
             </div>
         </div>
+        {{-- On its own line so long statuses fit the narrow sidebars; they wrap rather than spill if they still don't. --}}
+        <flux:badge size="sm" :color="$booking->status->color()" class="max-w-full !whitespace-normal leading-snug">{{ $booking->status->label() }}</flux:badge>
     </div>
 
     <dl class="grid grid-cols-2 gap-4 text-sm">

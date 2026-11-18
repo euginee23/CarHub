@@ -53,6 +53,9 @@
             <strong>{{ __('Renter:') }}</strong>
             @if ($contract->isSigned())
                 {{ __('signed electronically as ":name", :date', ['name' => $contract->renter_signature, 'date' => $contract->renter_signed_at->format('M j, Y g:i A')]) }}
+                @if ($drawnSignature = $contract->signatureImageDataUri())
+                    <img src="{{ $drawnSignature }}" alt="{{ __('Signature of :name', ['name' => $contract->renter_signature]) }}" class="mt-2 block h-20 w-auto max-w-full border-b border-zinc-300 pb-1" data-test="drawn-signature" />
+                @endif
             @else
                 {{ __('not yet signed') }}
             @endif

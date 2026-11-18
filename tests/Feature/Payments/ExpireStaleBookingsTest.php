@@ -73,16 +73,27 @@ test('a payment that went through without its webhook is caught before expiring'
     expect($booking->fresh()->status)->toBe(BookingStatus::Confirmed);
 });
 
-test('requests and checkouts still unfinished at pickup time expire', function (BookingStatus $status) {
-    $booking = Booking::factory()->status($status)->between('2026-10-05 09:00', '2026-10-07 09:00')->create();
+test('requests the rental company never answered expire at pickup time', function () {
+    $booking = Booking::factory()->between('2026-10-05 09:00', '2026-10-07 09:00')->create();
 
     $this->artisan('bookings:expire-stale')->assertSuccessful();
 
-    expect($booking->fresh()->status)->toBe(BookingStatus::Expired);
-})->with([
-    'never answered' => BookingStatus::Requested,
-    'never checked out' => BookingStatus::Approved,
-]);
+    expect($booking->fresh()->status)->toBe(BookingStatus::Expired)
+        ->and($booking->statusChanges()->latest('id')->value('note'))->toBe('The rental company did not answer before pickup time.');
+});
+
+test('renters running late keep their approved booking until the rental period ends', function () {
+    $booking = Booking::factory()->approved()->between('2026-10-05 09:00', '2026-10-07 09:00')->create();
+
+    $this->artisan('bookings:expire-stale')->expectsOutputToContain('No bookings expired.');
+    expect($booking->fresh()->status)->toBe(BookingStatus::Approved);
+
+    $this->travelTo(CarbonImmutable::parse('2026-10-07 09:01'));
+    $this->artisan('bookings:expire-stale')->assertSuccessful();
+
+    expect($booking->fresh()->status)->toBe(BookingStatus::Expired)
+        ->and($booking->statusChanges()->latest('id')->value('note'))->toBe('Checkout was not completed before the rental period ended.');
+});
 
 test('bookings still in time are left alone', function () {
     $waiting = Booking::factory()->status(BookingStatus::AwaitingPayment)->create(['payment_due_at' => now()->addHour()]);

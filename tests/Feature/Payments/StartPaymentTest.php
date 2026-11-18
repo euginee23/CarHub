@@ -10,12 +10,15 @@ use App\Models\TermsVersion;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
     Notification::fake();
+    Storage::fake('local');
     $this->travelTo(CarbonImmutable::parse('2026-10-01 08:00'));
     config(['services.paymongo.methods' => ['qrph']]);
 
@@ -36,10 +39,27 @@ test('signing the contract gives the renter a payment deadline', function () {
     Livewire::actingAs($this->renter)
         ->test('pages::trips.checkout', ['booking' => $booking])
         ->set('signature', 'Ana Reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
         ->set('agreeToContract', true)
         ->call('signContract');
 
-    // 24 hours from now would pass pickup, so the deadline is pickup itself.
+    // Renters may pay after the pickup time (and pick up late), so the full 24 hours apply.
+    expect($booking->fresh()->payment_due_at->format('Y-m-d H:i'))->toBe('2026-10-02 08:00');
+});
+
+test('the payment deadline never runs past the end of the rental', function () {
+    TermsVersion::factory()->create();
+    $booking = Booking::factory()->approved()->withAcceptedTerms()->for($this->renter, 'renter')
+        ->between('2026-10-01 09:00', '2026-10-01 20:00')->create();
+    RentalContract::factory()->for($booking)->create();
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $booking])
+        ->set('signature', 'Ana Reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
+        ->set('agreeToContract', true)
+        ->call('signContract');
+
     expect($booking->fresh()->payment_due_at->format('Y-m-d H:i'))->toBe('2026-10-01 20:00');
 });
 

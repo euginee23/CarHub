@@ -10,11 +10,14 @@ use App\Models\TermsVersion;
 use App\Models\User;
 use App\Models\VerificationDocument;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 beforeEach(function () {
     Notification::fake();
+    Storage::fake('local');
     $this->travelTo(CarbonImmutable::parse('2026-10-01 08:00'));
 
     $this->terms = TermsVersion::factory()->create(['version' => '2026.1']);
@@ -113,6 +116,7 @@ test('signing the contract moves the booking on to payment', function () {
     Livewire::actingAs($this->renter)
         ->test('pages::trips.checkout', ['booking' => $this->booking])
         ->set('signature', 'ana reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
         ->set('agreeToContract', true)
         ->call('signContract')
         ->assertHasNoErrors()
@@ -132,11 +136,62 @@ test('the signature must match the renter\'s name', function () {
     Livewire::actingAs($this->renter)
         ->test('pages::trips.checkout', ['booking' => $this->booking])
         ->set('signature', 'Somebody Else')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
         ->set('agreeToContract', true)
         ->call('signContract')
         ->assertHasErrors('signature');
 
     expect($this->booking->fresh()->status)->toBe(BookingStatus::Approved);
+});
+
+test('renters running late can still sign after the pickup time, and pay before the rental ends', function () {
+    $this->booking->forceFill(['terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+    $this->travelTo($this->booking->pickup_at->addHours(3));
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->assertSee('Running late? No problem.')
+        ->assertDontSee('These dates are over')
+        ->set('signature', 'Ana Reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
+        ->set('agreeToContract', true)
+        ->call('signContract')
+        ->assertHasNoErrors();
+
+    $booking = $this->booking->fresh();
+
+    expect($booking->status)->toBe(BookingStatus::AwaitingPayment)
+        ->and($booking->payment_due_at->isFuture())->toBeTrue()
+        ->and($booking->payment_due_at->lte($booking->return_at))->toBeTrue();
+});
+
+test('a booking whose rental period is over can no longer be signed', function () {
+    $this->booking->forceFill(['terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+
+    $checkout = Livewire::actingAs($this->renter)->test('pages::trips.checkout', ['booking' => $this->booking]);
+
+    $this->travelTo($this->booking->return_at->addMinute());
+
+    $checkout
+        ->set('signature', 'Ana Reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
+        ->set('agreeToContract', true)
+        ->call('signContract')
+        ->assertHasErrors('signature');
+
+    expect($this->booking->fresh()->status)->toBe(BookingStatus::Approved)
+        ->and($this->booking->fresh()->contract->isSigned())->toBeFalse();
+});
+
+test('once the rental period is over checkout says so instead of asking for a signature', function () {
+    $this->booking->forceFill(['terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+    $this->travelTo($this->booking->return_at->addHour());
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->assertSee('These dates are over')
+        ->assertSee(route('vehicles.show', $this->booking->vehicle))
+        ->assertDontSeeHtml('data-test="sign-form"');
 });
 
 test('the contract cannot be signed without two approved IDs', function () {
@@ -147,6 +202,7 @@ test('the contract cannot be signed without two approved IDs', function () {
     Livewire::actingAs($unverified)
         ->test('pages::trips.checkout', ['booking' => $booking])
         ->set('signature', 'Ben Cruz')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
         ->set('agreeToContract', true)
         ->call('signContract')
         ->assertHasErrors('signature');
@@ -212,7 +268,7 @@ test('the guide greets the renter and starts with a plain-words version of the t
         ->assertSee('Here are the most important rules, in plain words:')
         ->assertSee('You can cancel for free up to 24 hours before pickup.')
         ->assertSee('I agree — next step')
-        ->assertDontSee('Sign by typing your full name');
+        ->assertDontSee('Draw your signature');
 });
 
 test('once the terms are accepted the guide moves on to signing the contract', function () {
@@ -223,7 +279,11 @@ test('once the terms are accepted the guide moves on to signing the contract', f
         ->assertSee('Step 3 of 4')
         ->assertSee('Accepted Oct 1 · version 2026.1')
         ->assertSee('Both IDs approved — you’re verified.')
-        ->assertSee('Sign by typing your full name')
+        ->assertSee('Type your full name')
+        ->assertSee('Draw your signature')
+        ->assertSeeHtml('data-test="signature-pad"')
+        ->assertSeeHtml('data-signature-pad')
+        ->assertSee('You were logged out because this page was open for a long time.')
         ->assertSee('Type it exactly like this:')
         ->assertSee('Vehicle rental contract');
 });
@@ -234,6 +294,7 @@ test('after signing, the payment step shows the deadline and how paying works', 
     Livewire::actingAs($this->renter)
         ->test('pages::trips.checkout', ['booking' => $this->booking])
         ->set('signature', 'Ana Reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
         ->set('agreeToContract', true)
         ->call('signContract')
         ->assertSee('Step 4 of 4 — the last one!')
@@ -286,4 +347,69 @@ test('renters whose IDs are under review are told the page updates by itself', f
         ->test('pages::trips.checkout', ['booking' => $booking])
         ->assertSee('Thank you! We’re checking your IDs.')
         ->assertSeeHtml('wire:poll.15s="checkProgress"');
+});
+
+test('the drawn signature is kept privately and shown in the contract', function () {
+    $this->booking->forceFill(['terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->set('signature', 'Ana Reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->image('signature.png', 600, 200))
+        ->set('agreeToContract', true)
+        ->call('signContract')
+        ->assertHasNoErrors()
+        ->assertSet('signatureDrawing', null);
+
+    $contract = $this->booking->fresh()->contract;
+
+    expect($contract->renter_signature_path)->toStartWith('contract-signatures/');
+    Storage::disk(RentalContract::SIGNATURE_DISK)->assertExists($contract->renter_signature_path);
+
+    $this->actingAs($this->renter)
+        ->get(route('bookings.contract', $this->booking))
+        ->assertOk()
+        ->assertSee('data-test="drawn-signature"', escape: false)
+        ->assertSee('src="data:image/png;base64,', escape: false);
+});
+
+test('the contract cannot be signed without a drawn signature', function () {
+    $this->booking->forceFill(['terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->set('signature', 'Ana Reyes')
+        ->set('agreeToContract', true)
+        ->call('signContract')
+        ->assertHasErrors(['signatureDrawing' => 'required'])
+        ->assertSee('Draw your signature in the box first.');
+
+    expect($this->booking->fresh()->status)->toBe(BookingStatus::Approved);
+});
+
+test('the drawn signature must be a PNG image', function () {
+    $this->booking->forceFill(['terms_version_id' => $this->terms->id, 'terms_accepted_at' => now()])->save();
+
+    Livewire::actingAs($this->renter)
+        ->test('pages::trips.checkout', ['booking' => $this->booking])
+        ->set('signature', 'Ana Reyes')
+        ->set('signatureDrawing', UploadedFile::fake()->create('signature.pdf', 20, 'application/pdf'))
+        ->set('agreeToContract', true)
+        ->call('signContract')
+        ->assertHasErrors('signatureDrawing');
+
+    expect($this->booking->fresh()->status)->toBe(BookingStatus::Approved);
+});
+
+test('contracts signed before drawn signatures still render without one', function () {
+    $contract = RentalContract::factory()->for($this->booking)->create();
+    $contract->forceFill(['renter_signed_at' => now(), 'renter_signature' => 'Ana Reyes'])->save();
+
+    expect($contract->fresh()->signatureImageDataUri())->toBeNull();
+
+    $this->actingAs($this->renter)
+        ->get(route('bookings.contract', $this->booking))
+        ->assertOk()
+        ->assertSee('signed electronically as')
+        ->assertDontSee('data-test="drawn-signature"', escape: false);
 });

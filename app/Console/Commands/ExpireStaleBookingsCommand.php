@@ -8,7 +8,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('bookings:expire-stale')]
-#[Description('Expire bookings that were not paid in time or never got past checkout before pickup, releasing their vehicles.')]
+#[Description('Expire bookings that were not paid in time, never answered before pickup, or never checked out before the rental ended, releasing their vehicles.')]
 class ExpireStaleBookingsCommand extends Command
 {
     /**

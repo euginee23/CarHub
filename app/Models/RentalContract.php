@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * The agreement between rental company and renter, frozen from the booking at the
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property ContractSnapshot $snapshot
  * @property Carbon|null $renter_signed_at
  * @property string|null $renter_signature
+ * @property string|null $renter_signature_path
  * @property string|null $renter_signed_ip
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -39,6 +41,12 @@ class RentalContract extends Model
 {
     /** @use HasFactory<RentalContractFactory> */
     use HasFactory;
+
+    /**
+     * The private disk drawn signatures are kept on; they are only ever shown
+     * inside the contract, to the people allowed to read it.
+     */
+    public const string SIGNATURE_DISK = 'local';
 
     /**
      * Get the attributes that should be cast.
@@ -69,5 +77,21 @@ class RentalContract extends Model
     public function isSigned(): bool
     {
         return $this->renter_signed_at !== null;
+    }
+
+    /**
+     * The renter's drawn signature as an inline image, so the contract and its
+     * printable copy can show it without a public URL. Contracts signed before
+     * drawn signatures have none.
+     */
+    public function signatureImageDataUri(): ?string
+    {
+        $disk = Storage::disk(self::SIGNATURE_DISK);
+
+        if (blank($this->renter_signature_path) || ! $disk->exists($this->renter_signature_path)) {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode((string) $disk->get($this->renter_signature_path));
     }
 }

@@ -20,14 +20,23 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 
 new #[Title('Checkout')] class extends Component {
+    use WithFileUploads;
+
     #[Locked]
     public Booking $booking;
 
     public bool $agreeToTerms = false;
 
     public string $signature = '';
+
+    /**
+     * The signature the renter drew on the pad, uploaded as a PNG when they sign.
+     */
+    public ?TemporaryUploadedFile $signatureDrawing = null;
 
     public bool $agreeToContract = false;
 
@@ -187,13 +196,18 @@ new #[Title('Checkout')] class extends Component {
 
         $this->validate([
             'signature' => ['required', 'string', 'max:255'],
+            'signatureDrawing' => ['required', 'image', 'mimes:png', 'max:1024', 'dimensions:min_width=100,min_height=40,max_width=4000,max_height=2000'],
             'agreeToContract' => ['accepted'],
-        ], ['agreeToContract.accepted' => __('Tick the box to confirm you agree to the contract.')]);
+        ], [
+            'signatureDrawing.required' => __('Draw your signature in the box first.'),
+            'signatureDrawing.*' => __('We could not read your drawn signature. Clear the box and sign again.'),
+            'agreeToContract.accepted' => __('Tick the box to confirm you agree to the contract.'),
+        ]);
 
-        $signRentalContract->handle($this->booking, Auth::user(), $this->signature, request()->ip());
+        $signRentalContract->handle($this->booking, Auth::user(), $this->signature, $this->signatureDrawing, request()->ip());
 
         $this->booking->load('contract');
-        $this->reset(['signature', 'agreeToContract']);
+        $this->reset(['signature', 'signatureDrawing', 'agreeToContract']);
         $this->refreshSteps();
 
         Flux::toast(variant: 'success', text: __('Contract signed.'));
@@ -251,7 +265,7 @@ new #[Title('Checkout')] class extends Component {
     $steps = $this->steps;
     $user = auth()->user();
     $firstName = Str::before(Str::squish($user->name), ' ');
-    $companyName = $booking->vehicle->company?->company_name ?: ($booking->vehicle->company?->name ?: __('the rental company'));
+    $companyName = $booking->vehicle->company?->displayName() ?: __('the rental company');
     $deadline = $booking->payment_due_at;
     $shouldPoll = $focus === 'waiting' || ($focus === 'identity' && $this->identityPending);
 
@@ -282,7 +296,7 @@ new #[Title('Checkout')] class extends Component {
             'title' => $booking->vehicle->instant_book
                 ? __('Good news — this car is ready for you!')
                 : __('Good news — :company said yes!', ['company' => $companyName]),
-            'text' => __('Now read your rental contract and sign it by typing your name. It only takes a minute.'),
+            'text' => __('Now read your rental contract, type your name and draw your signature. It only takes a minute.'),
         ],
         default => [
             'step' => __('Step 4 of 4 — the last one!'),
@@ -629,20 +643,110 @@ new #[Title('Checkout')] class extends Component {
                             </div>
                         </div>
 
-                        @unless ($this->contract->isSigned())
+                        @if ($booking->return_at->isPast())
+                            <div class="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5" role="alert" data-test="rental-over">
+                                <p class="flex items-center gap-2 text-lg font-bold text-amber-900">
+                                    <flux:icon.calendar variant="mini" class="size-6 shrink-0" />
+                                    {{ __('These dates are over') }}
+                                </p>
+                                <p class="mt-2 text-base text-amber-900">
+                                    {{ __('This rental was meant to end :time, so it can’t be signed any more. Pick new dates to book the car again — it only takes a minute.', ['time' => $booking->return_at->format('M j, g:i A')]) }}
+                                </p>
+                                <flux:button variant="primary" class="mt-4" :href="route('vehicles.show', $booking->vehicle)" icon="calendar-days">{{ __('Pick new dates') }}</flux:button>
+                            </div>
+                        @elseif (! $this->contract->isSigned())
+                            @if ($booking->pickup_at->isPast())
+                                <div class="mt-6 flex items-start gap-3 rounded-xl bg-sky-50 p-4 text-sky-900" data-test="late-pickup">
+                                    <flux:icon.clock variant="mini" class="mt-0.5 size-5 shrink-0 text-sky-600" />
+                                    <p class="text-sm leading-relaxed">
+                                        <strong class="font-semibold">{{ __('Running late? No problem.') }}</strong>
+                                        {{ __('Sign and pay, then pick up the car as soon as you can. Your rental still ends :time.', ['time' => $booking->return_at->format('M j, g:i A')]) }}
+                                    </p>
+                                </div>
+                            @endif
+
                             <form
-                                wire:submit="signContract"
-                                class="mt-6 space-y-4"
+                                x-on:submit.prevent="signNow()"
+                                x-on:signature-changed="hasSignature = $event.detail.hasSignature"
+                                class="mt-6 space-y-6"
                                 x-data="{
                                     expected: @js(Str::lower(Str::squish($user->name))),
+                                    hasSignature: false,
+                                    saving: false,
+                                    problem: null,
+                                    giveUp: null,
+                                    init() {
+                                        {{-- Registered once: the remover $interceptMessage returns throws in Livewire 4.4. --}}
+                                        this.$wire.$interceptMessage(({ onError, onFailure }) => {
+                                            if (! this.saving) {
+                                                return;
+                                            }
+
+                                            onError(({ response, preventDefault }) => {
+                                                this.problem = response.status === 419 ? 'session' : 'server';
+
+                                                if (response.status === 419) {
+                                                    preventDefault();
+                                                }
+
+                                                this.giveUp?.();
+                                            });
+                                            onFailure(() => {
+                                                this.problem = 'network';
+                                                this.giveUp?.();
+                                            });
+                                        });
+                                    },
                                     get matches() {
                                         return (this.$wire.signature || '').trim().replace(/\s+/g, ' ').toLowerCase() === this.expected;
                                     },
+                                    get ready() {
+                                        return this.matches && this.hasSignature && this.$wire.agreeToContract;
+                                    },
+                                    async signNow() {
+                                        if (! this.ready || this.saving) {
+                                            return;
+                                        }
+
+                                        this.saving = true;
+                                        this.problem = null;
+
+                                        try {
+                                            {{-- An x-ref on the pad would belong to the pad's own x-data, so find it in the DOM. --}}
+                                            const drawing = await window.Alpine.$data(this.$root.querySelector('[data-signature-pad]')).toFile();
+
+                                            {{-- Livewire 4.4's $upload takes callbacks rather than returning a promise, and never calls
+                                                 back when its first request fails, so the interceptor in init() gives up for it. --}}
+                                            await new Promise((resolve, reject) => {
+                                                this.giveUp = () => reject(new Error('The request failed.'));
+                                                this.$wire.$upload('signatureDrawing', drawing, resolve, reject, () => {}, () => reject(new Error('The upload was cancelled.')));
+                                            });
+                                            await this.$wire.signContract();
+                                        } catch (error) {
+                                            this.$wire.$cancelUpload('signatureDrawing');
+
+                                            if (! this.problem) {
+                                                this.problem = 'other';
+                                                console.error(error);
+                                            }
+                                        } finally {
+                                            this.giveUp = null;
+                                            this.saving = false;
+                                        }
+                                    },
                                 }"
+                                data-test="sign-form"
                             >
+                                {{-- 1. The name, checked against the account --}}
                                 <div>
-                                    <label for="signature" class="block text-lg font-bold text-zinc-900">{{ __('Sign by typing your full name') }}</label>
-                                    <p class="mt-1 text-sm text-zinc-600">
+                                    <label for="signature" class="flex items-center gap-2.5 text-lg font-bold text-zinc-900">
+                                        <span class="flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold transition duration-300" :class="matches ? 'bg-emerald-500 text-white' : 'bg-brand-100 text-brand-700'">
+                                            <span x-show="! matches">1</span>
+                                            <span x-cloak x-show="matches"><flux:icon.check variant="micro" class="size-4" /></span>
+                                        </span>
+                                        {{ __('Type your full name') }}
+                                    </label>
+                                    <p class="mt-1.5 text-sm text-zinc-600">
                                         {{ __('Type it exactly like this:') }}
                                         <strong class="rounded bg-zinc-100 px-1.5 py-0.5 font-semibold text-zinc-900">{{ $user->name }}</strong>
                                     </p>
@@ -651,56 +755,133 @@ new #[Title('Checkout')] class extends Component {
                                         type="text"
                                         wire:model="signature"
                                         autocomplete="name"
+                                        autocapitalize="words"
                                         placeholder="{{ $user->name }}"
                                         class="mt-3 h-14 w-full rounded-xl border-2 bg-white px-4 text-lg text-zinc-900 transition focus:outline-hidden focus:ring-4 focus:ring-brand-100"
                                         :class="matches ? 'border-emerald-400' : 'border-zinc-300 focus:border-brand-500'"
                                         data-test="signature-input"
                                     />
+                                    <p x-cloak x-show="matches" x-transition.opacity class="mt-2 flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
+                                        <flux:icon.check-circle variant="micro" class="size-4" />
+                                        {{ __('That matches your name.') }}
+                                    </p>
                                     <flux:error name="signature" />
                                 </div>
 
-                                {{-- How the signature will look on the contract --}}
-                                <div class="relative rounded-xl border border-zinc-200 bg-amber-50/40 px-5 pb-4 pt-5">
-                                    <span x-cloak x-show="matches" x-transition class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                        <flux:icon.check variant="micro" class="size-3.5" />
-                                        {{ __('Matches your name') }}
-                                    </span>
-                                    <p
-                                        class="min-h-12 truncate pr-28 text-3xl text-brand-900"
-                                        style="font-family: 'Segoe Script', 'Brush Script MT', 'Snell Roundhand', 'URW Chancery L', cursive;"
-                                        x-text="$wire.signature"
-                                    ></p>
-                                    <div class="mt-1 flex justify-between border-t-2 border-zinc-300 pt-1.5 text-xs text-zinc-500">
-                                        <span>{{ __('Renter’s signature') }}</span>
-                                        <span>{{ now()->format('M j, Y') }}</span>
+                                {{-- 2. The drawn signature, saved as an image --}}
+                                <div>
+                                    <p class="flex items-center gap-2.5 text-lg font-bold text-zinc-900">
+                                        <span class="flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold transition duration-300" :class="hasSignature ? 'bg-emerald-500 text-white' : 'bg-brand-100 text-brand-700'">
+                                            <span x-show="! hasSignature">2</span>
+                                            <span x-cloak x-show="hasSignature"><flux:icon.check variant="micro" class="size-4" /></span>
+                                        </span>
+                                        {{ __('Draw your signature') }}
+                                    </p>
+                                    <p class="mt-1.5 text-sm text-zinc-600">{{ __('Use your finger, a stylus, or your mouse — just like signing on paper.') }}</p>
+
+                                    <div wire:ignore class="mt-3">
+                                        <div x-data="signaturePad" data-signature-pad class="relative select-none">
+                                            <canvas
+                                                x-ref="canvas"
+                                                x-on:pointerdown="start($event)"
+                                                x-on:pointermove="move($event)"
+                                                x-on:pointerup="end()"
+                                                x-on:pointercancel="end()"
+                                                class="block h-48 w-full cursor-crosshair touch-none rounded-xl border-2 border-dashed border-brand-300 bg-amber-50/60 sm:h-52"
+                                                role="img"
+                                                aria-label="{{ __('Signature pad — draw your signature here') }}"
+                                                data-test="signature-pad"
+                                            ></canvas>
+
+                                            <span class="pointer-events-none absolute bottom-10 left-5 text-2xl font-light leading-none text-zinc-400" aria-hidden="true">&times;</span>
+                                            <span class="pointer-events-none absolute inset-x-5 bottom-10 border-b-2 border-zinc-300" aria-hidden="true"></span>
+                                            <span class="pointer-events-none absolute bottom-3 left-5 right-5 flex justify-between text-xs text-zinc-500" aria-hidden="true">
+                                                <span>{{ __('Renter’s signature') }}</span>
+                                                <span>{{ now()->format('M j, Y') }}</span>
+                                            </span>
+
+                                            <div x-show="inkPoints === 0" x-transition.opacity class="pointer-events-none absolute inset-x-0 top-7 flex flex-col items-center gap-1.5 text-brand-700" aria-hidden="true">
+                                                <flux:icon.pencil variant="mini" class="size-7 motion-safe:animate-bounce" />
+                                                <span class="text-base font-semibold">{{ __('Sign here') }}</span>
+                                            </div>
+
+                                            <div x-cloak x-show="inkPoints > 0" x-transition.opacity class="absolute right-2 top-2 flex gap-1.5">
+                                                <button type="button" x-on:click="undo()" class="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm ring-1 ring-zinc-200 transition hover:bg-zinc-50">
+                                                    <flux:icon.arrow-uturn-left variant="micro" class="size-4" />
+                                                    {{ __('Undo') }}
+                                                </button>
+                                                <button type="button" x-on:click="clear()" class="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-2 text-sm font-medium text-red-600 shadow-sm ring-1 ring-zinc-200 transition hover:bg-red-50">
+                                                    <flux:icon.trash variant="micro" class="size-4" />
+                                                    {{ __('Clear') }}
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <flux:error name="signatureDrawing" />
                                 </div>
 
-                                <label
-                                    class="flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition duration-300"
-                                    :class="$wire.agreeToContract ? 'border-emerald-400 bg-emerald-50' : 'border-zinc-300 bg-white hover:border-brand-400 hover:bg-brand-50/40'"
-                                >
-                                    <input type="checkbox" wire:model="agreeToContract" class="mt-0.5 size-6 shrink-0 cursor-pointer accent-emerald-600" data-test="agree-contract" />
-                                    <span class="text-base leading-relaxed text-zinc-800">{{ __('I agree to this rental contract and understand that typing my name is my electronic signature.') }}</span>
-                                </label>
-                                <flux:error name="agreeToContract" />
+                                {{-- 3. Agreement --}}
+                                <div>
+                                    <p class="flex items-center gap-2.5 text-lg font-bold text-zinc-900">
+                                        <span class="flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-bold transition duration-300" :class="$wire.agreeToContract ? 'bg-emerald-500 text-white' : 'bg-brand-100 text-brand-700'">
+                                            <span x-show="! $wire.agreeToContract">3</span>
+                                            <span x-cloak x-show="$wire.agreeToContract"><flux:icon.check variant="micro" class="size-4" /></span>
+                                        </span>
+                                        {{ __('Tick to agree') }}
+                                    </p>
+                                    <label
+                                        class="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border-2 p-4 transition duration-300"
+                                        :class="$wire.agreeToContract ? 'border-emerald-400 bg-emerald-50' : 'border-zinc-300 bg-white hover:border-brand-400 hover:bg-brand-50/40'"
+                                    >
+                                        <input type="checkbox" wire:model="agreeToContract" class="mt-0.5 size-6 shrink-0 cursor-pointer accent-emerald-600" data-test="agree-contract" />
+                                        <span class="text-base leading-relaxed text-zinc-800">{{ __('I agree to this rental contract and understand that my typed name and drawn signature are my electronic signature.') }}</span>
+                                    </label>
+                                    <flux:error name="agreeToContract" />
+                                </div>
 
-                                <button
-                                    type="submit"
-                                    x-bind:disabled="! matches || ! $wire.agreeToContract"
-                                    data-test="sign-contract"
-                                    class="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-brand-600 px-6 py-4 text-lg font-bold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-500 disabled:shadow-none sm:w-auto"
-                                >
-                                    <flux:icon.pencil-square variant="mini" class="size-5 in-data-loading:hidden" />
-                                    <span class="in-data-loading:hidden">{{ __('Sign contract') }}</span>
-                                    <span class="hidden in-data-loading:inline">{{ __('Signing…') }}</span>
-                                </button>
-                                <p x-show="! matches || ! $wire.agreeToContract" class="flex items-center gap-1.5 text-sm text-zinc-500">
-                                    <flux:icon.arrow-up variant="micro" class="size-4 motion-safe:animate-bounce" />
-                                    <span x-text="! matches ? @js(__('Type your name above first.')) : @js(__('Now tick the box, then the button turns on.'))"></span>
-                                </p>
+                                <div>
+                                    <button
+                                        type="submit"
+                                        x-bind:disabled="! ready || saving"
+                                        data-test="sign-contract"
+                                        class="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-brand-600 px-6 py-4 text-lg font-bold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-500 disabled:shadow-none sm:w-auto"
+                                    >
+                                        <span x-show="! saving" class="inline-flex items-center gap-2">
+                                            <flux:icon.pencil-square variant="mini" class="size-5" />
+                                            {{ __('Sign contract') }}
+                                        </span>
+                                        <span x-cloak x-show="saving" class="inline-flex items-center gap-2">
+                                            <svg class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" class="opacity-25" />
+                                                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                                            </svg>
+                                            {{ __('Saving your signature…') }}
+                                        </span>
+                                    </button>
+                                    <p x-show="! ready && ! saving" class="mt-3 flex items-center gap-1.5 text-sm text-zinc-500">
+                                        <flux:icon.arrow-up variant="micro" class="size-4 shrink-0 motion-safe:animate-bounce" />
+                                        <span x-text="! matches ? @js(__('Type your name in step 1 first.')) : (! hasSignature ? @js(__('Now draw your signature in step 2.')) : @js(__('Now tick the box in step 3, then the button turns on.')))"></span>
+                                    </p>
+                                    <div x-cloak x-show="problem === 'session'" x-transition class="mt-4 rounded-xl border-2 border-amber-300 bg-amber-50 p-4" role="alert" data-test="session-expired">
+                                        <p class="flex items-center gap-2 font-bold text-amber-900">
+                                            <flux:icon.clock variant="mini" class="size-5 shrink-0" />
+                                            {{ __('You were logged out because this page was open for a long time.') }}
+                                        </p>
+                                        <p class="mt-1 text-sm text-amber-900">{{ __('Nothing was signed yet. Log in again, then sign — it only takes a moment.') }}</p>
+                                        <button type="button" x-on:click="window.location.reload()" class="mt-3 inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600">
+                                            <flux:icon.arrow-right-end-on-rectangle variant="micro" class="size-4" />
+                                            {{ __('Log in again') }}
+                                        </button>
+                                    </div>
+                                    <p x-cloak x-show="problem === 'network'" class="mt-3 text-sm font-medium text-red-600" role="alert">
+                                        {{ __('We couldn’t reach CarHub. Check your internet connection, then tap “Sign contract” again.') }}
+                                    </p>
+                                    <p x-cloak x-show="problem === 'server' || problem === 'other'" class="mt-3 text-sm font-medium text-red-600" role="alert">
+                                        {{ __('Something went wrong while saving your signature. Tap “Sign contract” again. If it keeps happening, tap the chat button in the corner for help.') }}
+                                    </p>
+                                </div>
                             </form>
-                        @endunless
+                        @endif
                     @endif
                 </x-booking.checkout-step>
 
@@ -841,7 +1022,7 @@ new #[Title('Checkout')] class extends Component {
                 </x-booking.checkout-step>
             </div>
 
-            <aside class="space-y-4 lg:sticky lg:top-6 lg:self-start">
+            <aside class="space-y-4 lg:sticky lg:top-24 lg:self-start">
                 <x-booking.summary :booking="$booking" />
 
                 <div class="rounded-2xl border border-zinc-200 bg-white p-5">

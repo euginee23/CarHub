@@ -1,4 +1,4 @@
-{{-- A headline number on a dashboard. --}}
+{{-- A headline number on a dashboard, optionally with a call to action ("Answer now →"). --}}
 @props([
     'label',
     'value',
@@ -6,6 +6,7 @@
     'href' => null,
     'tone' => 'default',
     'size' => 'lg',
+    'cta' => null,
 ])
 
 @php
@@ -31,5 +32,12 @@
     ])>{{ $value }}</p>
     @if ($hint)
         <p class="mt-1 text-xs text-zinc-500">{{ $hint }}</p>
+    @endif
+    @if ($cta)
+        <p @class([
+            'mt-3 text-sm font-semibold',
+            'text-amber-700' => $tone === 'attention',
+            'text-brand-600' => $tone !== 'attention',
+        ])>{{ $cta }} <span aria-hidden="true">&rarr;</span></p>
     @endif
 </{{ $tag }}>

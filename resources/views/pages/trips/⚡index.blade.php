@@ -62,11 +62,11 @@ new #[Title('My trips')] class extends Component {
             <a wire:key="booking-{{ $booking->id }}" href="{{ route('trips.show', $booking) }}" wire:navigate class="block">
                 <flux:card class="flex flex-wrap items-center gap-4 transition hover:border-zinc-300 dark:hover:border-zinc-500">
                     <x-marketing.vehicle-image :vehicle="$booking->vehicle" :caption="false" class="aspect-[4/3] !w-20 shrink-0 rounded-lg" />
-                    <div class="min-w-0 flex-1">
+                    <div class="min-w-44 flex-1">
                         <flux:heading>{{ $booking->vehicle->year }} {{ $booking->vehicle->name }}</flux:heading>
                         <flux:text class="mt-1">{{ $booking->pickup_at->format('M j, g:i A') }} &rarr; {{ $booking->return_at->format('M j, g:i A') }}</flux:text>
                     </div>
-                    <div class="text-end">
+                    <div class="flex w-full items-center justify-between gap-2 sm:block sm:w-auto sm:text-end">
                         <flux:badge size="sm" :color="$booking->status->color()">{{ $booking->status->label() }}</flux:badge>
                         <p class="mt-1 text-sm font-semibold text-zinc-900 dark:text-white">&#8369;{{ number_format($booking->total) }}</p>
                     </div>
